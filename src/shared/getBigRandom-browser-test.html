@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>getBigRandom 浏览器测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .test-section h3 {
+            color: #555;
+            margin-top: 0;
+        }
+        .result {
+            background-color: #e8f5e8;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .error {
+            background-color: #ffe8e8;
+            color: #d32f2f;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 getBigRandom 浏览器测试</h1>
+        
+        <div class="test-section">
+            <h3>📋 测试1: 基本功能测试</h3>
+            <button onclick="testBasicFunctions()">运行基本功能测试</button>
+            <div id="basic-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔑 测试2: secp256k1 私钥生成测试</h3>
+            <button onclick="testPrivateKeyGeneration()">生成私钥</button>
+            <div id="private-key-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎲 测试3: 随机性测试</h3>
+            <button onclick="testRandomness()">测试随机性</button>
+            <div id="randomness-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>⚡ 测试4: 性能测试</h3>
+            <button onclick="testPerformance()">性能测试</button>
+            <div id="performance-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🌐 测试5: 浏览器兼容性测试</h3>
+            <button onclick="testBrowserCompatibility()">兼容性测试</button>
+            <div id="compatibility-results"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 导入 getBigRandom 函数
+        import { 
+            getBigRandom, 
+            generateSecp256k1PrivateKey, 
+            isValidPrivateKey,
+            generateRandomBytes,
+            getRandomInt
+        } from './getBigRandom.js';
+        
+        // 导入 big-integer
+        import bigInt from 'https://cdn.skypack.dev/big-integer';
+
+        // 将函数暴露到全局作用域
+        window.getBigRandom = getBigRandom;
+        window.generateSecp256k1PrivateKey = generateSecp256k1PrivateKey;
+        window.isValidPrivateKey = isValidPrivateKey;
+        window.generateRandomBytes = generateRandomBytes;
+        window.getRandomInt = getRandomInt;
+        window.bigInt = bigInt;
+
+        // 测试1: 基本功能测试
+        window.testBasicFunctions = async function() {
+            const resultsDiv = document.getElementById('basic-results');
+            resultsDiv.innerHTML = '<div class="loading">正在测试...</div>';
+
+            try {
+                const results = [];
+                
+                // 测试小范围随机数
+                const smallLimit = bigInt(100);
+                const smallRandom = getBigRandom(smallLimit);
+                results.push(`✅ 小范围随机数 (1-99): ${smallRandom.toString()}`);
+                
+                // 测试中等范围随机数
+                const mediumLimit = bigInt(10000);
+                const mediumRandom = getBigRandom(mediumLimit);
+                results.push(`✅ 中等范围随机数 (1-9999): ${mediumRandom.toString()}`);
+                
+                // 测试大范围随机数
+                const largeLimit = bigInt('1000000000000000000'); // 10^18
+                const largeRandom = getBigRandom(largeLimit);
+                results.push(`✅ 大范围随机数: ${largeRandom.toString()}`);
+                
+                // 测试随机字节生成
+                const randomBytes = generateRandomBytes(16);
+                const hexString = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+                results.push(`✅ 随机字节 (16 bytes): ${hexString}`);
+                
+                // 测试随机整数生成
+                const randomInt = getRandomInt(1, 100);
+                results.push(`✅ 随机整数 (1-100): ${randomInt}`);
+                
+                resultsDiv.innerHTML = results.map(result => `<div class="result">${result}</div>`).join('');
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="result error">❌ 测试失败: ${error.message}</div>`;
+            }
+        };
+
+        // 测试2: secp256k1 私钥生成测试
+        window.testPrivateKeyGeneration = async function() {
+            const resultsDiv = document.getElementById('private-key-results');
+            resultsDiv.innerHTML = '<div class="loading">正在生成私钥...</div>';
+
+            try {
+                const results = [];
+                
+                // secp256k1 的阶 n
+                const n = bigInt('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141', 16);
+                results.push(`✅ secp256k1 阶 n: ${n.toString().substring(0, 20)}...`);
+                
+                // 生成多个私钥
+                for (let i = 0; i < 3; i++) {
+                    const privateKey = generateSecp256k1PrivateKey();
+                    results.push(`✅ 私钥 ${i + 1}: ${privateKey.toString().substring(0, 20)}...`);
+                    
+                    // 验证私钥
+                    if (isValidPrivateKey(privateKey, n)) {
+                        results.push(`  ✅ 私钥 ${i + 1} 验证通过`);
+                    } else {
+                        results.push(`  ❌ 私钥 ${i + 1} 验证失败`);
+                    }
+                }
+                
+                resultsDiv.innerHTML = results.map(result => `<div class="result">${result}</div>`).join('');
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="result error">❌ 私钥生成失败: ${error.message}</div>`;
+            }
+        };
+
+        // 测试3: 随机性测试
+        window.testRandomness = async function() {
+            const resultsDiv = document.getElementById('randomness-results');
+            resultsDiv.innerHTML = '<div class="loading">正在测试随机性...</div>';
+
+            try {
+                const results = [];
+                const testLimit = bigInt(1000);
+                const resultsSet = new Set();
+                
+                // 生成多个随机数检查重复
+                for (let i = 0; i < 100; i++) {
+                    const random = getBigRandom(testLimit);
+                    resultsSet.add(random.toString());
+                }
+                
+                const uniqueCount = resultsSet.size;
+                const duplicateRate = ((100 - uniqueCount) / 100 * 100).toFixed(2);
+                
+                results.push(`✅ 生成 100 个随机数，唯一值数量: ${uniqueCount}`);
+                results.push(`✅ 重复率: ${duplicateRate}%`);
+                
+                if (uniqueCount > 90) {
+                    results.push('✅ 随机性测试通过');
+                } else {
+                    results.push('⚠️ 随机性可能存在问题');
+                }
+                
+                resultsDiv.innerHTML = results.map(result => `<div class="result">${result}</div>`).join('');
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="result error">❌ 随机性测试失败: ${error.message}</div>`;
+            }
+        };
+
+        // 测试4: 性能测试
+        window.testPerformance = async function() {
+            const resultsDiv = document.getElementById('performance-results');
+            resultsDiv.innerHTML = '<div class="loading">正在测试性能...</div>';
+
+            try {
+                const results = [];
+                const startTime = performance.now();
+                const iterations = 100;
+                
+                for (let i = 0; i < iterations; i++) {
+                    generateSecp256k1PrivateKey();
+                }
+                
+                const endTime = performance.now();
+                const duration = endTime - startTime;
+                const avgTime = duration / iterations;
+                
+                results.push(`✅ 生成 ${iterations} 个私钥耗时: ${duration.toFixed(2)}ms`);
+                results.push(`✅ 平均每个私钥生成时间: ${avgTime.toFixed(2)}ms`);
+                
+                resultsDiv.innerHTML = results.map(result => `<div class="result">${result}</div>`).join('');
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="result error">❌ 性能测试失败: ${error.message}</div>`;
+            }
+        };
+
+        // 测试5: 浏览器兼容性测试
+        window.testBrowserCompatibility = async function() {
+            const resultsDiv = document.getElementById('compatibility-results');
+            resultsDiv.innerHTML = '<div class="loading">正在测试兼容性...</div>';
+
+            try {
+                const results = [];
+                
+                // 检查 crypto API
+                if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+                    results.push('✅ crypto.getRandomValues 可用');
+                } else {
+                    results.push('❌ crypto.getRandomValues 不可用');
+                }
+                
+                // 检查 @noble/hashes
+                try {
+                    const testBytes = generateRandomBytes(4);
+                    results.push('✅ @noble/hashes randomBytes 可用');
+                } catch (error) {
+                    results.push('❌ @noble/hashes randomBytes 不可用');
+                }
+                
+                // 检查 big-integer
+                try {
+                    const testNum = bigInt(123);
+                    results.push('✅ big-integer 库可用');
+                } catch (error) {
+                    results.push('❌ big-integer 库不可用');
+                }
+                
+                // 检查浏览器信息
+                results.push(`✅ 浏览器: ${navigator.userAgent.substring(0, 50)}...`);
+                
+                resultsDiv.innerHTML = results.map(result => `<div class="result">${result}</div>`).join('');
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="result error">❌ 兼容性测试失败: ${error.message}</div>`;
+            }
+        };
+    </script>
+</body>
+</html>

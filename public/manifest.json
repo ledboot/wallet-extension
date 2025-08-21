@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Anex Wallet Extension",
+  "version": "1.0.0",
+  "description": "A secure cryptocurrency wallet extension with SQLite database support",
+
+  "permissions": ["storage", "tabs", "windows", "activeTab"],
+
+  "host_permissions": ["<all_urls>"],
+
+  "background": {
+    "service_worker": "src/background/index.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/index.js"],
+      "run_at": "document_start"
+    }
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": ["js/sql-wasm.js", "js/sql-wasm.wasm", "js/*.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
+  "action": {
+    "default_popup": "src/popup/test-popup.html",
+    "default_title": "Anex Wallet"
+  },
+
+  "options_page": "src/options/index.html",
+
+  "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
