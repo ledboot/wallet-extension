@@ -1,10 +1,12 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { useWallet } from '@/ui/utils/walletContext';
 
 import { accountsStore } from './accounts';
 import { globalStore } from './global';
 import { keyringsStore } from './keyrings';
+import eventBus from '@/shared/eventBus';
+import { EVENTS } from '@/shared/constants';
 
 // Accounts hooks
 export const useAccounts = () => accountsStore();
@@ -32,6 +34,12 @@ export function useUnlockCallback() {
     async (password: string) => {
       await wallet.unlock(password);
       globalStore.getState().update({ isUnlocked: true });
+      // 同步 keyrings 到本地状态
+      const keyrings = await wallet.getKeyrings();
+      keyringsStore.getState().setKeyrings(keyrings);
+      if (keyrings && keyrings.length > 0) {
+        keyringsStore.getState().setCurrent(keyrings[0]);
+      }
     },
     [wallet]
   );

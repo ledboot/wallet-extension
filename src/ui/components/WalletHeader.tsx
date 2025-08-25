@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Check, ChevronDown, Copy, Settings } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/ui/utils';
 import { Account } from '@/shared/types';
+import { useNavigate } from '@/ui/pages/mainRoute';
 
 export function WalletHeader() {
   const navigate = useNavigate();
@@ -26,29 +26,31 @@ export function WalletHeader() {
   }, [wallet]);
 
   const [copied, setCopied] = useState(false);
+
   const copyAddress = () => {
     if (!currentAccount) return;
     navigator.clipboard.writeText(currentAccount.address);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
   return (
-    <div className='w-full sticky top-0 z-10 border-border flex items-center justify-between border-b p-4'>
+    <div className='w-full sticky top-0 z-20 flex h-14 items-center justify-between px-4 py-[15px]'>
       <div className='flex items-center space-x-3'>
-        <div className='flex h-8 w-8 items-center justify-center rounded-full'>
+        <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary'>
           <span className='text-primary-foreground text-sm font-bold'>N</span>
         </div>
         <div>
           <button
-            onClick={() => navigate('/accounts')}
-            className='btn btn-ghost flex items-center space-x-1 text-sm font-medium transition-colors hover:text-primary'
+            onClick={() => navigate('AccountSelection', { currentAccount: currentAccount })}
+            className='flex items-center space-x-1 text-sm font-medium cursor-pointer'
           >
             <span>{currentAccount?.alianName || ''}</span>
             <ChevronDown className='text-muted-foreground h-4 w-4' />
           </button>
           <button
             onClick={copyAddress}
-            className='text-muted-foreground hover:text-foreground flex items-center space-x-1 text-xs transition-colors'
+            className='text-muted-foreground hover:text-foreground flex items-center space-x-1 text-xs'
           >
             <span>{shortAddress}</span>
             {copied ? (

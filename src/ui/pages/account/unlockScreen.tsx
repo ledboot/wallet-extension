@@ -8,7 +8,7 @@ import { useNavigate } from '../mainRoute';
 
 export default function UnlockScreen() {
   const navigate = useNavigate();
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState('12345678');
   const unlock = useUnlockCallback();
   const wallet = useWallet();
   const handleUnlock = async () => {
@@ -16,6 +16,7 @@ export default function UnlockScreen() {
       await unlock(password);
       const hasVault = await wallet.hasVault();
       if (hasVault) {
+        
         navigate('MainScreen');
         return;
       } else {

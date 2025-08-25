@@ -6,6 +6,7 @@ import { useCallback, useRef } from 'react';
 import UnlockScreen from './account/unlockScreen';
 import CreatePasswordScreen from './account/createPasswordScreen';
 import CreateOrImportWalletScreen from './account/createOrImportWalletScreen';
+import AccountSelection from './account/AccountSelection';
 
 const routes = {
  BoostScreen: {
@@ -40,10 +41,10 @@ const routes = {
     path: '/account/unlock',
     element: <UnlockScreen />,
   },
-//   SwitchAccountScreen: {
-//     path: '/account/switch-account',
-//     element: <SwitchAccountScreen />,
-//   },
+  AccountSelection: {
+    path: '/account/selection',
+    element: <AccountSelection />,
+  },
 //   ReceiveScreen: {
 //     path: '/wallet/receive',
 //     element: <ReceiveScreen />,

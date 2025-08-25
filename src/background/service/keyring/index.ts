@@ -1,4 +1,3 @@
-import passworder from '@metamask/browser-passworder';
 // @ts-expect-error - browser-passworder 没有类型定义
 import encryptor from 'browser-passworder';
 import { EventEmitter } from 'eventemitter3';
@@ -506,9 +505,7 @@ class KeyringService extends EventEmitter {
     }
 
     await this.clearKeyrings();
-    console.log('encryptedVault', encryptedVault);
     const vault = await this.encryptor.decrypt(password, encryptedVault);
-    console.log('vault', vault);
 
     const arr = Array.from(vault as unknown as Iterable<unknown>);
     for (let i = 0; i < arr.length; i++) {
@@ -620,8 +617,7 @@ class KeyringService extends EventEmitter {
     address: string,
     type?: string,
     start?: number,
-    end?: number,
-    includeWatchKeyring = true
+    end?: number
   ): Promise<Keyring> => {
     console.debug(`KeyringController - getKeyringForAccount: ${address}`);
     const keyrings = type
@@ -742,6 +738,7 @@ class KeyringService extends EventEmitter {
         this.displayForKeyring(keyring, index)
       )
     );
+    this.emit('updateKeyrings');
     return this.memStore.updateState({ keyrings });
   };
 

@@ -1,8 +1,8 @@
-import { ArrowUpDown, CreditCard, Download, Send } from 'lucide-react';
+import { History, Download, Send } from 'lucide-react';
 
 export function WalletActions() {
   return (
-    <div className='grid w-full grid-cols-4 gap-3 p-4'>
+    <div className='grid w-full grid-cols-4 gap-3'>
       <button className='bg-wallet-card border-border hover:border-primary/50 btn btn-outline flex h-16 flex-col space-y-1 transition-all'>
         <Send className='h-5 w-5' />
         <span className='text-xs'>Send</span>
@@ -14,13 +14,8 @@ export function WalletActions() {
       </button>
 
       <button className='bg-wallet-card border-border hover:border-primary/50 btn btn-outline flex h-16 flex-col space-y-1 transition-all'>
-        <ArrowUpDown className='h-5 w-5' />
-        <span className='text-xs'>Swap</span>
-      </button>
-
-      <button className='bg-wallet-card border-border hover:border-primary/50 btn btn-outline flex h-16 flex-col space-y-1 transition-all'>
-        <CreditCard className='h-5 w-5' />
-        <span className='text-xs'>Buy</span>
+        <History className='h-5 w-5' />
+        <span className='text-xs'>History</span>
       </button>
     </div>
   );

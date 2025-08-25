@@ -220,6 +220,11 @@ export class WalletController {
     return `${BRAND_ALIAN_TYPE_TEXT[type]} ${index}`;
   };
 
+  getAccounts = async () => {
+    const keyrings = await this.getKeyrings();
+    return keyrings.reduce<Account[]>((pre, cur) => pre.concat(cur.accounts), []);
+  };
+
   /**
    * 获取网络类型
    */
@@ -308,8 +313,9 @@ export class WalletController {
 
   createKeyringWithPrivateKey = async (
     privateKey: string,
-    alianName?: string
+    _alianName?: string
   ) => {
+    void _alianName;
     const originKeyring = await keyringService.importPrivateKey(privateKey);
 
     const displayedKeyring = await keyringService.displayForKeyring(
@@ -326,4 +332,11 @@ export class WalletController {
   };
 }
 
-export default new WalletController();
+const walletControllerInstance = new WalletController();
+
+// bridge KeyringService internal events to UI event bus
+keyringService.on('updateKeyrings', () => {
+  eventBus.emit(EVENTS.broadcastToUI, { method: 'updateKeyrings', params: {} });
+});
+
+export default walletControllerInstance;
