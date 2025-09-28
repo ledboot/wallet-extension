@@ -9,42 +9,9 @@
  */
 
 // Import dependencies
-import bigInt from 'big-integer';
+import bigi from 'bigi';
 
-// Global BigInteger reference for compatibility
-const BigInteger = bigInt;
-
-// Define BigInteger constants for compatibility
-BigInteger.ZERO = bigInt(0);
-BigInteger.ONE = bigInt(1);
-BigInteger.TWO = bigInt(2);
-
-// Add valueOf method for compatibility
-BigInteger.valueOf = function (value) {
-  return bigInt(value);
-};
-
-// Add testBit method for compatibility
-BigInteger.prototype.testBit = function (n) {
-  // testBit(n) returns true if the nth bit is set
-  // This is equivalent to (this & (1 << n)) != 0
-  const mask = BigInteger.ONE.shiftLeft(n);
-  return !this.and(mask).isZero();
-};
-
-// Add getLowestSetBit method for compatibility
-BigInteger.prototype.getLowestSetBit = function () {
-  // Find the lowest bit that is set
-  if (this.isZero()) return -1;
-
-  let bit = 0;
-  let temp = this;
-  while (temp.isEven()) {
-    temp = temp.divide(2);
-    bit++;
-  }
-  return bit;
-};
+// Our BigInteger already provides testBit and getLowestSetBit
 
 // Simple SecureRandom implementation for compatibility
 class SecureRandom {
@@ -68,7 +35,7 @@ class Barrett {
   constructor(modulus) {
     this.modulus = modulus;
     this.k = modulus.bitLength();
-    this.mu = BigInteger.ONE.shiftLeft(2 * this.k).divide(modulus);
+    this.mu = bigi.ONE.shiftLeft(2 * this.k).divide(modulus);
   }
 
   reduce(x) {
@@ -155,18 +122,18 @@ ec.FieldElementFp.prototype.sqrt = function () {
     // z = g^(u+1) + p, p = 4u + 3
     var z = new ec.FieldElementFp(
       this.q,
-      this.x.modPow(this.q.shiftRight(2).add(BigInteger.ONE), this.q)
+      this.x.modPow(this.q.shiftRight(2).add(bigi.ONE), this.q)
     );
     return z.square().equals(this) ? z : null;
   }
 
   // p mod 4 == 1
-  var qMinusOne = this.q.subtract(BigInteger.ONE);
+  var qMinusOne = this.q.subtract(bigi.ONE);
   var legendreExponent = qMinusOne.shiftRight(1);
-  if (!this.x.modPow(legendreExponent, this.q).equals(BigInteger.ONE))
+  if (!this.x.modPow(legendreExponent, this.q).equals(bigi.ONE))
     return null;
   var u = qMinusOne.shiftRight(2);
-  var k = u.shiftLeft(1).add(BigInteger.ONE);
+  var k = u.shiftLeft(1).add(bigi.ONE);
   var Q = this.x;
   var fourQ = Q.shiftLeft(2).mod(this.q);
   var U, V;
@@ -175,7 +142,7 @@ ec.FieldElementFp.prototype.sqrt = function () {
     var rand = new SecureRandom();
     var P;
     do {
-      P = new BigInteger(this.q.bitLength(), rand);
+      P = new bigi(this.q.bitLength(), rand);
     } while (
       P.compareTo(this.q) >= 0 ||
       !P.multiply(P)
@@ -196,7 +163,7 @@ ec.FieldElementFp.prototype.sqrt = function () {
       V = V.shiftRight(1);
       return new ec.FieldElementFp(this.q, V);
     }
-  } while (U.equals(BigInteger.ONE) || U.equals(qMinusOne));
+  } while (U.equals(bigi.ONE) || U.equals(qMinusOne));
 
   return null;
 };
@@ -210,11 +177,11 @@ ec.FieldElementFp.fastLucasSequence = function (p, P, Q, k) {
 
   var n = k.bitLength();
   var s = k.getLowestSetBit();
-  var Uh = BigInteger.ONE;
-  var Vl = BigInteger.TWO;
+  var Uh = bigi.ONE;
+  var Vl = bigi.TWO;
   var Vh = P;
-  var Ql = BigInteger.ONE;
-  var Qh = BigInteger.ONE;
+  var Ql = bigi.ONE;
+  var Qh = bigi.ONE;
 
   for (var j = n - 1; j >= s + 1; --j) {
     Ql = Ql.multiply(Qh).mod(p);
@@ -255,7 +222,7 @@ ec.PointFp = function (curve, x, y, z, compressed) {
   // Projective coordinates: either zinv == null or z * zinv == 1
   // z and zinv are just BigIntegers, not fieldElements
   if (z == null) {
-    this.z = BigInteger.ONE;
+    this.z = bigi.ONE;
   } else {
     this.z = z;
   }
@@ -293,21 +260,21 @@ ec.PointFp.prototype.equals = function (other) {
     .multiply(this.z)
     .subtract(this.y.toBigInteger().multiply(other.z))
     .mod(this.curve.q);
-  if (!u.equals(BigInteger.ZERO)) return false;
+  if (!u.equals(bigi.ZERO)) return false;
   // v = X2 * Z1 - X1 * Z2
   v = other.x
     .toBigInteger()
     .multiply(this.z)
     .subtract(this.x.toBigInteger().multiply(other.z))
     .mod(this.curve.q);
-  return v.equals(BigInteger.ZERO);
+  return v.equals(bigi.ZERO);
 };
 
 ec.PointFp.prototype.isInfinity = function () {
   if (this.x == null && this.y == null) return true;
   return (
-    this.z.equals(BigInteger.ZERO) &&
-    !this.y.toBigInteger().equals(BigInteger.ZERO)
+    this.z.equals(bigi.ZERO) &&
+    !this.y.toBigInteger().equals(bigi.ZERO)
   );
 };
 
@@ -332,14 +299,14 @@ ec.PointFp.prototype.add = function (b) {
     .subtract(this.x.toBigInteger().multiply(b.z))
     .mod(this.curve.q);
 
-  if (BigInteger.ZERO.equals(v)) {
-    if (BigInteger.ZERO.equals(u)) {
+  if (bigi.ZERO.equals(v)) {
+    if (bigi.ZERO.equals(u)) {
       return this.twice(); // this == b, so double
     }
     return this.curve.getInfinity(); // this = -b, so infinity
   }
 
-  var THREE = new BigInteger('3');
+  var THREE = new bigi('3');
   var x1 = this.x.toBigInteger();
   var y1 = this.y.toBigInteger();
   // var x2 = b.x.toBigInteger(); // Unused variable
@@ -379,10 +346,10 @@ ec.PointFp.prototype.add = function (b) {
 
 ec.PointFp.prototype.twice = function () {
   if (this.isInfinity()) return this;
-  if (this.y.toBigInteger().isZero()) return this.curve.getInfinity();
+  if (this.y.toBigInteger().compareTo(bigi.ZERO) === 0) return this.curve.getInfinity();
 
   // TODO: optimized handling of constants
-  var THREE = new BigInteger('3');
+  var THREE = new bigi('3');
   var x1 = this.x.toBigInteger();
   var y1 = this.y.toBigInteger();
 
@@ -392,7 +359,7 @@ ec.PointFp.prototype.twice = function () {
 
   // w = 3 * x1^2 + a * z1^2
   var w = x1.square().multiply(THREE);
-  if (!BigInteger.ZERO.equals(a)) {
+  if (!bigi.ZERO.equals(a)) {
     w = w.add(this.z.square().multiply(a));
   }
   w = w.mod(this.curve.q);
@@ -430,29 +397,31 @@ ec.PointFp.prototype.multiply = function (k) {
   if (this.isInfinity()) return this;
   // Convert k to BigInteger if it's not already
   if (typeof k === 'number') {
-    k = BigInteger(k);
+    k = bigi(k);
   }
-  if (k.isZero()) return this.curve.getInfinity();
+  console.log('k', typeof k);
+  if (k.compareTo(bigi.ZERO) === 0) return this.curve.getInfinity();
 
   var e = k;
-  var h = e.multiply(new BigInteger('3'));
+  var h = e.multiply(new bigi('3'));
 
   var neg = this.negate();
-  var result = this;
+  var resultPoint = this.curve.getInfinity();
+  resultPoint = resultPoint.add(this);
 
   var i;
   for (i = h.bitLength() - 2; i > 0; --i) {
-    result = result.twice();
+    resultPoint = resultPoint.twice();
 
     var hBit = h.testBit(i);
     var eBit = e.testBit(i);
 
     if (hBit != eBit) {
-      result = result.add(hBit ? this : neg);
+      resultPoint = resultPoint.add(hBit ? this : neg);
     }
   }
 
-  return result;
+  return resultPoint;
 };
 
 // Compute this*j + x*k (simultaneous multiplication)
@@ -461,25 +430,25 @@ ec.PointFp.prototype.multiplyTwo = function (j, x, k) {
   if (j.bitLength() > k.bitLength()) i = j.bitLength() - 1;
   else i = k.bitLength() - 1;
 
-  var result = this.curve.getInfinity();
+  var resultPoint = this.curve.getInfinity();
   var both = this.add(x);
   while (i >= 0) {
-    result = result.twice();
+    resultPoint = resultPoint.twice();
     if (j.testBit(i)) {
       if (k.testBit(i)) {
-        result = result.add(both);
+        resultPoint = resultPoint.add(both);
       } else {
-        result = result.add(this);
+        resultPoint = resultPoint.add(this);
       }
     } else {
       if (k.testBit(i)) {
-        result = result.add(x);
+        resultPoint = resultPoint.add(x);
       }
     }
     --i;
   }
 
-  return result;
+  return resultPoint;
 };
 
 // patched by bitaddress.org and Casascius for use with Bitcoin.ECKey
@@ -517,8 +486,8 @@ ec.PointFp.decodeFrom = function (curve, enc) {
   yBa.unshift(0);
 
   // Convert to BigIntegers
-  var x = new BigInteger(xBa);
-  var y = new BigInteger(yBa);
+  var x = new bigi(xBa);
+  var y = new bigi(yBa);
 
   // Return point
   return new ec.PointFp(
@@ -553,14 +522,14 @@ ec.PointFp.prototype.add2D = function (b) {
 
 ec.PointFp.prototype.twice2D = function () {
   if (this.isInfinity()) return this;
-  if (this.y.toBigInteger().isZero()) {
+  if (this.y.toBigInteger().compareTo(bigi.ZERO) === 0) {
     // if y1 == 0, then (x1, y1) == (x1, -y1)
     // and hence this = -this and thus 2(x1, y1) == infinity
     return this.curve.getInfinity();
   }
 
-  var TWO = this.curve.fromBigInteger(BigInteger.valueOf(2));
-  var THREE = this.curve.fromBigInteger(BigInteger.valueOf(3));
+  var TWO = this.curve.fromBigInteger(bigi.valueOf(2));
+  var THREE = this.curve.fromBigInteger(bigi.valueOf(3));
   var gamma = this.x
     .square()
     .multiply(THREE)
@@ -577,29 +546,30 @@ ec.PointFp.prototype.multiply2D = function (k) {
   if (this.isInfinity()) return this;
   // Convert k to BigInteger if it's not already
   if (typeof k === 'number') {
-    k = BigInteger(k);
+    k = bigi(k);
   }
-  if (k.isZero()) return this.curve.getInfinity();
+  if (k.compareTo(bigi.ZERO) === 0) return this.curve.getInfinity();
 
   var e = k;
-  var h = e.multiply(new BigInteger('3'));
+  var h = e.multiply(new bigi('3'));
 
   var neg = this.negate();
-  var result = this;
+  var resultPoint = this.curve.getInfinity();
+  resultPoint = resultPoint.add(this);
 
   var i;
   for (i = h.bitLength() - 2; i > 0; --i) {
-    result = result.twice();
+    resultPoint = resultPoint.twice();
 
     var hBit = h.testBit(i);
     var eBit = e.testBit(i);
 
     if (hBit != eBit) {
-      result = result.add2D(hBit ? this : neg);
+      resultPoint = resultPoint.add2D(hBit ? this : neg);
     }
   }
 
-  return result;
+  return resultPoint;
 };
 
 ec.PointFp.prototype.isOnCurve = function () {
@@ -640,14 +610,14 @@ ec.PointFp.prototype.validate = function () {
   var x = this.getX().toBigInteger();
   var y = this.getY().toBigInteger();
   if (
-    x.compareTo(BigInteger.ONE) < 0 ||
-    x.compareTo(n.subtract(BigInteger.ONE)) > 0
+    x.compareTo(bigi.ONE) < 0 ||
+    x.compareTo(n.subtract(bigi.ONE)) > 0
   ) {
     throw new Error('x coordinate out of bounds');
   }
   if (
-    y.compareTo(BigInteger.ONE) < 0 ||
-    y.compareTo(n.subtract(BigInteger.ONE)) > 0
+    y.compareTo(bigi.ONE) < 0 ||
+    y.compareTo(n.subtract(bigi.ONE)) > 0
   ) {
     throw new Error('y coordinate out of bounds');
   }
@@ -672,10 +642,10 @@ ec.CurveFp = function (q, a, b) {
   this.q = q;
   // Convert a and b to BigInteger if they're not already
   if (typeof a === 'number') {
-    a = BigInteger(a);
+    a = bigi(a);
   }
   if (typeof b === 'number') {
-    b = BigInteger(b);
+    b = bigi(b);
   }
   this.a = new ec.FieldElementFp(this.q, a);
   this.b = new ec.FieldElementFp(this.q, b);
@@ -727,7 +697,7 @@ ec.CurveFp.prototype.decodePointHex = function (s) {
     case 3: // compressed
       var yTilde = firstByte & 1;
       var xHex = s.substr(2, s.length - 2);
-      var X1 = new BigInteger(xHex, 16);
+      var X1 = new bigi(xHex, 16);
       return this.decompressPoint(yTilde, X1);
     case 4: // uncompressed
     case 6: // hybrid
@@ -738,8 +708,8 @@ ec.CurveFp.prototype.decodePointHex = function (s) {
 
       return new ec.PointFp(
         this,
-        this.fromBigInteger(new BigInteger(xHexStr, 16)),
-        this.fromBigInteger(new BigInteger(yHexStr, 16))
+        this.fromBigInteger(new bigi(xHexStr, 16)),
+        this.fromBigInteger(new bigi(yHexStr, 16))
       );
 
     default: // unsupported
@@ -785,7 +755,7 @@ ec.CurveFp.prototype.decompressPoint = function (yTilde, X1) {
 };
 
 ec.fromHex = function (s) {
-  return new BigInteger(s, 16);
+  return new bigi(s, 16);
 };
 
 ec.integerToBytes = function (i, len) {
@@ -834,12 +804,12 @@ ec.secNamedCurves = {
     var p = ec.fromHex(
       'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F'
     );
-    var a = BigInteger.ZERO;
+    var a = bigi.ZERO;
     var b = ec.fromHex('7');
     var n = ec.fromHex(
       'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141'
     );
-    var h = BigInteger.ONE;
+    var h = bigi.ONE;
     var curve = new ec.CurveFp(p, a, b);
     var G = curve.decodePointHex(
       '04' +

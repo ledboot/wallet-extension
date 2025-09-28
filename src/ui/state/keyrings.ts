@@ -1,20 +1,15 @@
 import { Account, WalletKeyring } from '@shared/types';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import eventBus from '@/shared/eventBus';
-import { EVENTS } from '@/shared/constants';
 
 export interface KeyringsState {
   keyrings: WalletKeyring[];
   current: WalletKeyring;
-  __listener?: (payload?: any) => void;
   reset: () => void;
   setCurrent: (payload: WalletKeyring) => void;
   setKeyrings: (payload: WalletKeyring[]) => void;
   updateKeyringName: (payload: WalletKeyring) => void;
   updateAccountName: (payload: Account) => void;
-  startSync: (fetchKeyrings: () => Promise<WalletKeyring[]>) => void;
-  stopSync: () => void;
 }
 
 const initialKeyring: WalletKeyring = {
@@ -32,7 +27,7 @@ const initialState = {
 
 export const keyringsStore = create<KeyringsState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       ...initialState,
 
       reset: () => set(initialState),
@@ -81,32 +76,6 @@ export const keyringsStore = create<KeyringsState>()(
             keyrings: updatedKeyrings
           };
         });
-      },
-
-      startSync: (fetchKeyrings: () => Promise<WalletKeyring[]>) => {
-        const listener = async (payload?: any) => {
-          if (payload?.method === 'updateKeyrings') {
-            console.log('keyringsStore received updateKeyrings event');
-            const keyrings = await fetchKeyrings();
-            set({ keyrings });
-            if (keyrings && keyrings.length > 0) {
-              set({ current: keyrings[0] });
-            }
-          }
-        };
-        // 保存到 state 以便 stop 时移除
-        set((state) => ({ ...state, __listener: listener }));
-        // 监听 eventBus 的广播事件
-        eventBus.addEventListener(EVENTS.broadcastToUI, listener);
-      },
-
-      stopSync: () => {
-        const currentListener = get().__listener;
-        if (currentListener) {
-          // 移除 eventBus 监听
-          eventBus.removeEventListener(EVENTS.broadcastToUI, currentListener);
-          set((state) => ({ ...state, __listener: undefined }));
-        }
       },
     }),
     {

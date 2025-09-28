@@ -1,8 +1,10 @@
-import { keyringService } from '@/background/service';
-import { KEYRING_TYPE } from '@/shared/constants';
-import { useCreateWalletCallback } from '@/ui/state/hooks';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+
+import { KEYRING_TYPE } from '@/shared/constants';
+import { useCreateWalletCallback } from '@/ui/state/hooks';
+import { useWallet } from '@/ui/utils';
 
 export default function CreateOrImportWalletScreen() {
   const location = useLocation();
@@ -10,34 +12,39 @@ export default function CreateOrImportWalletScreen() {
     newWallet: boolean;
     importWallet: boolean;
   };
+  console.log('newWallet', newWallet);
+  console.log('importWallet', importWallet);
   const createWallet = useCreateWalletCallback();
+  const wallet = useWallet();
   const navigate = useNavigate();
   const [address, setAddress] = useState('');
   const [wif, setWIF] = useState('');
 
   const handleCreateWallet = async () => {
-    await createWallet(wif);
+    try {
+      await createWallet(wif);
+    } catch (error) {
+      toast.error('Failed to create wallet');
+      console.error('Failed to create wallet', error);
+      return;
+    }
     navigate('/main');
   };
 
-  const handleImportWallet = () => {
-    keyringService.importPrivateKey(wif);
+  const handleImportWallet = async () => {
+    await wallet.createKeyringWithPrivateKey(wif);
+    navigate('/main');
   };
 
   useEffect(() => {
     const generatePrePrivateKey = async () => {
-    if (newWallet) {
-      const KeyringClass = keyringService.getKeyringClassForType(KEYRING_TYPE.SimpleKeyring);
-      if (KeyringClass) {
-          const keyringInstance = new KeyringClass();
-          const {address: preAddress, wif: preWIF} = await keyringService.generatePrePrivateKey(keyringInstance);
-          console.log('preAddress', preAddress);
-          console.log('preWIF', preWIF);
-          setAddress(preAddress);
-          setWIF(preWIF);
-        }
+      if (newWallet) {
+        const { address: preAddress, wif: preWIF } = await wallet.generatePrePrivateKey(KEYRING_TYPE.SimpleKeyring);
+        setAddress(preAddress);
+        setWIF(preWIF);
       }
     };
+    console.log('newWallet', newWallet);
     generatePrePrivateKey();
   }, [newWallet]);
 
@@ -47,20 +54,20 @@ export default function CreateOrImportWalletScreen() {
         {newWallet ? 'Create Wallet' : 'Import Wallet'}
       </div>
       {newWallet && (
-        <div className='flex flex-col gap-2 w-full'>
+        <div className='flex w-full flex-col gap-2'>
           <span className='text-sm text-gray-500'>Wallet Address</span>
           <input
             type='text'
             placeholder='Wallet Address'
             value={address}
-            className='input rounded-md w-full'
+            className='input w-full rounded-md'
             disabled={true}
           />
           <span className='text-sm text-gray-500'>WIF</span>
           <textarea
             placeholder='WIF'
             value={wif}
-            className='input rounded-md w-full h-20 resize-none'
+            className='input h-20 w-full resize-none rounded-md'
             disabled={true}
             style={{ whiteSpace: 'pre-line' }}
           />
@@ -74,15 +81,10 @@ export default function CreateOrImportWalletScreen() {
         </div>
       )}
       {importWallet && (
-        <div className='flex flex-col gap-2 w-full'>
-          <input
-            type='text'
-            placeholder='Wallet Name'
-            className='input rounded-md'
-          />
+        <div className='flex w-full flex-col gap-2'>
           <textarea
             placeholder='Enter a private key'
-            className='input rounded-md w-full h-20 resize-none'
+            className='input h-20 w-full resize-none rounded-md'
             value={wif}
             onChange={(e) => setWIF(e.target.value)}
             style={{ whiteSpace: 'pre-line' }}

@@ -1,6 +1,5 @@
 import {
   AUTO_LOCK_TIMES,
-  BRAND_ALIAN_TYPE_TEXT,
   DEFAULT_LOCKTIME_ID,
   EVENTS,
   KEYRING_TYPE,
@@ -13,9 +12,12 @@ import keyringService from '../service/keyring';
 import { DisplayedKeyring } from '../service/keyring/index';
 import preferenceService from '../service/preference';
 import sessionService from '../service/session';
+import { openapiService } from '../service';
 
 export class WalletController {
   timer: any = null;
+  private lastHeartbeatTs: number | null = null;
+  private heartbeatInterval: any = null;
 
   /**
    * 启动钱包
@@ -55,7 +57,8 @@ export class WalletController {
   unlock = async (password: string) => {
     await keyringService.submitPassword(password);
     sessionService.broadcastEvent('unlock');
-    this._resetTimeout();
+    // 心跳模式：初始化心跳时间并启动监控
+    this._initHeartbeat();
   };
 
   /**
@@ -70,6 +73,11 @@ export class WalletController {
    */
   async lockWallet(): Promise<void> {
     await keyringService.setLocked();
+    // 上锁后停止心跳监控
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
   }
 
   /**
@@ -107,7 +115,7 @@ export class WalletController {
    * @param privateKey 私钥
    */
   createTmpKeyringWithPrivateKey = async (privateKey: string) => {
-    const originKeyring = keyringService.createTmpKeyring('Simple Key Pair', [
+    const originKeyring = keyringService.createTmpKeyring(KEYRING_TYPE.SimpleKeyring, [
       privateKey,
     ]);
     const displayedKeyring = await keyringService.displayForKeyring(
@@ -179,46 +187,43 @@ export class WalletController {
     index: number,
     initName = true
   ) => {
-    const key = 'keyring_' + index;
     const type = displayedKeyring.type;
-    const accounts: Account[] = [];
-    for (let j = 0; j < displayedKeyring.accounts.length; j++) {
-      const { pubkey } = displayedKeyring.accounts[j];
-      //   const address = publicKeyToAddress(pubkey, networkType);
-      const accountKey = key + '#' + j;
-      const defaultName = this._generateAlianName(type, j + 1);
+    
+    // 账户 alianName 从 PreferenceService 获取，如果没有则使用来自 SimpleKeyring 的默认值
+    const accounts = displayedKeyring.accounts.map((account, j) => {
+      const accountKey = displayedKeyring.key + '#' + j;
       const alianName = preferenceService.getAccountAlianName(
         accountKey,
-        defaultName
+        account.alianName // 使用来自 SimpleKeyring 的默认值
       );
-      const flag = preferenceService.getAddressFlag(pubkey);
-      accounts.push({
+      
+      return {
         type,
-        pubkey,
-        address: pubkey,
+        pubkey: account.pubkey,
+        address: account.pubkey,
+        addressHex: account.addressHex,
         alianName,
         index: j,
         key: accountKey,
-        flag,
-      });
-    }
+        flag: preferenceService.getAddressFlag(account.pubkey),
+      };
+    });
+
+    // 钱包 alianName 从 PreferenceService 获取
     const alianName = preferenceService.getKeyringAlianName(
-      key,
+      displayedKeyring.key,
       initName ? `${KEYRING_TYPES[type].alianName} #${index + 1}` : ''
     );
-    const keyring: WalletKeyring = {
+    
+    return {
       index,
-      key,
+      key: displayedKeyring.key,
       type,
       accounts,
       alianName,
     };
-    return keyring;
   };
 
-  private _generateAlianName = (type: string, index: number) => {
-    return `${BRAND_ALIAN_TYPE_TEXT[type]} ${index}`;
-  };
 
   getAccounts = async () => {
     const keyrings = await this.getKeyrings();
@@ -246,6 +251,7 @@ export class WalletController {
    * 获取当前密钥环
    */
   getCurrentKeyring = async () => {
+    this.resetLockTime();
     let currentKeyringIndex = preferenceService.getCurrentKeyringIndex();
     const displayedKeyrings = await keyringService.getAllDisplayedKeyrings();
     if (currentKeyringIndex === undefined) {
@@ -294,22 +300,71 @@ export class WalletController {
    * @param accountIndex 账户索引
    */
   changeKeyring = async (keyring: WalletKeyring, accountIndex = 0) => {
-    preferenceService.setCurrentKeyringIndex(keyring.index);
+    const index = keyringService.getKeyringIndexByKey(keyring.key);
+    preferenceService.setCurrentKeyringIndex(index);
     preferenceService.setCurrentAccount(keyring.accounts[accountIndex]);
+    this.resetLockTime();
   };
 
-  _resetTimeout = async () => {
+
+  /** UI 心跳：更新心跳时间 */
+  heartbeat = () => {
+    this._touchHeartbeat();
+    return { ok: true };
+  };
+
+  private _touchHeartbeat() {
+    this.lastHeartbeatTs = Date.now();
+  }
+
+  private resetLockTime() {
     if (this.timer) {
       clearTimeout(this.timer);
     }
-
     const timeId = preferenceService.getAutoLockTimeId();
     const timeConfig =
       AUTO_LOCK_TIMES[timeId] || AUTO_LOCK_TIMES[DEFAULT_LOCKTIME_ID];
+
     this.timer = setTimeout(() => {
-      this.lockWallet();
+      const isUnlocked = keyringService.memStore.getState().isUnlocked;
+      if (isUnlocked) {
+        this.lockWallet();
+      }
     }, timeConfig.time);
-  };
+  }
+
+  private _initHeartbeat() {
+    this._touchHeartbeat();
+
+    // 清理之前的定时器
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+    }
+
+    // 启动心跳监控（每秒检查一次）
+    this.heartbeatInterval = setInterval(() => {
+      const isUnlocked = keyringService.memStore.getState().isUnlocked;
+      if (!isUnlocked) {
+        return;
+      }
+
+      const timeId = preferenceService.getAutoLockTimeId();
+      const timeConfig =
+        AUTO_LOCK_TIMES[timeId] || AUTO_LOCK_TIMES[DEFAULT_LOCKTIME_ID];
+
+      const now = Date.now();
+      // 修复：如果 lastHeartbeatTs 为 null，使用当前时间
+      const last = this.lastHeartbeatTs || now;
+      const elapsed = now - last;
+
+      if (elapsed > timeConfig.time) {
+        this.lockWallet();
+      }
+    }, 1000);
+
+    this.resetLockTime();
+
+  }
 
   createKeyringWithPrivateKey = async (
     privateKey: string,
@@ -329,8 +384,58 @@ export class WalletController {
     );
 
     this.changeKeyring(keyring);
+    // 活动发生，刷新心跳时间
+    this._touchHeartbeat();
+    eventBus.emit(EVENTS.broadcastToUI, {
+      method: 'updateKeyrings',
+      params: {}
+    });
+  };
+  
+  generatePrePrivateKey = (keyringType: string) =>{
+    const keyring = keyringService.createTmpKeyring(
+      keyringType,
+      []
+    );
+    const { address: preAddress, wif: preWIF } = keyring.generatePrePrivateKey();
+    return { address: preAddress, wif: preWIF };
+  }
+  
+
+  getAddressHistory = async (params: { account: Account; start: number; limit: number }) => {
+    this.resetLockTime();
+    return await openapiService.getAddressHistory(params);
+  };
+
+  /**
+   * 更新账户别名
+   * @param accountKey 账户键值
+   * @param newName 新名称
+   */
+  updateAccountAlianName = async (accountKey: string, newName: string) => {
+    preferenceService.setAccountAlianName(accountKey, newName);
+    // 触发 UI 更新
+    eventBus.emit(EVENTS.broadcastToUI, {
+      method: 'updateKeyrings',
+      params: {}
+    });
+  };
+
+  /**
+   * 更新钱包别名
+   * @param keyringKey 钱包键值
+   * @param newName 新名称
+   */
+  updateKeyringAlianName = async (keyringKey: string, newName: string) => {
+    preferenceService.setKeyringAlianName(keyringKey, newName);
+    // 触发 UI 更新
+    eventBus.emit(EVENTS.broadcastToUI, {
+      method: 'updateKeyrings',
+      params: {}
+    });
   };
 }
+
 
 const walletControllerInstance = new WalletController();
 

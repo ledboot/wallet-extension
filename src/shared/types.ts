@@ -13,6 +13,7 @@ export interface Account {
   type: string;
   pubkey: string;
   address: string;
+  addressHex: string;
   alianName?: string;
   index?: number;
   balance?: number;

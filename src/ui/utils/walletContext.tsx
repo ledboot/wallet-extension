@@ -37,6 +37,12 @@ export interface WalletController {
   changeKeyring(keyring: WalletKeyring, accountIndex?: number): Promise<void>;
 
   createKeyringWithPrivateKey(privateKey: string, alianName?: string): Promise<void>;
+  
+  getAddressHistory(params: { address: string; start: number; limit: number }): Promise<any>;
+
+  updateAccountAlianName(accountKey: string, newName: string): Promise<void>;
+  updateKeyringAlianName(keyringKey: string, newName: string): Promise<void>;
+  generatePrePrivateKey(keyringType: string): Promise<{ address: string; wif: string }>;
 }
 
 const WalletContext = createContext<WalletController | null>(null);

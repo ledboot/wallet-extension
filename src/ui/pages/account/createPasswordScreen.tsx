@@ -31,7 +31,7 @@ export default function CreatePasswordScreen() {
     }
   }, [newPassword, confirmPassword]);
 
-  const [run, loading] = useWalletRequest(wallet.boot, {
+  const [run] = useWalletRequest(wallet.boot, {
     onSuccess: () => {
       navigate('CreateOrImportWalletScreen', {
         importWallet: importWallet,

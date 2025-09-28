@@ -1,10 +1,11 @@
-import { X, Check } from "lucide-react";
+import { X, Check, Edit3 } from "lucide-react";
 import { useNavigate } from "@/ui/pages/mainRoute";
 import { useState,useEffect } from "react";
 import { useLocation } from 'react-router';
-// import { useWallet } from "@/ui/utils";
-import { Account } from "@shared/types";
+import { Account, WalletKeyring } from "@shared/types";
 import { useCurrentKeyring,useKeyringsList } from "@/ui/state/hooks";
+import { EditAccountName } from "@/ui/components/EditAccountName";
+import { EditKeyringName } from "@/ui/components/EditKeyringName";
 
 const AccountSelection = () => {
   const navigate = useNavigate();
@@ -13,10 +14,9 @@ const AccountSelection = () => {
   const currentAccountFromState = (location.state as any)?.currentAccount as Account | undefined;
   const [selectedKeyringIndex, setSelectedKeyringIndex] = useState(0);
   const [selectedAccountIndex, setSelectedAccountIndex] = useState(0);
-  const keyring = useCurrentKeyring();
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [editingKeyring, setEditingKeyring] = useState<WalletKeyring | null>(null);
   const keyringsList = useKeyringsList();
-  console.log('keyring', keyring);
-  console.log('keyringsList', keyringsList);
   useEffect(() => {
     if (currentAccountFromState && keyringsList && keyringsList.length > 0) {
       for (let k = 0; k < keyringsList.length; k++) {
@@ -39,6 +39,16 @@ const AccountSelection = () => {
     navigate("MainScreen");
   };
 
+  const handleEditAccount = (account: Account, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingAccount(account);
+  };
+
+  const handleEditKeyring = (keyring: WalletKeyring, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingKeyring(keyring);
+  };
+
   return (
     <div className="w-full h-full bg-base-100">
       {/* Fixed Header */}
@@ -58,7 +68,16 @@ const AccountSelection = () => {
       <div className="pt-14 pb-20 space-y-4 overflow-y-auto h-[calc(100vh-56px)] hide-scrollbar">
         {keyringsList.map((kr, kIndex) => (
           <div key={kr.key || kIndex}>
-            <div className="px-4 py-2 text-xs text-base-content/60">{kr.alianName || `Keyring ${kIndex + 1}`}</div>
+            <div className="px-4 py-2 text-xs text-base-content/60 flex items-center justify-between">
+              <span>{kr.alianName || `Keyring ${kIndex + 1}`}</span>
+              <button
+                onClick={(e) => handleEditKeyring(kr, e)}
+                className="btn btn-ghost btn-xs h-6 w-6 p-0"
+                title="编辑钱包名称"
+              >
+                <Edit3 className="h-3 w-3" />
+              </button>
+            </div>
             <div className="space-y-2 px-4">
               {kr.accounts.map((account: Account, aIndex: number) => (
                 <button
@@ -80,9 +99,18 @@ const AccountSelection = () => {
                         </div>
                       </div>
                     </div>
-                    {selectedKeyringIndex === kIndex && selectedAccountIndex === aIndex && (
-                      <Check className="h-4 w-4 text-primary" />
-                    )}
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={(e) => handleEditAccount(account, e)}
+                        className="btn btn-ghost btn-xs h-6 w-6 p-0"
+                        title="编辑账户名称"
+                      >
+                        <Edit3 className="h-3 w-3" />
+                      </button>
+                      {selectedKeyringIndex === kIndex && selectedAccountIndex === aIndex && (
+                        <Check className="h-4 w-4 text-primary" />
+                      )}
+                    </div>
                   </div>
                 </button>
               ))}
@@ -98,6 +126,30 @@ const AccountSelection = () => {
           <button className="btn btn-primary" onClick={()=>navigate("WelcomeScreen")}>添加</button>
         </div>
       </div>
+
+      {/* 编辑账户名称弹窗 */}
+      {editingAccount && (
+        <EditAccountName
+          account={editingAccount}
+          onClose={() => setEditingAccount(null)}
+          onSuccess={() => {
+            // 可以在这里添加成功后的处理逻辑
+            console.log('Account name updated successfully');
+          }}
+        />
+      )}
+
+      {/* 编辑钱包名称弹窗 */}
+      {editingKeyring && (
+        <EditKeyringName
+          keyring={editingKeyring}
+          onClose={() => setEditingKeyring(null)}
+          onSuccess={() => {
+            // 可以在这里添加成功后的处理逻辑
+            console.log('Keyring name updated successfully');
+          }}
+        />
+      )}
     </div>
   );
 };

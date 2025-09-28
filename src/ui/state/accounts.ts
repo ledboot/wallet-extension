@@ -38,6 +38,7 @@ export interface AccountsState {
 const initialAccount = {
   type: '',
   pubkey: '',
+  addressHex: '',
   address: '',
   alianName: '',
   index: 0,

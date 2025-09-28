@@ -62,6 +62,7 @@
     "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react": "^4.5.1",
     "autoprefixer": "^10.4.19",
+    "bigi": "^1.4.2",
     "daisyui": "^5.0.46",
     "dotenv": "^17.2.1",
     "eslint": "^8.57.0",

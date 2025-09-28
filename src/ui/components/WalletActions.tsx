@@ -1,6 +1,9 @@
 import { History, Download, Send } from 'lucide-react';
+import { useNavigate } from '../pages/mainRoute';
 
 export function WalletActions() {
+  const navigate = useNavigate();
+
   return (
     <div className='grid w-full grid-cols-4 gap-3'>
       <button className='bg-wallet-card border-border hover:border-primary/50 btn btn-outline flex h-16 flex-col space-y-1 transition-all'>
@@ -13,7 +16,10 @@ export function WalletActions() {
         <span className='text-xs'>Receive</span>
       </button>
 
-      <button className='bg-wallet-card border-border hover:border-primary/50 btn btn-outline flex h-16 flex-col space-y-1 transition-all'>
+      <button 
+        onClick={() => navigate('HistoryScreen')}
+        className='bg-wallet-card border-border hover:border-primary/50 btn btn-outline flex h-16 flex-col space-y-1 transition-all'
+      >
         <History className='h-5 w-5' />
         <span className='text-xs'>History</span>
       </button>

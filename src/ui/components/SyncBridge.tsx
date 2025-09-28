@@ -1,18 +1,18 @@
 import { PropsWithChildren, useEffect } from 'react';
 import { keyringsStore } from '@/ui/state/keyrings';
-import { useWallet } from '@/ui/utils/walletContext';
 import { Message } from '@/shared/utils';
 import eventBus from '@/shared/eventBus';
 import { EVENTS } from '@/shared/constants';
-
+import { useNavigate } from '@/ui/pages/mainRoute';
+import { globalStore } from '@/ui/state/global';
+import { useWallet } from '@/ui/utils';
 const { PortMessage } = Message;
 
 export default function SyncBridge(props: PropsWithChildren) {
-  const walletController = useWallet();
+  const navigate = useNavigate();
+  const wallet = useWallet();
   
   useEffect(() => {
-    // 启动 keyrings 同步
-    keyringsStore.getState().startSync(() => walletController.getKeyrings());
     
     // 监听 PortMessage 的广播事件并转发到 eventBus
     const portMessageChannel = new PortMessage();
@@ -29,12 +29,66 @@ export default function SyncBridge(props: PropsWithChildren) {
     };
     
     portMessageChannel.listen(broadcastHandler);
+
+    // 定时发送心跳（仅在 popup 打开时保持）
+    const heartbeatInterval = setInterval(() => {
+      try {
+        portMessageChannel.request({
+          type: 'controller',
+          method: 'heartbeat',
+          args: []
+        });
+      } catch (e) {
+        // ignore
+      }
+    }, 15 * 1000);
+
+    // 统一接收并按 method 分发处理
+    const onBroadcastToUI = async (payload: any) => {
+      if (!payload || !payload.method) return;
+
+      const { method, params } = payload;
+
+      switch (method) {
+        case 'lock': {
+          console.log('received broadcast lock');
+          globalStore.getState().update({ isUnlocked: false });
+          navigate('UnlockScreen');
+          break;
+        }
+        case 'initVault':{
+          navigate('WelcomeScreen');
+          break;
+        }
+        case 'updateKeyrings': {
+          const keyrings = await wallet.getKeyrings();
+          console.log('SyncBridge updateKeyrings keyrings', keyrings);
+          if (keyrings && keyrings.length > 0) {
+            keyringsStore.getState().setKeyrings(keyrings);
+            if (keyrings && keyrings.length > 0) {
+              keyringsStore.getState().setCurrent(keyrings[0]);
+            }
+          }
+          break;
+        }
+        // 可以在此添加更多广播事件处理
+        // case 'keyringsChanged': { ... break; }
+        // case 'accountsUpdated': { ... break; }
+        default: {
+          // 透传到以 method 为粒度的 UI 事件，供其他模块按需订阅
+          eventBus.emit(`ui:${method}`, params);
+          break;
+        }
+      }
+    };
+    eventBus.addEventListener(EVENTS.broadcastToUI, onBroadcastToUI);
     
     return () => {
-      keyringsStore.getState().stopSync();
       portMessageChannel.dispose();
+      eventBus.removeEventListener(EVENTS.broadcastToUI, onBroadcastToUI);
+      clearInterval(heartbeatInterval);
     };
-  }, [walletController]);
+  }, [navigate]);
   
   return props.children as any;
 }

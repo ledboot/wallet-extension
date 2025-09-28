@@ -60,7 +60,7 @@ browserRuntimeOnConnect((port: any) => {
             eventBus.emit(data.method, data.params);
             break;
           case 'controller':
-          default:
+            console.log('received controller', data);
             if (data.method) {
               return walletController[
                 data.method as keyof typeof walletController

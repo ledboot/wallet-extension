@@ -1,32 +1,32 @@
 declare module '@/shared/ecdsa.js' {
-  import bigInt from 'big-integer';
+  import bigi from 'bigi';
 
   export interface FieldElementFp {
-    toBigInteger(): bigInt.BigInteger;
+    toBigInteger(): bigi.BigInteger;
   }
 
   export interface PointFp {
     getX(): FieldElementFp;
     getY(): FieldElementFp;
     add(point: PointFp): PointFp;
-    multiply(k: bigInt.BigInteger): PointFp;
+    multiply(k: bigi.BigInteger): PointFp;
     isOnCurve(): boolean;
     toString(): string;
     getEncoded(compressed: number): Uint8Array;
   }
 
   export interface CurveFp {
-    getQ(): bigInt.BigInteger;
+    getQ(): bigi.BigInteger;
     getA(): FieldElementFp;
     getB(): FieldElementFp;
-    fromBigInteger(x: bigInt.BigInteger): FieldElementFp;
+    fromBigInteger(x: bigi.BigInteger): FieldElementFp;
   }
 
   export interface X9Parameters {
     getCurve(): CurveFp;
     getG(): PointFp;
-    getN(): bigInt.BigInteger;
-    getH(): bigInt.BigInteger;
+    getN(): bigi.BigInteger;
+    getH(): bigi.BigInteger;
   }
 
   export interface SecNamedCurves {
@@ -34,9 +34,9 @@ declare module '@/shared/ecdsa.js' {
   }
 
   export function getSECCurveByName(name: string): X9Parameters;
-  export function fromHex(hex: string): bigInt.BigInteger;
+  export function fromHex(hex: string): bigi.BigInteger;
   export function integerToBytes(
-    value: bigInt.BigInteger,
+    value: bigi.BigInteger,
     length: number
   ): number[];
 

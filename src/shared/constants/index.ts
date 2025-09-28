@@ -107,4 +107,4 @@ export const getAutoLockTimes = () => [
   { id: 7, time: 14400000, label: '4小时' },
 ];
 
-export const DEFAULT_LOCKTIME_ID = 0;
+export const DEFAULT_LOCKTIME_ID = 5;

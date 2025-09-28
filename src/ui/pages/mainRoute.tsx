@@ -1,4 +1,5 @@
 import { HashRouter, Route, Routes, useNavigate as useNavigateOrigin } from 'react-router';
+import SyncBridge from '@/ui/components/SyncBridge';
 import BoostScreen from './main/boostScreen';
 import WelcomeScreen from './main/welcomeScreen';
 import MainScreen from './main/mainScreen';
@@ -7,6 +8,7 @@ import UnlockScreen from './account/unlockScreen';
 import CreatePasswordScreen from './account/createPasswordScreen';
 import CreateOrImportWalletScreen from './account/createOrImportWalletScreen';
 import AccountSelection from './account/AccountSelection';
+import History from './wallet/History';
 
 const routes = {
  BoostScreen: {
@@ -45,10 +47,10 @@ const routes = {
     path: '/account/selection',
     element: <AccountSelection />,
   },
-//   ReceiveScreen: {
-//     path: '/wallet/receive',
-//     element: <ReceiveScreen />,
-//   },
+  HistoryScreen: {
+    path: '/wallet/history',
+    element: <History />,
+  },
 };
 
 type RouteTypes = keyof typeof routes;
@@ -101,15 +103,17 @@ export function useNavigate() {
 export default function MainRoute() {
   return (
     <HashRouter>
-      <Routes>
-        {Object.entries(routes).map(([key, value]) => (
-          <Route
-            key={key}
-            path={value.path}
-            element={value.element}
-          />
-        ))}
-      </Routes>
+      <SyncBridge>
+        <Routes>
+          {Object.entries(routes).map(([key, value]) => (
+            <Route
+              key={key}
+              path={value.path}
+              element={value.element}
+            />
+          ))}
+        </Routes>
+      </SyncBridge>
     </HashRouter>
   );
 }

@@ -6,7 +6,6 @@ import { WalletProvider } from './utils/walletContext';
 import { Message } from '@/shared/utils';
 import { AppDimensions } from './components/appDimensions';
 import { Toaster } from 'sonner';
-import SyncBridge from '@/ui/components/SyncBridge';
 
 
 const { PortMessage } = Message;
@@ -40,9 +39,7 @@ root.render(
   <WalletProvider wallet={wallet as any}>
     <AppDimensions>
       <Toaster position='top-center' />
-      <SyncBridge>
-        <MainRoute/>
-      </SyncBridge>
+      <MainRoute/>
     </AppDimensions>
   </WalletProvider>
 );

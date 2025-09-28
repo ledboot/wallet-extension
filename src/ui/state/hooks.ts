@@ -1,12 +1,10 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 
 import { useWallet } from '@/ui/utils/walletContext';
 
 import { accountsStore } from './accounts';
 import { globalStore } from './global';
 import { keyringsStore } from './keyrings';
-import eventBus from '@/shared/eventBus';
-import { EVENTS } from '@/shared/constants';
 
 // Accounts hooks
 export const useAccounts = () => accountsStore();
@@ -39,6 +37,7 @@ export function useUnlockCallback() {
       keyringsStore.getState().setKeyrings(keyrings);
       if (keyrings && keyrings.length > 0) {
         keyringsStore.getState().setCurrent(keyrings[0]);
+        accountsStore.getState().setCurrent(keyrings[0].accounts[0]);
       }
     },
     [wallet]
