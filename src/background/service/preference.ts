@@ -1,21 +1,17 @@
 import { compareVersions } from 'compare-versions';
-import { cloneDeep } from 'lodash-es';
 
-import { DEFAULT_LOCKTIME_ID, EVENTS } from '@/shared/constants';
-import eventBus from '@/shared/eventBus';
+import { DEFAULT_LOCKTIME_ID } from '@/shared/constants';
 import {
-  Account,
   AnexBalance,
   NetworkType,
   TxHistoryItem,
 } from '@/shared/types';
 
 import createPersistStore from '../utils/persisitStore';
-import { sessionService } from './index';
 
 export interface PreferenceStore {
-  currentKeyringIndex: number;
-  currentAccount: Account | undefined | null;
+  currentKeyringKey: string;
+  currentAccountIndex: number;
   balance: AnexBalance;
   locale: string;
   networkType: NetworkType;
@@ -46,8 +42,8 @@ class PreferenceService {
     this.store = await createPersistStore<PreferenceStore>({
       name: 'preference',
       template: {
-        currentKeyringIndex: 0,
-        currentAccount: undefined,
+        currentKeyringKey: '',
+        currentAccountIndex: 0,
         balance: {
           confirm_amount: '0',
           pending_amount: '0',
@@ -138,21 +134,6 @@ class PreferenceService {
     return this.store.keyringAlianNames[keyringKey];
   };
 
-  getCurrentAccount = () => {
-    return cloneDeep(this.store.currentAccount);
-  };
-
-  setCurrentAccount = (account?: Account | null) => {
-    this.store.currentAccount = account;
-    if (account) {
-      sessionService.broadcastEvent('accountsChanged', [account.address]);
-      eventBus.emit(EVENTS.broadcastToUI, {
-        method: 'accountsChanged',
-        params: account,
-      });
-    }
-  };
-
   setNetworkType = (networkType: NetworkType) => {
     this.store.networkType = networkType;
   };
@@ -161,13 +142,21 @@ class PreferenceService {
     return this.store.networkType;
   };
 
-  // currentKeyringIndex
-  getCurrentKeyringIndex = () => {
-    return this.store.currentKeyringIndex;
+  getCurrentKeyringKey = () => {
+    return this.store.currentKeyringKey;
   };
 
-  setCurrentKeyringIndex = (keyringIndex: number) => {
-    this.store.currentKeyringIndex = keyringIndex;
+  setCurrentKeyringKey = (keyringKey: string) => {
+    console.log('setCurrentKeyringKey', keyringKey);
+    this.store.currentKeyringKey = keyringKey;
+  };
+
+  getCurrentAccountIndex = () => {
+    return this.store.currentAccountIndex;
+  };
+
+  setCurrentAccountIndex = (accountIndex: number) => {
+    this.store.currentAccountIndex = accountIndex;
   };
 }
 

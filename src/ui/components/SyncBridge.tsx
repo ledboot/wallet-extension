@@ -1,5 +1,6 @@
 import { PropsWithChildren, useEffect } from 'react';
 import { keyringsStore } from '@/ui/state/keyrings';
+import { accountsStore } from '@/ui/state/accounts';
 import { Message } from '@/shared/utils';
 import eventBus from '@/shared/eventBus';
 import { EVENTS } from '@/shared/constants';
@@ -56,6 +57,22 @@ export default function SyncBridge(props: PropsWithChildren) {
           navigate('UnlockScreen');
           break;
         }
+        case 'unlock': {
+          globalStore.getState().update({ isUnlocked: true });
+          const keyrings = await wallet.getKeyrings();
+          if (keyrings && keyrings.length > 0) {
+            keyringsStore.getState().setKeyrings(keyrings);
+          }
+          const currentKeyring = await wallet.getCurrentKeyring();
+          if (currentKeyring) {
+            keyringsStore.getState().setCurrent(currentKeyring);
+          }
+          const currentAccount = await wallet.getCurrentAccount();
+          if (currentAccount) {
+            accountsStore.getState().setCurrent(currentAccount);
+          }
+          break;
+        }
         case 'initVault':{
           navigate('WelcomeScreen');
           break;
@@ -65,8 +82,17 @@ export default function SyncBridge(props: PropsWithChildren) {
           console.log('SyncBridge updateKeyrings keyrings', keyrings);
           if (keyrings && keyrings.length > 0) {
             keyringsStore.getState().setKeyrings(keyrings);
-            if (keyrings && keyrings.length > 0) {
-              keyringsStore.getState().setCurrent(keyrings[0]);
+            
+            const currentKeyring = await wallet.getCurrentKeyring();
+            console.log('SyncBridge updateKeyrings currentKeyring', currentKeyring);
+            if (currentKeyring) {
+              keyringsStore.getState().setCurrent(currentKeyring);
+            }
+
+            const currentAccount = await wallet.getCurrentAccount();
+            console.log('SyncBridge updateKeyrings currentAccount', currentAccount);
+            if (currentAccount) {
+              accountsStore.getState().setCurrent(currentAccount);
             }
           }
           break;
@@ -88,7 +114,7 @@ export default function SyncBridge(props: PropsWithChildren) {
       eventBus.removeEventListener(EVENTS.broadcastToUI, onBroadcastToUI);
       clearInterval(heartbeatInterval);
     };
-  }, [navigate]);
+  }, [navigate, wallet]);
   
   return props.children as any;
 }

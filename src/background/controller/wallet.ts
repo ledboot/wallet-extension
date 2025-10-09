@@ -59,6 +59,14 @@ export class WalletController {
     sessionService.broadcastEvent('unlock');
     // 心跳模式：初始化心跳时间并启动监控
     this._initHeartbeat();
+    // 更新当前keyring和account
+    if (!preferenceService.getCurrentKeyringKey()){
+      const displayedKeyring = await keyringService.getAllDisplayedKeyrings();
+      if (displayedKeyring.length > 0) {
+        preferenceService.setCurrentKeyringKey(displayedKeyring[0].key);
+        preferenceService.setCurrentAccountIndex(0);
+      }
+    }
   };
 
   /**
@@ -129,13 +137,12 @@ export class WalletController {
    * 移除密钥环
    * @param keyring 密钥环
    */
-  removeKeyring = async (keyring: WalletKeyring) => {
-    await keyringService.removeKeyring(keyring.index);
+  removeKeyring = async (keyringKey: string) => {
+    await keyringService.removeKeyring(keyringKey);
     const keyrings = await this.getKeyrings();
     const nextKeyring = keyrings[keyrings.length - 1];
-    if (nextKeyring && nextKeyring.accounts[0]) {
-      this.changeKeyring(nextKeyring);
-      return nextKeyring;
+    if (nextKeyring) {
+      this.changeKeyring(nextKeyring.key,0);
     }
   };
 
@@ -162,24 +169,8 @@ export class WalletController {
   getCurrentAccount = async () => {
     const currentKeyring = await this.getCurrentKeyring();
     if (!currentKeyring) return null;
-    const account = preferenceService.getCurrentAccount();
-    let currentAccount: Account | undefined = undefined;
-    currentKeyring.accounts.forEach((v) => {
-      if (v.pubkey === account?.pubkey) {
-        currentAccount = v;
-      }
-    });
-    if (!currentAccount) {
-      currentAccount = currentKeyring.accounts[0];
-    }
-    if (currentAccount) {
-      currentAccount.flag = preferenceService.getAddressFlag(
-        currentAccount.address
-      );
-      //   openapiService.setClientAddress(currentAccount.address, currentAccount.flag);
-    }
-
-    return currentAccount;
+    const account = currentKeyring.accounts[preferenceService.getCurrentAccountIndex()];
+    return account;
   };
 
   displayedKeyringToWalletKeyring = (
@@ -252,46 +243,15 @@ export class WalletController {
    */
   getCurrentKeyring = async () => {
     this.resetLockTime();
-    let currentKeyringIndex = preferenceService.getCurrentKeyringIndex();
-    const displayedKeyrings = await keyringService.getAllDisplayedKeyrings();
-    if (currentKeyringIndex === undefined) {
-      const currentAccount = preferenceService.getCurrentAccount();
-      for (let i = 0; i < displayedKeyrings.length; i++) {
-        if (displayedKeyrings[i].type !== currentAccount?.type) {
-          continue;
-        }
-        const found = displayedKeyrings[i].accounts.find(
-          (v) => v.pubkey === currentAccount?.pubkey
-        );
-        if (found) {
-          currentKeyringIndex = i;
-          break;
-        }
-      }
-      if (currentKeyringIndex === undefined) {
-        currentKeyringIndex = 0;
-      }
+    const currentKeyringKey = preferenceService.getCurrentKeyringKey();
+    if (!currentKeyringKey){
+      return null
     }
-
-    if (
-      !displayedKeyrings[currentKeyringIndex] ||
-      displayedKeyrings[currentKeyringIndex].type === KEYRING_TYPE.Empty ||
-      !displayedKeyrings[currentKeyringIndex].accounts[0]
-    ) {
-      for (let i = 0; i < displayedKeyrings.length; i++) {
-        if (displayedKeyrings[i].type !== KEYRING_TYPE.Empty) {
-          currentKeyringIndex = i;
-          preferenceService.setCurrentKeyringIndex(currentKeyringIndex);
-          break;
-        }
-      }
+    const displayedKeyring = await keyringService.getDisplayedKeyringByKey(currentKeyringKey);
+    if (!displayedKeyring) {
+      return null;
     }
-    const displayedKeyring = displayedKeyrings[currentKeyringIndex];
-    if (!displayedKeyring) return null;
-    return this.displayedKeyringToWalletKeyring(
-      displayedKeyring,
-      currentKeyringIndex
-    );
+    return this.displayedKeyringToWalletKeyring(displayedKeyring, displayedKeyring.index);
   };
 
   /**
@@ -299,11 +259,16 @@ export class WalletController {
    * @param keyring 密钥环
    * @param accountIndex 账户索引
    */
-  changeKeyring = async (keyring: WalletKeyring, accountIndex = 0) => {
-    const index = keyringService.getKeyringIndexByKey(keyring.key);
-    preferenceService.setCurrentKeyringIndex(index);
-    preferenceService.setCurrentAccount(keyring.accounts[accountIndex]);
+  changeKeyring = async (keyringKey: string,accountIndex = 0) => {
+    await keyringService.changeKeyring(keyringKey);
+    preferenceService.setCurrentKeyringKey(keyringKey);
+    preferenceService.setCurrentAccountIndex(accountIndex);
     this.resetLockTime();
+    // 发送更新事件
+    eventBus.emit(EVENTS.broadcastToUI, {
+      method: 'updateKeyrings',
+      params: {}
+    });
   };
 
 
@@ -383,7 +348,7 @@ export class WalletController {
       keyringService.keyrings.length - 1
     );
 
-    this.changeKeyring(keyring);
+    this.changeKeyring(keyring.key,0);
     // 活动发生，刷新心跳时间
     this._touchHeartbeat();
     eventBus.emit(EVENTS.broadcastToUI, {

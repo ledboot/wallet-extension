@@ -34,7 +34,8 @@ export interface WalletController {
 
   getCurrentKeyring(): Promise<WalletKeyring>;
   getKeyrings(): Promise<WalletKeyring[]>;
-  changeKeyring(keyring: WalletKeyring, accountIndex?: number): Promise<void>;
+  
+  changeKeyring(keyringKey: string, accountIndex?: number): Promise<void>;
 
   createKeyringWithPrivateKey(privateKey: string, alianName?: string): Promise<void>;
   

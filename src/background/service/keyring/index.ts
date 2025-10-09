@@ -18,8 +18,6 @@ interface MemStoreState {
   isUnlocked: boolean;
   keyringTypes: string[];
   keyrings: any[];
-  preWIF: string;
-  preAddress: string;
 }
 
 export interface DisplayedKeyring {
@@ -60,7 +58,6 @@ class KeyringService extends EventEmitter {
   password: string | null = null;
   private isUnlocking = false;
   private cachedDisplayedKeyring: DisplayedKeyring[] | null = null;
-  currentKeyringIndex: number = 0;
 
   constructor() {
     super();
@@ -69,11 +66,7 @@ class KeyringService extends EventEmitter {
       isUnlocked: false,
       keyringTypes: this.keyringTypes,
       keyrings: [],
-      preWIF: '',
-      preAddress: '',
-      addressTypes: [],
     });
-    console.log('KeyringService keyringTypes', this.keyringTypes);
 
     this.keyrings = [];
   }
@@ -137,6 +130,18 @@ class KeyringService extends EventEmitter {
 
   getKeyringIndexByKey = (key: string) => {
     return this.keyrings.findIndex((k) => k.key === key);
+  };
+
+  /**
+   * 切换当前keyring
+   * @param keyringKey keyring的key
+   */
+  changeKeyring = async (keyringKey: string) => {
+    const index = this.getKeyringIndexByKey(keyringKey);
+    if (index === -1) {
+      throw new Error('keyring_not_found');
+    }
+    await this.fullUpdate();
   };
 
   addKeyring = async (keyring: Keyring) => {
@@ -204,7 +209,6 @@ class KeyringService extends EventEmitter {
       await this.verifyPassword(password);
 
       this.password = password;
-      console.log('submitPassword', password);
 
       this.keyrings = await this.unlockKeyrings(password);
       this.cachedDisplayedKeyring = null;
@@ -382,7 +386,13 @@ class KeyringService extends EventEmitter {
     await this.fullUpdate();
   };
 
-  removeKeyring = async (keyringIndex: number): Promise<any> => {
+  removeKeyring = async (keyringKey: string) => {
+    const index = this.getKeyringIndexByKey(keyringKey);
+    if (index === -1) {
+      throw new Error('keyring_not_found');
+    }
+    const keyringIndex = this.keyrings.findIndex((k) => k.key === keyringKey);
+
     delete this.keyrings[keyringIndex];
     this.cachedDisplayedKeyring = null;
 
@@ -502,10 +512,6 @@ class KeyringService extends EventEmitter {
     const Keyring = this.getKeyringClassForType(type);
     const keyring = new Keyring(data);
     keyring.key = key;
-    await keyring.deserialize(data);
-
-    // getAccounts also validates the accounts for some keyrings
-    await keyring.getAccounts();
     return { keyring };
   };
 
@@ -538,6 +544,12 @@ class KeyringService extends EventEmitter {
    */
   getKeyringsByType = (type: string): Keyring[] => {
     return this.keyrings.filter((keyring) => keyring.type === type);
+  };
+
+  getDisplayedKeyringByKey = (key: string): Promise<DisplayedKeyring | undefined> => {
+    return this.getAllDisplayedKeyrings().then((keyrings) => {
+      return keyrings.find((keyring) => keyring.key === key);
+    });
   };
 
   /**
@@ -612,7 +624,6 @@ class KeyringService extends EventEmitter {
     if (resetCache || !this.cachedDisplayedKeyring) {
       this.cachedDisplayedKeyring = await Promise.all(
         this.keyrings.map((keyring, index) => {
-          console.log('getAllDisplayedKeyrings', keyring);
           return this.displayForKeyring(keyring, index);
         })
       );

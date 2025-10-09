@@ -3,13 +3,14 @@ import { useNavigate } from "@/ui/pages/mainRoute";
 import { useState,useEffect } from "react";
 import { useLocation } from 'react-router';
 import { Account, WalletKeyring } from "@shared/types";
-import { useCurrentKeyring,useKeyringsList } from "@/ui/state/hooks";
+import { useCurrentKeyring, useKeyringsList } from "@/ui/state/hooks";
 import { EditAccountName } from "@/ui/components/EditAccountName";
 import { EditKeyringName } from "@/ui/components/EditKeyringName";
+import { useWallet } from "@/ui/utils/walletContext";
 
 const AccountSelection = () => {
   const navigate = useNavigate();
-  // const wallet = useWallet();
+  const wallet = useWallet();
   const location = useLocation();
   const currentAccountFromState = (location.state as any)?.currentAccount as Account | undefined;
   const [selectedKeyringIndex, setSelectedKeyringIndex] = useState(0);
@@ -17,6 +18,7 @@ const AccountSelection = () => {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editingKeyring, setEditingKeyring] = useState<WalletKeyring | null>(null);
   const keyringsList = useKeyringsList();
+  const currentKeyring = useCurrentKeyring();
   useEffect(() => {
     if (currentAccountFromState && keyringsList && keyringsList.length > 0) {
       for (let k = 0; k < keyringsList.length; k++) {
@@ -33,9 +35,15 @@ const AccountSelection = () => {
   }, [keyringsList, currentAccountFromState]);
   
 
-  const handleAccountSelect = (kIndex: number, aIndex: number) => {
-    setSelectedKeyringIndex(kIndex);
-    setSelectedAccountIndex(aIndex);
+  const handleAccountSelect = (keyring: WalletKeyring, accountIndex: number) => {
+    if (keyring.key === currentKeyring.key) {
+      navigate("MainScreen");
+      return;
+    }
+    console.log('handleAccountSelect', keyring.key, accountIndex);
+    setSelectedKeyringIndex(keyring.index);
+    setSelectedAccountIndex(accountIndex);
+    wallet.changeKeyring(keyring.key, accountIndex);
     navigate("MainScreen");
   };
 
@@ -82,7 +90,7 @@ const AccountSelection = () => {
               {kr.accounts.map((account: Account, aIndex: number) => (
                 <button
                   key={account.key || aIndex}
-                  onClick={() => handleAccountSelect(kIndex, aIndex)}
+                  onClick={() => handleAccountSelect(kr, aIndex)}
                   className="w-full p-3 hover:bg-gray-100 transition-colors text-left rounded-lg border border-base-300"
                 >
                   <div className="flex items-center justify-between">
@@ -100,13 +108,13 @@ const AccountSelection = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button
+                      <div
                         onClick={(e) => handleEditAccount(account, e)}
-                        className="btn btn-ghost btn-xs h-6 w-6 p-0"
+                        className="btn btn-ghost btn-xs h-6 w-6 p-0 cursor-pointer"
                         title="编辑账户名称"
                       >
                         <Edit3 className="h-3 w-3" />
-                      </button>
+                      </div>
                       {selectedKeyringIndex === kIndex && selectedAccountIndex === aIndex && (
                         <Check className="h-4 w-4 text-primary" />
                       )}

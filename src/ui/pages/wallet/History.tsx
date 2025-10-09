@@ -5,7 +5,7 @@ import { useWallet } from '../../utils/walletContext';
 import { useRootStore } from '../../state';
 import { TxHistoryItem } from '@/shared/types';
 import { toast } from 'sonner';
-import { useCurrentKeyring } from '@/ui/state/hooks';
+import { useCurrentAccount, useCurrentKeyring } from '@/ui/state/hooks';
 
 interface TransactionDisplayItem extends TxHistoryItem {
   type: 'send' | 'receive' | 'swap';
@@ -19,6 +19,7 @@ export default function History() {
   const navigate = useNavigate();
   const wallet = useWallet();
   const currentKeyring = useCurrentKeyring();
+  const currentAccount = useCurrentAccount();
   const { current } = useRootStore((state) => state.accounts);
   const { networkType } = useRootStore((state) => state.settings);
   
@@ -186,10 +187,11 @@ export default function History() {
   });
 
   useEffect(() => {
+    console.log('current', currentKeyring,currentAccount);
     if (current.address) {
       loadTransactions(true);
     }
-  }, [current.address]);
+  }, [current.address,currentKeyring,currentAccount]);
 
   return (
     <div className="h-screen flex flex-col bg-background">

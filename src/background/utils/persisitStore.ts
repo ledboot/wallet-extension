@@ -2,9 +2,9 @@ import debounce from 'debounce';
 
 import { storage } from '../webapi';
 
-const persistStorage = (name: string, obj: object) => {
-  debounce(() => storage.set(name, obj), 1000);
-};
+const persistStorage = debounce((name: string, obj: object) => {
+  storage.set(name, obj);
+}, 1000);
 
 interface CreatePersistStoreParams<T> {
   name: string;

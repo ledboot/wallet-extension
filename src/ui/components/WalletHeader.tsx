@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Check, ChevronDown, Copy, Settings } from 'lucide-react';
-import { useWallet } from '@/ui/utils';
-import { Account } from '@/shared/types';
 import { useNavigate } from '@/ui/pages/mainRoute';
+import { useCurrentAccount } from '@/ui/state/hooks';
 
 export function WalletHeader() {
   const navigate = useNavigate();
-  const wallet = useWallet();
-  const [currentAccount, setCurrentAccount] = useState<Account | null>(null);
+  const currentAccount = useCurrentAccount();
   const [shortAddress, setShortAddress] = useState('');
 
   useEffect(() => {
@@ -16,14 +14,7 @@ export function WalletHeader() {
     }
   }, [currentAccount]);
 
-  useEffect(() => {
-    const init = async () => {
-      const account = await wallet.getCurrentAccount();
-      console.log('account', account);
-      setCurrentAccount(account);
-    };
-    init();
-  }, [wallet]);
+  
 
   const [copied, setCopied] = useState(false);
 
