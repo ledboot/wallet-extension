@@ -52,6 +52,7 @@ export class OpenapiService {
 
   getAddressHistory = async (params: { account: Account; start: number; limit: number }) => {
     const res = await this.httpPost(this.endpoint,'schrt', [params.account.address,0,params.start,params.limit,0,true]);
+    console.log('getAddressHistory res', res);
     if (res.result && Array.isArray(res.result)) {
       return await this.analyzeResult(params.account, res.result);
     }
@@ -98,9 +99,11 @@ export class OpenapiService {
       }
       rsum += msgtx?.tIn.length || 0;
 
+      const txLen = msgtx?.tOut.length || 0;
+
       // 处理交易输出
-      for (let j = 0; j < msgtx.tOut.length; j++) {
-        const output = msgtx.tOut[j];
+      for (let j = 0; j < txLen; j++) {
+        const output = msgtx?.tOut[j];
         
         // 跳过无效输出
         if (output.isSeparator()) continue;
@@ -158,8 +161,10 @@ export class OpenapiService {
         msgtx.rawDecode(list[i].hex);
       }
 
-      for (let j = 0; j < msgtx.tIn.length; j++) {
-        const input = msgtx.tIn[j];
+      const txLen = msgtx?.tIn.length || 0;
+
+      for (let j = 0; j < txLen; j++) {
+        const input = msgtx?.tIn[j];
         
         if (input.isSeparator()) continue;
         if (input.previousOutPoint.hash == "0000000000000000000000000000000000000000000000000000000000000000") {

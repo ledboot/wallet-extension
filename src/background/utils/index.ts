@@ -53,7 +53,7 @@ export function decode(r: Reader) {
   const version = r.readInt32();
 
   if ((version & 0x20) == 0) {
-    const dcount = r.ReadVarInt();
+    const dcount = r.readVarInt();
     const txDef = [];
     let lockTime = 0;
 
@@ -88,7 +88,7 @@ export function decode(r: Reader) {
       txDef.push(c);
     }
 
-    let count = r.ReadVarInt();
+    let count = r.readVarInt();
     const tIn = [];
     for (let i = 0; i < count; i++) {
       const t = new TinDef();
@@ -96,7 +96,7 @@ export function decode(r: Reader) {
       tIn.push(t);
     }
 
-    count = r.ReadVarInt();
+    count = r.readVarInt();
     const tOut = [];
     for (let i = 0; i < count; i++) {
       const t = new ToutDef();
@@ -109,7 +109,7 @@ export function decode(r: Reader) {
       console.log('lockTime', lockTime);
     }
 
-    count = r.ReadVarInt();
+    count = r.readVarInt();
     const signatureScripts = [];
     for (let i = 0; i < count; i++) {
       signatureScripts.push(r.readScript());

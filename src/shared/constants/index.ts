@@ -1,14 +1,25 @@
 export type ChainInfo = {
-  name: string;
+  label: string;
+  iconLabel: string;
   chainId: number;
   endpoints: string[];
+  icon: string;
+  unit: string;
+  networkType: NetworkType;
 };
 
 export type CHAINS_ENUM = ChainType;
 
 export enum ChainType {
-  OMEGA_MAINNET = 'OMEGA_MAINNET',
-  OMEGA_TESTNET = 'OMEGA_TESTNET',
+  ZENT_MAINNET = 'ZENT_MAINNET',
+  ZENT_TESTNET = 'ZENT_TESTNET',
+  HOVM_MAINNET = 'HOVM_MAINNET',
+  GCT_TESTNET = 'GCT_TESTNET',
+}
+
+export enum NetworkType {
+  MAINNET,
+  TESTNET
 }
 
 export const IS_WINDOWS = /windows/i.test(navigator.userAgent);
@@ -59,29 +70,49 @@ export const EVENTS = {
 };
 
 export const CHAIN_INFO: { [key in ChainType]: ChainInfo } = {
-  [ChainType.OMEGA_MAINNET]: {
-    name: 'OMEGA_MAINNET',
+  [ChainType.ZENT_MAINNET]: {
+    label: 'ZENT',
+    iconLabel: 'ZENT',
     chainId: 1,
     endpoints: [
-      'http://lsomg.com:8789',
-      'http://omegasuite.org:8789',
-      'http://207.246.106.17:8789',
-      'http://78.141.214.76:8789',
-      'http://78.141.236.245:8789',
-      'http://136.244.116.65:8789',
-      'http://140.82.54.243:8789',
-      'http://45.77.63.131:8789',
+      'http://omegasuite.org:9789',
     ],
+    icon: './images/artifacts/bitcoin-mainnet.svg',
+    unit: 'ZENT',
+    networkType: NetworkType.MAINNET,
   },
-  [ChainType.OMEGA_TESTNET]: {
-    name: 'OMEGA_TESTNET',
+  [ChainType.ZENT_TESTNET]: {
+    label: 'ZENT Testnet',
+    iconLabel: 'ZENT',
     chainId: 1,
     endpoints: [
-      'http://lsomg.com:18840',
-      'http://omegasuite.org:18840',
-      'http://207.246.106.17:18840',
-      'http://78.141.214.76:18840',
+      'http://omegasuite.org:7789',
     ],
+    icon: './images/artifacts/bitcoin-mainnet.svg',
+    unit: 'ZENT',
+    networkType: NetworkType.TESTNET,
+  },
+  [ChainType.HOVM_MAINNET]: {
+    label: 'HOVM Mainnet',
+    iconLabel: 'HOVM',
+    chainId: 1,
+    endpoints: [
+      'http://omegasuite.org:3789',
+    ],
+    icon: './images/artifacts/bitcoin-mainnet.svg',
+    unit: 'HOVM',
+    networkType: NetworkType.MAINNET,
+  },
+  [ChainType.GCT_TESTNET]: {
+    label: 'GCT Testnet',
+    iconLabel: 'GCT',
+    chainId: 1,
+    endpoints: [
+      'http://omegasuite.org:6789',
+    ],
+    icon: './images/artifacts/bitcoin-mainnet.svg',
+    unit: 'GCT',
+    networkType: NetworkType.TESTNET,
   },
 };
 

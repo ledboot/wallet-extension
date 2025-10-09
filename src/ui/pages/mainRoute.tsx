@@ -9,6 +9,7 @@ import CreatePasswordScreen from './account/createPasswordScreen';
 import CreateOrImportWalletScreen from './account/createOrImportWalletScreen';
 import AccountSelection from './account/AccountSelection';
 import History from './wallet/History';
+import NetworkSelection from './network/NetworkSelection';
 
 const routes = {
  BoostScreen: {
@@ -50,6 +51,10 @@ const routes = {
   HistoryScreen: {
     path: '/wallet/history',
     element: <History />,
+  },
+  NetworkSelection: {
+    path: '/network/selection',
+    element: <NetworkSelection />,
   },
 };
 

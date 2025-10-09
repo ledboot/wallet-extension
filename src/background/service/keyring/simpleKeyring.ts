@@ -82,6 +82,7 @@ export class SimpleKeyring {
     if (opts) {
       this.deserialize(opts);
     }
+    this.key = '';
     this.type = type;
   }
   getIndexByAddress(address: string): number {

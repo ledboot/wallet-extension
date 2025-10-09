@@ -7,6 +7,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig, Plugin } from 'vite';
 import dotenv from 'dotenv';
 import wasm from 'vite-plugin-wasm';
+import tailwindcss from '@tailwindcss/vite';
 
 // 加载环境变量
 dotenv.config();
@@ -43,6 +44,7 @@ export function touchGlobalCSSPlugin({
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     touchGlobalCSSPlugin({
       cssFilePath: resolve(__dirname, 'src/assets/styles/index.css'),
       watchFiles: ['.tsx'],

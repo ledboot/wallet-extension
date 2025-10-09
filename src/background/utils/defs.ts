@@ -63,9 +63,9 @@ export class PolygonDef {
     this.Loops = [];
   }
   read(r: Reader) {
-    for (let nloops = r.ReadVarInt(); nloops > 0; nloops--) {
+    for (let nloops = r.readVarInt(); nloops > 0; nloops--) {
       const loop = [];
-      for (let borders = r.ReadVarInt(); borders > 0; borders--) {
+      for (let borders = r.readVarInt(); borders > 0; borders--) {
         loop.push(r.readHash());
       }
       this.Loops.push(loop);
@@ -155,7 +155,7 @@ export class RightDef {
   }
   read(r: Reader) {
     this.father = r.readHash();
-    const n = r.ReadVarInt();
+    const n = r.readVarInt();
     const s = r.read(Number(n));
     this.desc = bytesToString(s);
     this.attrib = r.read(1)[0];
@@ -212,7 +212,7 @@ export class RightSetDef {
     return { rights: this.rights };
   }
   read(r: Reader) {
-    const n = r.ReadVarInt();
+    const n = r.readVarInt();
     for (let i = 0; i < n; i++) {
       this.rights.push(r.readHash());
     }

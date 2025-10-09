@@ -132,7 +132,7 @@ export default function History() {
       console.log('currentKeyring', currentKeyring);
       
       const result = await wallet.getAddressHistory({
-        address: current.address,
+        account: current,
         start,
         limit
       });

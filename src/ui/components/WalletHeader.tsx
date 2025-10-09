@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, ChevronDown, Copy, Settings } from 'lucide-react';
+import { Check, ChevronDown, Copy, Globe, Settings } from 'lucide-react';
 import { useNavigate } from '@/ui/pages/mainRoute';
 import { useCurrentAccount } from '@/ui/state/hooks';
 
@@ -24,6 +24,7 @@ export function WalletHeader() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
 
   return (
     <div className='w-full sticky top-0 z-20 flex h-14 items-center justify-between px-4 py-[15px]'>
@@ -52,9 +53,10 @@ export function WalletHeader() {
           </button>
         </div>
       </div>
-      <button className='btn btn-ghost btn-sm'>
-        <Settings className='h-4 w-4' />
-      </button>
+      <div className='flex items-center space-x-2'>
+        <Settings className='h-7 w-7 p-1 cursor-pointer hover:bg-gray-100 rounded' />
+        <Globe className='h-7 w-7 p-1 cursor-pointer hover:bg-gray-100 rounded' onClick={()=>navigate('NetworkSelection')} />
+      </div>
     </div>
   );
 }

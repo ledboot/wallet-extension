@@ -149,7 +149,6 @@ class KeyringService extends EventEmitter {
     const accountAddresses = accounts.map((account) => account.addressHex);
     await this.checkForDuplicate(keyring.type, accountAddresses);
 
-    console.log('addKeyring', keyring);
     this.keyrings.push(keyring);
     this.cachedDisplayedKeyring = null;
 

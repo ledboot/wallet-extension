@@ -248,7 +248,7 @@ export class MsgT {
     return m;
   }
 
-  lockInput(v) {
+  lockInput(v: any) {
     // omegaDB.transaction(function (dbtx) {
     //   if (v == undefined) v = 1;
     //   for (var i = 0; i < T.TIn.length; i++) {
