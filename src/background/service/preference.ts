@@ -1,9 +1,8 @@
 import { compareVersions } from 'compare-versions';
 
-import { DEFAULT_LOCKTIME_ID } from '@/shared/constants';
+import { ChainType, DEFAULT_LOCKTIME_ID, NetworkType } from '@/shared/constants';
 import {
   AnexBalance,
-  NetworkType,
   TxHistoryItem,
 } from '@/shared/types';
 
@@ -15,6 +14,7 @@ export interface PreferenceStore {
   balance: AnexBalance;
   locale: string;
   networkType: NetworkType;
+  chainType: ChainType;
   currentVersion: string;
   firstOpen: boolean;
   txHistory: TxHistoryItem[];
@@ -51,6 +51,7 @@ class PreferenceService {
         },
         locale: 'en',
         networkType: NetworkType.MAINNET,
+        chainType: ChainType.ZENT_MAINNET,
         currentVersion: '0',
         firstOpen: false,
         txHistory: [],
@@ -147,7 +148,6 @@ class PreferenceService {
   };
 
   setCurrentKeyringKey = (keyringKey: string) => {
-    console.log('setCurrentKeyringKey', keyringKey);
     this.store.currentKeyringKey = keyringKey;
   };
 
@@ -158,6 +158,15 @@ class PreferenceService {
   setCurrentAccountIndex = (accountIndex: number) => {
     this.store.currentAccountIndex = accountIndex;
   };
+
+  getChainType = () => {
+    return this.store.chainType;
+  };
+
+  setChainType = (chainTyp: ChainType) =>{
+    this.store.chainType = chainTyp
+  }
+
 }
 
 export default new PreferenceService();

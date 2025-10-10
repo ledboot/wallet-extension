@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
 
-import { Account, NetworkType, WalletKeyring } from '@/shared/types';
+import { Account, WalletKeyring } from '@/shared/types';
+import { ChainType,NetworkType } from '@/shared/constants';
 
 export interface WalletController {
   boot(password: string): Promise<void>;
@@ -31,6 +32,7 @@ export interface WalletController {
   getCurrentKeyringAccounts(): Promise<Account[]>;
 
   getNetworkType(): Promise<NetworkType>;
+  changeNetwork(chainType: ChainType): Promise<void>;
 
   getCurrentKeyring(): Promise<WalletKeyring>;
   getKeyrings(): Promise<WalletKeyring[]>;

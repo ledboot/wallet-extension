@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { DEFAULT_LOCKTIME_ID } from '@/shared/constants';
-import { NetworkType, WalletConfig } from '@/shared/types';
+import { DEFAULT_LOCKTIME_ID, NetworkType } from '@/shared/constants';
+import { WalletConfig } from '@/shared/types';
 
 export interface SettingsState {
   locale: string;

@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { ArrowLeft,Check } from 'lucide-react';
 
-import { CHAIN_INFO, ChainInfo, ChainType } from '@/shared/constants';
+import { CHAIN_INFO, ChainType } from '@/shared/constants';
 import { useNavigate } from '@/ui/pages/mainRoute';
+import { ChainInfo } from '@/shared/types';
 
 export default function NetworkSelection() {
   const navigate = useNavigate();

@@ -1,8 +1,4 @@
-export enum NetworkType {
-  MAINNET = 'mainnet',
-  TESTNET = 'testnet',
-}
-
+import { NetworkType } from "./constants";
 export interface AnexBalance {
   confirm_amount: string;
   pending_amount: string;
@@ -60,4 +56,14 @@ export type WalletKeyring = {
   type: string;
   accounts: Account[];
   alianName: string;
+};
+
+export type ChainInfo = {
+  label: string;
+  iconLabel: string;
+  chainId: number;
+  endpoints: string[];
+  icon: string;
+  unit: string;
+  networkType: NetworkType;
 };

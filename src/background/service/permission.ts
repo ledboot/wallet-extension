@@ -2,13 +2,13 @@ import { max } from 'lodash-es';
 import { LRUCache } from 'lru-cache';
 
 import createPersistStore from '@/background/utils/persisitStore';
-import { CHAINS_ENUM, INTERNAL_REQUEST_ORIGIN } from '@/shared/constants';
+import { ChainType, INTERNAL_REQUEST_ORIGIN } from '@/shared/constants';
 
 export interface ConnectedSite {
   origin: string;
   icon: string;
   name: string;
-  chain: CHAINS_ENUM;
+  chain: ChainType;
   e?: number;
   isSigned: boolean;
   isTop: boolean;
@@ -66,7 +66,7 @@ class PermissionService {
     origin: string,
     name: string,
     icon: string,
-    defaultChain: CHAINS_ENUM,
+    defaultChain: ChainType,
     isSigned = false
   ) => {
     if (!this.lruCache) return;
@@ -193,7 +193,7 @@ class PermissionService {
     this.sync();
   };
 
-  getSitesByDefaultChain = (chain: CHAINS_ENUM) => {
+  getSitesByDefaultChain = (chain: ChainType) => {
     if (!this.lruCache) return [];
     return Array.from(this.lruCache.values()).filter(
       (item: ConnectedSite) => item.chain === chain

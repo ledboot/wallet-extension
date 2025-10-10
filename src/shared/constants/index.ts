@@ -1,14 +1,4 @@
-export type ChainInfo = {
-  label: string;
-  iconLabel: string;
-  chainId: number;
-  endpoints: string[];
-  icon: string;
-  unit: string;
-  networkType: NetworkType;
-};
-
-export type CHAINS_ENUM = ChainType;
+import { ChainInfo } from '../types';
 
 export enum ChainType {
   ZENT_MAINNET = 'ZENT_MAINNET',
@@ -18,8 +8,8 @@ export enum ChainType {
 }
 
 export enum NetworkType {
-  MAINNET,
-  TESTNET
+  MAINNET = 'mainnet',
+  TESTNET = 'testnet',
 }
 
 export const IS_WINDOWS = /windows/i.test(navigator.userAgent);
@@ -74,9 +64,7 @@ export const CHAIN_INFO: { [key in ChainType]: ChainInfo } = {
     label: 'ZENT',
     iconLabel: 'ZENT',
     chainId: 1,
-    endpoints: [
-      'http://omegasuite.org:9789',
-    ],
+    endpoints: ['http://omegasuite.org:9789'],
     icon: './images/artifacts/bitcoin-mainnet.svg',
     unit: 'ZENT',
     networkType: NetworkType.MAINNET,
@@ -85,9 +73,7 @@ export const CHAIN_INFO: { [key in ChainType]: ChainInfo } = {
     label: 'ZENT Testnet',
     iconLabel: 'ZENT',
     chainId: 1,
-    endpoints: [
-      'http://omegasuite.org:7789',
-    ],
+    endpoints: ['http://omegasuite.org:7789'],
     icon: './images/artifacts/bitcoin-mainnet.svg',
     unit: 'ZENT',
     networkType: NetworkType.TESTNET,
@@ -96,9 +82,7 @@ export const CHAIN_INFO: { [key in ChainType]: ChainInfo } = {
     label: 'HOVM Mainnet',
     iconLabel: 'HOVM',
     chainId: 1,
-    endpoints: [
-      'http://omegasuite.org:3789',
-    ],
+    endpoints: ['http://omegasuite.org:3789'],
     icon: './images/artifacts/bitcoin-mainnet.svg',
     unit: 'HOVM',
     networkType: NetworkType.MAINNET,
@@ -107,9 +91,7 @@ export const CHAIN_INFO: { [key in ChainType]: ChainInfo } = {
     label: 'GCT Testnet',
     iconLabel: 'GCT',
     chainId: 1,
-    endpoints: [
-      'http://omegasuite.org:6789',
-    ],
+    endpoints: ['http://omegasuite.org:6789'],
     icon: './images/artifacts/bitcoin-mainnet.svg',
     unit: 'GCT',
     networkType: NetworkType.TESTNET,
