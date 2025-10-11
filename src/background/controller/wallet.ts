@@ -9,7 +9,6 @@ import {
 } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
 import { Account, WalletKeyring } from '@/shared/types';
-import { NetworkType } from '@/shared/constants';
 
 import keyringService from '../service/keyring';
 import { DisplayedKeyring } from '../service/keyring/index';
@@ -234,16 +233,10 @@ export class WalletController {
   changeNetwork = async (chainType: ChainType) => {
     const chainInfo = CHAIN_INFO[chainType]
     preferenceService.setNetworkType(chainInfo.networkType)
-    await this.setNetworkType(CHAIN_INFO[chainType].networkType);
-  };
-
-  setNetworkType = async (networkType: NetworkType) => {
-    if (networkType === this.getNetworkType()) return;
-    await preferenceService.setNetworkType(networkType);
-    sessionService.broadcastEvent('networkChanged', [networkType]);
+    preferenceService.setChainType(chainType)
     eventBus.emit(EVENTS.broadcastToUI, {
       method: 'networkChanged',
-      params: networkType,
+      params: chainType,
     });
   };
 

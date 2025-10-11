@@ -4,10 +4,16 @@ import { getPublicKey, utils as secpUtils } from '@noble/secp256k1';
 import bs58check from 'bs58check';
 
 import { bytesToHex2 } from '@/background/utils';
-import { BRAND_ALIAN_TYPE_TEXT } from '@/shared/constants';
-import { Account } from '@shared/types';
+import { BRAND_ALIAN_TYPE_TEXT, NetworkType } from '@/shared/constants';
+import { Account } from '@/shared/types';
+import preferenceService from '../preference';
 
 export const type = 'Simple Key Pair';
+
+const mainnetPrivateKeyPrefix = 0x80;
+const mainnetAddressPrefix = 0;
+const testnetPrivateKeyPrefix = 0xEF;
+const testnetAddressPrefix = 0x6F;
 
 interface ECKey {
   privateKey: any;
@@ -20,23 +26,26 @@ interface ECKey {
 }
 
 class ECKeyImpl implements ECKey {
-  // ECKey.privateKeyPrefix = 0x80; // mainnet 0x80    testnet 0xEF
-  // ECKey.addressPrefix = 0; // mainnet 0x0    testnet 0x6F
-  privateKeyPrefix = 0x80; // mainnet 0x80    testnet 0xEF
-  addressPrefix = 0; // mainnet 0x0    testnet 0x6F
   privateKey: any;
   compressed: boolean;
-
 
   constructor(privateKey: any, compressed: boolean) {
     this.privateKey = privateKey;
     this.compressed = compressed;
   }
 
+  getPrivateKeyPrefix(): number {
+    return preferenceService.getNetworkType() === NetworkType.MAINNET ? mainnetPrivateKeyPrefix : testnetPrivateKeyPrefix;
+  }
+
+  getAddressPrefix(): number {
+    return preferenceService.getNetworkType() === NetworkType.MAINNET ? mainnetAddressPrefix : testnetAddressPrefix;
+  }
+
   toWIF(): string {
     const key = this.privateKey; // 32 bytes
     const payload = new Uint8Array(this.compressed ? 34 : 33);
-    payload[0] = this.privateKeyPrefix;
+    payload[0] = this.getPrivateKeyPrefix();
     payload.set(key, 1);
     if (this.compressed) payload[33] = 0x01;
     return bs58check.encode(Uint8Array.from(payload));
@@ -49,14 +58,14 @@ class ECKeyImpl implements ECKey {
   getAddress(): string {
     const pubHash = this.getPubKeyHash(); // 20 bytes
     const payload = new Uint8Array(21);
-    payload[0] = this.addressPrefix;
+    payload[0] = this.getAddressPrefix();
     payload.set(pubHash, 1);
     return bs58check.encode(Uint8Array.from(payload));
   }
 
   getAddressHex(): string {
     const pubHash = this.getPubKeyHash();
-    const versionHex = bytesToHex2(new Uint8Array([this.addressPrefix]));
+    const versionHex = bytesToHex2(new Uint8Array([this.getAddressPrefix()]));
     const hashHex = bytesToHex2(pubHash);
     return versionHex + hashHex;
   }
@@ -76,8 +85,6 @@ export class SimpleKeyring {
   type: string;
   key: string;
   wallets: ECKey[] = [];
-  // privateKeyPrefix = 0x80; // mainnet 0x80    testnet 0xEF
-  // addressPrefix = 0; // mainnet 0x0    testnet 0x6F
   constructor(opts?: any) {
     if (opts) {
       this.deserialize(opts);
@@ -85,6 +92,7 @@ export class SimpleKeyring {
     this.key = '';
     this.type = type;
   }
+  
   getIndexByAddress(address: string): number {
     return this.wallets.findIndex((wallet) => wallet.getAddress() === address);
   }
@@ -106,23 +114,23 @@ export class SimpleKeyring {
     };
   }
 
-  async serialize(): Promise<any> {
+  serialize(): any {
     return this.wallets.map((wallet) => wallet.toWIF());
   }
 
-  async deserialize(opts: any) {
+  deserialize(opts: any) {
     const wifArray = opts as string[];
     for (const wif of wifArray) {
-      const { privateKeyBytes, compressed } =
-        this._decodeWalletImportFormat(wif);
+      const { privateKeyBytes, compressed } = this.decodeWalletImportFormat(wif);
       if (privateKeyBytes == null || privateKeyBytes.length != 32) {
+        // return Promise.reject(new Error('invalid private key'));
         throw new Error('invalid private key');
       }
       this.wallets.push(new ECKeyImpl(privateKeyBytes, compressed));
     }
   }
 
-  async addAccounts(n = 1) {
+  addAccounts(n = 1) {
     const newWallets: ECKey[] = [];
     const addressHexArray: string[] = [];
     for (let i = 0; i < n; i++) {
@@ -135,7 +143,7 @@ export class SimpleKeyring {
     return addressHexArray;
   }
 
-  async getAccounts() {
+  getAccounts() {
     return this.wallets.map((wallet, index) => ({
       type: this.type,
       pubkey: wallet.getAddress(),
@@ -159,8 +167,8 @@ export class SimpleKeyring {
     };
   }
 
-  async exportAccount(address: string) {
-    const wallet = this._getWalletForAccount(address);
+  exportAccount(address: string) {
+    const wallet = this.getWalletForAccount(address);
     return wallet.toWIF();
   }
 
@@ -175,7 +183,7 @@ export class SimpleKeyring {
     }
   }
 
-  private _getWalletForAccount(address: string) {
+  getWalletForAccount(address: string) {
     const wallet = this.wallets.find((eckey) => eckey.getAddress() === address);
     if (!wallet) {
       throw new Error('Simple Keyring - Unable to find matching publicKey.');
@@ -183,11 +191,25 @@ export class SimpleKeyring {
     return wallet;
   }
 
-  _decodeWalletImportFormat = (wif: string) => {
+  getPrivateKeyPrefix(): number {
+    return preferenceService.getNetworkType() === NetworkType.MAINNET ? mainnetPrivateKeyPrefix : testnetPrivateKeyPrefix;
+  }
+
+  decodeWalletImportFormat = (wif: string): { privateKeyBytes: Uint8Array; compressed: boolean } => {
     const decoded = bs58check.decode(wif); // version + key [+ 0x01]
-    if (decoded[0] !== 0x80) throw 'Version ' + decoded[0] + ' not supported!';
+    
+    // 根据网络类型检查前缀
+    const expectedPrefix = this.getPrivateKeyPrefix();
+    
+    if (decoded[0] !== expectedPrefix) {
+      throw new Error(
+        `Private key format mismatch!`
+      );
+    }
+    
     const compressed = decoded.length === 34 && decoded[33] === 0x01;
     const priv = decoded.slice(1, 33);
     return { privateKeyBytes: priv, compressed };
   };
+
 }

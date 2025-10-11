@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { DEFAULT_LOCKTIME_ID, NetworkType } from '@/shared/constants';
+import { ChainType, DEFAULT_LOCKTIME_ID, NetworkType } from '@/shared/constants';
 import { WalletConfig } from '@/shared/types';
 
 export interface SettingsState {
   locale: string;
   networkType: NetworkType;
+  chainType: ChainType;
   walletConfig: WalletConfig;
   skippedVersion: string;
   autoLockTimeId: number;
@@ -14,6 +15,7 @@ export interface SettingsState {
   updateSettings: (payload: {
     locale?: string;
     networkType?: NetworkType;
+    chainType?: ChainType;
     walletConfig?: WalletConfig;
     skippedVersion?: string;
     autoLockTimeId?: number;
@@ -23,6 +25,7 @@ export interface SettingsState {
 const initialState = {
   locale: 'en',
   networkType: NetworkType.MAINNET,
+  chainType: ChainType.ZENT_MAINNET,
   walletConfig: {
     version: '',
     endpoint: '',

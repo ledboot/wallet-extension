@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, ChevronDown, Copy, Globe, Settings } from 'lucide-react';
 import { useNavigate } from '@/ui/pages/mainRoute';
 import { useCurrentAccount } from '@/ui/state/hooks';
+import { toast } from 'sonner';
 
 export function WalletHeader() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export function WalletHeader() {
     navigator.clipboard.writeText(currentAccount.address);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    toast.success('address copied');
   };
 
 

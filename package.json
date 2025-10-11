@@ -17,12 +17,12 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@metamask/browser-passworder": "^6.0.0",
     "@metamask/obs-store": "^9.1.0",
     "@noble/hashes": "^1.8.0",
     "@noble/secp256k1": "^2.3.0",
     "@sqlite.org/sqlite-wasm": "3.50.3-build1",
     "@tailwindcss/cli": "^4.1.11",
+    "@tailwindcss/vite": "^4.1.14",
     "base58-js": "^3.0.3",
     "big-integer": "^1.6.52",
     "bitcoinjs-lib": "^6.1.7",

@@ -6,9 +6,7 @@ class DisplayKeyring {
   type = '';
 
   constructor(keyring: Keyring) {
-    keyring.getAccounts().then(accounts => {
-      this.accounts = accounts || [];
-    });
+    this.accounts = keyring.getAccounts() || [];
     this.type = keyring.type;
   }
 
@@ -18,7 +16,7 @@ class DisplayKeyring {
       this.accounts[0].address,
       this.type
     );
-    return await keyring.getAccounts();
+    return keyring.getAccounts();
   };
 
 }

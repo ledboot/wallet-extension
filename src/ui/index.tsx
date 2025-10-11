@@ -38,7 +38,7 @@ const root = createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <WalletProvider wallet={wallet as any}>
     <AppDimensions>
-      <Toaster position='top-center' />
+      <Toaster position='bottom-right' duration={2000} />
       <MainRoute/>
     </AppDimensions>
   </WalletProvider>

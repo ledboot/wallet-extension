@@ -53,7 +53,7 @@ browserRuntimeOnConnect((port: any) => {
   ) {
     console.log('port', port);
     const pm = new PortMessage(port as any);
-    pm.listen((data: any) => {
+    pm.listen(async (data: any) => {
       if (data?.type) {
         switch (data.type) {
           case 'broadcast':
@@ -62,7 +62,7 @@ browserRuntimeOnConnect((port: any) => {
           case 'controller':
             console.log('received controller', data);
             if (data.method) {
-              return walletController[
+              return await walletController[
                 data.method as keyof typeof walletController
               ].apply(null, data.args);
             }

@@ -4,14 +4,30 @@ import { ArrowLeft,Check } from 'lucide-react';
 import { CHAIN_INFO, ChainType } from '@/shared/constants';
 import { useNavigate } from '@/ui/pages/mainRoute';
 import { ChainInfo } from '@/shared/types';
+import { useChainType } from '@/ui/state/hooks';
+import { useWallet } from '@/ui/utils';
 
 export default function NetworkSelection() {
   const navigate = useNavigate();
+  const wallet = useWallet();
+  const currentChainType = useChainType();
 
   const chains = useMemo(
     () => Object.entries(CHAIN_INFO) as [ChainType, ChainInfo][],
     []
   );
+
+  const handleChangeNetwork = async (chainType: ChainType) => {
+    if (chainType === currentChainType) return;
+    
+    try {
+      await wallet.changeNetwork(chainType);
+      // 网络切换成功后返回上一页
+      navigate('#back');
+    } catch (error) {
+      console.error('Failed to change network:', error);
+    }
+  };
 
   return (
     <div className='h-full w-full bg-base-100'>
@@ -32,13 +48,13 @@ export default function NetworkSelection() {
       {/* List */}
       <div className='flex-1 pt-14 overflow-y-auto'>
         {chains.map(([key, info]) => (
-          <div key={key} className='cursor-pointer px-4 py-3 hover:bg-gray-50'>
+          <div key={key} className='cursor-pointer px-4 py-3 hover:bg-gray-50' onClick={() => handleChangeNetwork(key)}>
             <div className='flex items-center justify-between'>
                 <div className='flex items-center'>
                     <img className='h-8 w-8' src={info.icon} alt={info.iconLabel} />
                     <div className='ml-2 text-base font-medium'>{info.label}</div>
                 </div>
-                <Check className="h-4 w-4 text-primary" />
+                {currentChainType === key && <Check className="h-4 w-4 text-primary" />}
             </div>
           </div>
         ))}

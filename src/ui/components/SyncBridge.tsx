@@ -1,9 +1,10 @@
 import { PropsWithChildren, useEffect } from 'react';
 import { keyringsStore } from '@/ui/state/keyrings';
 import { accountsStore } from '@/ui/state/accounts';
+import { settingsStore } from '@/ui/state/settings';
 import { Message } from '@/shared/utils';
 import eventBus from '@/shared/eventBus';
-import { EVENTS } from '@/shared/constants';
+import { EVENTS, ChainType, CHAIN_INFO } from '@/shared/constants';
 import { useNavigate } from '@/ui/pages/mainRoute';
 import { globalStore } from '@/ui/state/global';
 import { useWallet } from '@/ui/utils';
@@ -94,6 +95,19 @@ export default function SyncBridge(props: PropsWithChildren) {
             if (currentAccount) {
               accountsStore.getState().setCurrent(currentAccount);
             }
+          }
+          break;
+        }
+        case 'networkChanged': {
+          console.log('SyncBridge networkChanged', params);
+          // 更新前端设置状态
+          if (params && typeof params === 'string') {
+            const chainType = params as ChainType;
+            const networkType = CHAIN_INFO[chainType].networkType;
+            settingsStore.getState().updateSettings({
+              networkType,
+              chainType
+            });
           }
           break;
         }

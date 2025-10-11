@@ -12,8 +12,7 @@ export default function CreateOrImportWalletScreen() {
     newWallet: boolean;
     importWallet: boolean;
   };
-  console.log('newWallet', newWallet);
-  console.log('importWallet', importWallet);
+  const [isBackup, setIsBackup] = useState(false);
   const createWallet = useCreateWalletCallback();
   const wallet = useWallet();
   const navigate = useNavigate();
@@ -21,10 +20,16 @@ export default function CreateOrImportWalletScreen() {
   const [wif, setWIF] = useState('');
 
   const handleCreateWallet = async () => {
+    if (!isBackup) {
+      toast.error('Please check the backup box');
+      return;
+    }
     try {
       await createWallet(wif);
-    } catch (error) {
-      toast.error('Failed to create wallet');
+    } catch (error: any) {
+      // 显示具体的错误信息
+      const errorMessage = error?.message || 'Failed to create wallet';
+      toast.error(errorMessage);
       console.error('Failed to create wallet', error);
       return;
     }
@@ -32,7 +37,16 @@ export default function CreateOrImportWalletScreen() {
   };
 
   const handleImportWallet = async () => {
-    await wallet.createKeyringWithPrivateKey(wif);
+    try {
+      await wallet.createKeyringWithPrivateKey(wif);
+      toast.success('Wallet imported successfully');
+    } catch (error: any) {
+      // 显示具体的错误信息
+      const errorMessage = error?.message || 'Failed to import wallet';
+      toast.error(errorMessage);
+      console.error('Failed to import wallet', error);
+      return;
+    }
     navigate('/main');
   };
 
@@ -44,9 +58,8 @@ export default function CreateOrImportWalletScreen() {
         setWIF(preWIF);
       }
     };
-    console.log('newWallet', newWallet);
     generatePrePrivateKey();
-  }, [newWallet]);
+  }, [newWallet, wallet]);
 
   return (
     <div className='flex h-screen flex-col items-center justify-center p-4'>
@@ -72,7 +85,7 @@ export default function CreateOrImportWalletScreen() {
             style={{ whiteSpace: 'pre-line' }}
           />
           <div className='flex items-center gap-2'>
-            <input type='checkbox' className='checkbox' />
+            <input type='checkbox' className='checkbox' checked={isBackup} onChange={(e) => setIsBackup(e.target.checked)} />
             <label className='label'>I backup my private key</label>
           </div>
           <button className='btn rounded-md' onClick={handleCreateWallet}>
