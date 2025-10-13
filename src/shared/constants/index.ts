@@ -121,3 +121,8 @@ export const getAutoLockTimes = () => [
 ];
 
 export const DEFAULT_LOCKTIME_ID = 5;
+
+export const MainnetPrivateKeyPrefix = 0x80;
+export const MainnetAddressPrefix = 0;
+export const TestnetPrivateKeyPrefix = 0xEF;
+export const TestnetAddressPrefix = 0x6F;

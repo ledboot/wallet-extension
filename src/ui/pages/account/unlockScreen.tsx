@@ -1,30 +1,26 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
 
-import { useUnlockCallback } from '@/ui/state/hooks';
 import { useWallet } from '@/ui/utils';
 
 import { useNavigate } from '../mainRoute';
+import { toast } from 'sonner';
 
 export default function UnlockScreen() {
   const navigate = useNavigate();
   const [password, setPassword] = useState('12345678');
-  const unlock = useUnlockCallback();
   const wallet = useWallet();
   const handleUnlock = async () => {
     try {
-      await unlock(password);
+      await wallet.unlock(password);
       const hasVault = await wallet.hasVault();
       if (hasVault) {
-        
         navigate('MainScreen');
         return;
       } else {
         navigate('WelcomeScreen');
       }
-    } catch (error) {
-      toast.error('Invalid password');
-      console.error(error);
+    } catch (error: any) {
+      toast.error(error.message);
     }
   };
   return (

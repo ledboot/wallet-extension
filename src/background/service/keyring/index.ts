@@ -36,14 +36,14 @@ export interface Keyring {
   type: string;
   key: string;
   serialize(): any;
-  deserialize(opts: any): void;
+  deserialize(opts: any): Promise<void>;
   addAccounts(n: number): string[];
   getAccounts(): Account[];
   exportAccount(address: string): string;
   removeAccount(address: string): void;
   getIndexByAddress(address: string): number;
   activeAccount(index: number): Account;
-  generatePrePrivateKey(): any;
+  generatePrePrivateKey(): { address: string; wif: string };
 }
 
 class KeyringService extends EventEmitter {
@@ -111,13 +111,14 @@ class KeyringService extends EventEmitter {
    * Import Keychain using Private key
    *
    * @emits KeyringController#unlock
-   * @param  privateKey - The privateKey to generate address
+   * @param  privateKeyHex - The privateKey to generate address
    * @returns  A Promise that resolves to the state.
    */
-  importPrivateKey = async (privateKey: string) => {
-    const keyring = await this.addNewKeyring(KEYRING_TYPE.SimpleKeyring, [
-      privateKey,
-    ]);
+  importPrivateKey = async (privateKeyHex: string, compressed: boolean) => {
+    const keyring = await this.addNewKeyring(KEYRING_TYPE.SimpleKeyring, [[
+      privateKeyHex,
+      compressed,
+    ]]);
     this.setUnlocked();
     this.fullUpdate();
     return keyring;
@@ -205,8 +206,7 @@ class KeyringService extends EventEmitter {
     this.isUnlocking = true;
 
     try {
-      this.verifyPassword(password);
-
+      await this.verifyPassword(password);
       this.password = password;
 
       this.keyrings = await this.unlockKeyrings(password);
@@ -269,14 +269,19 @@ class KeyringService extends EventEmitter {
    */
   addNewKeyring = async (type: string, opts: unknown): Promise<Keyring> => {
     const Keyring = this.getKeyringClassForType(type);
-    const keyring = new Keyring(opts);
+    const keyring = new Keyring();
+    await keyring.deserialize(opts);
     keyring.key = Date.now().toString();
     return await this.addKeyring(keyring);
   };
 
-  createTmpKeyring = (type: string, opts: unknown) => {
+  createTmpKeyring = async (type: string, opts: unknown) => {
     const Keyring = this.getKeyringClassForType(type);
-    const keyring = new Keyring(opts);
+    const keyring = new Keyring();
+    if (opts && Array.isArray(opts) && opts.length > 0) {
+      await keyring.deserialize(opts);
+    }
+    keyring.key = Date.now().toString();
     return keyring;
   };
 
@@ -465,7 +470,6 @@ class KeyringService extends EventEmitter {
   unlockKeyrings = async (password: string): Promise<any[]> => {
     const encryptedVault = this.store.getState().vault;
     if (!encryptedVault) {
-      console.log('cannot_unlock_without_a_previous_vault');
       eventBus.emit(EVENTS.broadcastToUI, {
         method: 'initVault',
         params: {},
@@ -476,11 +480,15 @@ class KeyringService extends EventEmitter {
 
     this.clearKeyrings();
     const vault = await this.encryptor.decrypt(password, encryptedVault);
-
     const arr = Array.from(vault as unknown as Iterable<unknown>);
     for (let i = 0; i < arr.length; i++) {
-      const { keyring } = this._restoreKeyring(arr[i]);
-      this.keyrings.push(keyring);
+      try {
+        const { keyring } = await this._restoreKeyring(arr[i]);
+        this.keyrings.push(keyring);
+      } catch (error) {
+        console.error('Error restoring keyring:', error);
+        return Promise.reject(error);
+      }
     }
     this.cachedDisplayedKeyring = null;
 
@@ -498,8 +506,8 @@ class KeyringService extends EventEmitter {
    * @param {Object} serialized - The serialized keyring.
    * @returns {Keyring} The deserialized keyring.
    */
-  restoreKeyring = (serialized: any) => {
-    const { keyring } = this._restoreKeyring(serialized);
+  restoreKeyring = async (serialized: any) => {
+    const { keyring } = await this._restoreKeyring(serialized);
     this.updateMemStoreKeyrings();
     return keyring;
   };
@@ -513,10 +521,11 @@ class KeyringService extends EventEmitter {
    * @param {Object} serialized - The serialized keyring.
    * @returns {Keyring} The deserialized keyring.
    */
-  _restoreKeyring = (serialized: any): { keyring: Keyring } => {
+  _restoreKeyring = async (serialized: any): Promise<{ keyring: Keyring }> => {
     const { type, key, data } = serialized;
     const Keyring = this.getKeyringClassForType(type);
-    const keyring = new Keyring(data);
+    const keyring = new Keyring();
+    await keyring.deserialize(data);
     keyring.key = key;
     return { keyring };
   };
@@ -704,6 +713,10 @@ class KeyringService extends EventEmitter {
       params: {},
     });
   };
+
+  changeNetwork = () => {
+    this.cachedDisplayedKeyring = null;
+  }
 }
 
 export default new KeyringService();

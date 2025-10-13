@@ -13,8 +13,8 @@ import { Account, WalletKeyring } from '@/shared/types';
 import keyringService from '../service/keyring';
 import { DisplayedKeyring } from '../service/keyring/index';
 import preferenceService from '../service/preference';
-import sessionService from '../service/session';
 import { openapiService } from '../service';
+import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
 
 export class WalletController {
   timer: any = null;
@@ -58,7 +58,6 @@ export class WalletController {
    */
   unlock = async (password: string) => {
     await keyringService.submitPassword(password);
-    sessionService.broadcastEvent('unlock');
     // 心跳模式：初始化心跳时间并启动监控
     this._initHeartbeat();
     // 更新当前keyring和account
@@ -69,6 +68,7 @@ export class WalletController {
         preferenceService.setCurrentAccountIndex(0);
       }
     }
+    eventBus.emit(EVENTS.broadcastToUI, { method: 'unlock', params: {} });
   };
 
   /**
@@ -121,21 +121,6 @@ export class WalletController {
   };
 
   /**
-   * 使用私钥创建临时密钥环
-   * @param privateKey 私钥
-   */
-  createTmpKeyringWithPrivateKey = async (privateKey: string) => {
-    const originKeyring = keyringService.createTmpKeyring(KEYRING_TYPE.SimpleKeyring, [
-      privateKey,
-    ]);
-    const displayedKeyring = await keyringService.displayForKeyring(
-      originKeyring,
-      -1
-    );
-    return this.displayedKeyringToWalletKeyring(displayedKeyring, -1, false);
-  };
-
-  /**
    * 移除密钥环
    * @param keyring 密钥环
    */
@@ -161,7 +146,6 @@ export class WalletController {
         keyrings.push(keyring);
       }
     }
-
     return keyrings;
   };
 
@@ -234,6 +218,7 @@ export class WalletController {
     const chainInfo = CHAIN_INFO[chainType]
     preferenceService.setNetworkType(chainInfo.networkType)
     preferenceService.setChainType(chainType)
+    keyringService.changeNetwork();
     eventBus.emit(EVENTS.broadcastToUI, {
       method: 'networkChanged',
       params: chainType,
@@ -333,12 +318,35 @@ export class WalletController {
 
   }
 
-  createKeyringWithPrivateKey = async (
-    privateKey: string,
-    _alianName?: string
-  ) => {
-    void _alianName;
-    const originKeyring = await keyringService.importPrivateKey(privateKey);
+  // createKeyringWithPrivateKey = async (
+  //   wif: string,
+  //   _alianName?: string
+  // ) => {
+  //   void _alianName;
+  //   const originKeyring = await keyringService.importPrivateKey(privateKey);
+
+  //   const displayedKeyring = await keyringService.displayForKeyring(
+  //     originKeyring,
+  //     keyringService.keyrings.length - 1
+  //   );
+
+  //   const keyring = this.displayedKeyringToWalletKeyring(
+  //     displayedKeyring,
+  //     keyringService.keyrings.length - 1
+  //   );
+
+  //   this.changeKeyring(keyring.key,0);
+  //   // 活动发生，刷新心跳时间
+  //   this._touchHeartbeat();
+  //   eventBus.emit(EVENTS.broadcastToUI, {
+  //     method: 'updateKeyrings',
+  //     params: {}
+  //   });
+  // };
+
+  importPrivateKey = async (wif: string) => {
+    const { privateKeyHex, compressed } = decodeWalletImportFormat(wif);
+    const originKeyring = await keyringService.importPrivateKey(privateKeyHex, compressed);
 
     const displayedKeyring = await keyringService.displayForKeyring(
       originKeyring,
@@ -359,15 +367,13 @@ export class WalletController {
     });
   };
   
-  generatePrePrivateKey = (keyringType: string) =>{
-    const keyring = keyringService.createTmpKeyring(
+  generatePrePrivateKey = async (keyringType: string) =>{
+    const keyring = await keyringService.createTmpKeyring(
       keyringType,
       []
     );
-    const { address: preAddress, wif: preWIF } = keyring.generatePrePrivateKey();
-    return { address: preAddress, wif: preWIF };
+    return keyring.generatePrePrivateKey();
   }
-  
 
   getAddressHistory = async (params: { account: Account; start: number; limit: number }) => {
     this.resetLockTime();
@@ -404,11 +410,4 @@ export class WalletController {
 }
 
 
-const walletControllerInstance = new WalletController();
-
-// bridge KeyringService internal events to UI event bus
-keyringService.on('updateKeyrings', () => {
-  eventBus.emit(EVENTS.broadcastToUI, { method: 'updateKeyrings', params: {} });
-});
-
-export default walletControllerInstance;
+export default new WalletController();

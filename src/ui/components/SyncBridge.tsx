@@ -60,18 +60,6 @@ export default function SyncBridge(props: PropsWithChildren) {
         }
         case 'unlock': {
           globalStore.getState().update({ isUnlocked: true });
-          const keyrings = await wallet.getKeyrings();
-          if (keyrings && keyrings.length > 0) {
-            keyringsStore.getState().setKeyrings(keyrings);
-          }
-          const currentKeyring = await wallet.getCurrentKeyring();
-          if (currentKeyring) {
-            keyringsStore.getState().setCurrent(currentKeyring);
-          }
-          const currentAccount = await wallet.getCurrentAccount();
-          if (currentAccount) {
-            accountsStore.getState().setCurrent(currentAccount);
-          }
           break;
         }
         case 'initVault':{
@@ -79,27 +67,10 @@ export default function SyncBridge(props: PropsWithChildren) {
           break;
         }
         case 'updateKeyrings': {
-          const keyrings = await wallet.getKeyrings();
-          console.log('SyncBridge updateKeyrings keyrings', keyrings);
-          if (keyrings && keyrings.length > 0) {
-            keyringsStore.getState().setKeyrings(keyrings);
-            
-            const currentKeyring = await wallet.getCurrentKeyring();
-            console.log('SyncBridge updateKeyrings currentKeyring', currentKeyring);
-            if (currentKeyring) {
-              keyringsStore.getState().setCurrent(currentKeyring);
-            }
-
-            const currentAccount = await wallet.getCurrentAccount();
-            console.log('SyncBridge updateKeyrings currentAccount', currentAccount);
-            if (currentAccount) {
-              accountsStore.getState().setCurrent(currentAccount);
-            }
-          }
+          updateKeyrings()
           break;
         }
         case 'networkChanged': {
-          console.log('SyncBridge networkChanged', params);
           // 更新前端设置状态
           if (params && typeof params === 'string') {
             const chainType = params as ChainType;
@@ -108,6 +79,7 @@ export default function SyncBridge(props: PropsWithChildren) {
               networkType,
               chainType
             });
+            updateKeyrings()
           }
           break;
         }
@@ -129,6 +101,23 @@ export default function SyncBridge(props: PropsWithChildren) {
       clearInterval(heartbeatInterval);
     };
   }, [navigate, wallet]);
+
+  const updateKeyrings = async () => {
+    const keyrings = await wallet.getKeyrings();
+    if (keyrings && keyrings.length > 0) {
+      keyringsStore.getState().setKeyrings(keyrings);
+      
+      const currentKeyring = await wallet.getCurrentKeyring();
+      if (currentKeyring) {
+        keyringsStore.getState().setCurrent(currentKeyring);
+      }
+
+      const currentAccount = await wallet.getCurrentAccount();
+      if (currentAccount) {
+        accountsStore.getState().setCurrent(currentAccount);
+      }
+    }
+  }
   
   return props.children as any;
 }

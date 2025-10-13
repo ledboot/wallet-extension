@@ -22,8 +22,6 @@ export interface WalletController {
   getIsFirstOpen(): Promise<boolean>;
   updateIsFirstOpen(): Promise<void>;
 
-  createTmpKeyringWithPrivateKey(privateKey: string): Promise<WalletKeyring>;
-
   removeKeyring(keyring: WalletKeyring): Promise<WalletKeyring>;
 
   getCurrentAccount(): Promise<Account>;
@@ -39,13 +37,14 @@ export interface WalletController {
   
   changeKeyring(keyringKey: string, accountIndex?: number): Promise<void>;
 
-  createKeyringWithPrivateKey(privateKey: string, alianName?: string): Promise<void>;
+  // createKeyringWithPrivateKey(privateKey: string, compressed: boolean, alianName?: string): Promise<void>;
+  importPrivateKey(wif: string): Promise<void>;
   
   getAddressHistory(params: { account: Account; start: number; limit: number }): Promise<any>;
 
   updateAccountAlianName(accountKey: string, newName: string): Promise<void>;
   updateKeyringAlianName(keyringKey: string, newName: string): Promise<void>;
-  generatePrePrivateKey(keyringType: string): Promise<{ address: string; wif: string }>;
+  generatePrePrivateKey(keyringType: string): Promise<any>;
 }
 
 const WalletContext = createContext<WalletController | null>(null);

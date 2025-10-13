@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { KEYRING_TYPE } from '@/shared/constants';
-import { useCreateWalletCallback } from '@/ui/state/hooks';
 import { useWallet } from '@/ui/utils';
 
 export default function CreateOrImportWalletScreen() {
@@ -13,7 +12,6 @@ export default function CreateOrImportWalletScreen() {
     importWallet: boolean;
   };
   const [isBackup, setIsBackup] = useState(false);
-  const createWallet = useCreateWalletCallback();
   const wallet = useWallet();
   const navigate = useNavigate();
   const [address, setAddress] = useState('');
@@ -25,7 +23,7 @@ export default function CreateOrImportWalletScreen() {
       return;
     }
     try {
-      await createWallet(wif);
+      await wallet.importPrivateKey(wif);
     } catch (error: any) {
       // 显示具体的错误信息
       const errorMessage = error?.message || 'Failed to create wallet';
@@ -38,7 +36,7 @@ export default function CreateOrImportWalletScreen() {
 
   const handleImportWallet = async () => {
     try {
-      await wallet.createKeyringWithPrivateKey(wif);
+      await wallet.importPrivateKey(wif);
       toast.success('Wallet imported successfully');
     } catch (error: any) {
       // 显示具体的错误信息
@@ -53,9 +51,10 @@ export default function CreateOrImportWalletScreen() {
   useEffect(() => {
     const generatePrePrivateKey = async () => {
       if (newWallet) {
-        const { address: preAddress, wif: preWIF } = await wallet.generatePrePrivateKey(KEYRING_TYPE.SimpleKeyring);
-        setAddress(preAddress);
-        setWIF(preWIF);
+        const { address: preAddress, wif: preWif} =
+          await wallet.generatePrePrivateKey(KEYRING_TYPE.SimpleKeyring);
+        setAddress(preAddress || '');
+        setWIF(preWif || '');
       }
     };
     generatePrePrivateKey();
@@ -85,7 +84,12 @@ export default function CreateOrImportWalletScreen() {
             style={{ whiteSpace: 'pre-line' }}
           />
           <div className='flex items-center gap-2'>
-            <input type='checkbox' className='checkbox' checked={isBackup} onChange={(e) => setIsBackup(e.target.checked)} />
+            <input
+              type='checkbox'
+              className='checkbox'
+              checked={isBackup}
+              onChange={(e) => setIsBackup(e.target.checked)}
+            />
             <label className='label'>I backup my private key</label>
           </div>
           <button className='btn rounded-md' onClick={handleCreateWallet}>

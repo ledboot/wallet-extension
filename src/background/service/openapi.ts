@@ -3,11 +3,19 @@ import { hexToBytes } from '../utils';
 import { ripemd160 as nobleRipemd160 } from '@noble/hashes/ripemd160';
 import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
 import { Account } from '@/shared/types';
+import { CHAIN_INFO } from '@/shared/constants';
+import preferenceService from './preference';
 
 
 export class OpenapiService {
-  endpoint = 'http://omegasuite.org:8789';
+
   constructor() {}
+
+  getEndpoint = () => {
+    const chainType = preferenceService.getChainType();
+    const chainInfo = CHAIN_INFO[chainType];
+    return chainInfo.endpoints[0];
+  }
 
   getRespData = async (res: any) => {
     let jsonRes: { id: number; error: any; result: any };
@@ -51,7 +59,7 @@ export class OpenapiService {
   };
 
   getAddressHistory = async (params: { account: Account; start: number; limit: number }) => {
-    const res = await this.httpPost(this.endpoint,'schrt', [params.account.address,0,params.start,params.limit,0,true]);
+    const res = await this.httpPost(this.getEndpoint(),'schrt', [params.account.address,0,params.start,params.limit,0,true]);
     console.log('getAddressHistory res', res);
     if (res.result && Array.isArray(res.result)) {
       return await this.analyzeResult(params.account, res.result);
