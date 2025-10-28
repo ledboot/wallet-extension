@@ -1,8 +1,6 @@
 import { NetworkType } from "./constants";
 export interface AnexBalance {
-  confirm_amount: string;
-  pending_amount: string;
-  amount: string;
+  amount: bigint;
 }
 
 export interface Account {
@@ -37,17 +35,20 @@ export interface TxHistoryInOutItem {
 
 export interface TxHistoryItem {
   txid: string;
+  address: string;
+  txType: TxType;
+  blockHeight: number;
+  blockHash: string;
+  blockTime: number;
+  tokenType: string;
+  value: string;
+  rights: string[];
   confirmations: number;
-  height: number;
-  timestamp: number;
-  size: number;
-  feeRate: number;
-  fee: number;
-  outputValue: number;
-  vin: TxHistoryInOutItem[];
-  vout: TxHistoryInOutItem[];
-  types: string[];
-  methods: string[];
+}
+
+export enum TxType {
+  SEND = 'SEND',
+  RECEIVE = 'RECEIVE',
 }
 
 export type WalletKeyring = {

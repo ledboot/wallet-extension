@@ -40,7 +40,7 @@ export interface WalletController {
   // createKeyringWithPrivateKey(privateKey: string, compressed: boolean, alianName?: string): Promise<void>;
   importPrivateKey(wif: string): Promise<void>;
   
-  getAddressHistory(params: { account: Account; start: number; limit: number }): Promise<any>;
+  getAddressHistory(account: Account, start: number, limit: number): Promise<any>;
 
   updateAccountAlianName(accountKey: string, newName: string): Promise<void>;
   updateKeyringAlianName(keyringKey: string, newName: string): Promise<void>;

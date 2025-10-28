@@ -56,9 +56,9 @@ class ECKeyImpl implements ECKey {
 
   getAddressHex(): string {
     const pubHash = this.getPubKeyHash();
-    const versionHex = bytesToHex2(new Uint8Array([getAddressPrefix()]));
+    // const versionHex = bytesToHex2(new Uint8Array([getAddressPrefix()]));
     const hashHex = bytesToHex2(pubHash);
-    return versionHex + hashHex;
+    return hashHex;
   }
 
   getPubKeyHash(): Uint8Array {

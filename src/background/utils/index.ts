@@ -1,5 +1,17 @@
+import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
+
+import base58 from './base58';
+import {
+  BorderDef,
+  PolygonDef,
+  RightDef,
+  RightSetDef,
+  SeparatorDef,
+  TinDef,
+  ToutDef,
+  VertexDef,
+} from './defs';
 import { Reader } from './reader';
-import { VertexDef, BorderDef, PolygonDef, RightDef, RightSetDef, SeparatorDef, TinDef, ToutDef } from './defs';
 
 // 辅助函数：将字符转换为半字节值
 export function nib(charCode: number): number {
@@ -19,6 +31,22 @@ export function hexToBytes(hex: string): Uint8Array {
   return out;
 }
 
+export function addressHexToString(bytes: Uint8Array, version: number): string {
+  // Create a copy of the input bytes
+  const hash = bytes.slice(0);
+  
+  // Add version at the beginning
+  const versionedHash = new Uint8Array([version, ...hash]);
+  
+  // Calculate checksum (double SHA-256) of the versioned hash
+  const checksum = nobleSha256(nobleSha256(versionedHash));
+  
+  // Combine versioned hash with first 4 bytes of checksum
+  const result = new Uint8Array([...versionedHash, ...checksum.slice(0, 4)]);
+  
+  return base58.encode(result);
+}
+
 export function bytesToHex(bytes: Uint8Array | number[]): string {
   const lut = Array.from({ length: 256 }, (_, i) =>
     i.toString(16).padStart(2, '0')
@@ -28,14 +56,14 @@ export function bytesToHex(bytes: Uint8Array | number[]): string {
   return s;
 }
 
-export function bytesToString(bytes: Uint8Array):string  {
+export function bytesToString(bytes: Uint8Array): string {
   let str: string = '';
   for (let i = 0; i < bytes.length; i++) str += String.fromCharCode(bytes[i]);
   return str;
 }
 
 export function hashReverse(h: any): string {
-  let s = "";
+  let s = '';
   for (let i = 0; i < 64; i += 2) {
     s = h.charAt(i) + h.charAt(i + 1) + s;
   }
@@ -121,7 +149,7 @@ export function bytesToHex2(bytes: Uint8Array): string {
   const hex = [];
   for (let i = 0; i < bytes.length; i++) {
     hex.push((bytes[i] >>> 4).toString(16));
-    hex.push((bytes[i] & 0xF).toString(16));
+    hex.push((bytes[i] & 0xf).toString(16));
   }
-  return hex.join("");
+  return hex.join('');
 }

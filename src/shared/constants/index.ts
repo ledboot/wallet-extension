@@ -63,7 +63,7 @@ export const CHAIN_INFO: { [key in ChainType]: ChainInfo } = {
   [ChainType.ZENT_MAINNET]: {
     label: 'ZENT',
     iconLabel: 'ZENT',
-    chainId: 1,
+    chainId: 0x1,
     endpoints: ['http://omegasuite.org:9789'],
     icon: './images/artifacts/bitcoin-mainnet.svg',
     unit: 'ZENT',
@@ -72,7 +72,7 @@ export const CHAIN_INFO: { [key in ChainType]: ChainInfo } = {
   [ChainType.ZENT_TESTNET]: {
     label: 'ZENT Testnet',
     iconLabel: 'ZENT',
-    chainId: 1,
+    chainId: 0x1,
     endpoints: ['http://omegasuite.org:7789'],
     icon: './images/artifacts/bitcoin-mainnet.svg',
     unit: 'ZENT',
@@ -81,7 +81,7 @@ export const CHAIN_INFO: { [key in ChainType]: ChainInfo } = {
   [ChainType.HOVM_MAINNET]: {
     label: 'HOVM Mainnet',
     iconLabel: 'HOVM',
-    chainId: 1,
+    chainId: 0x2,
     endpoints: ['http://omegasuite.org:3789'],
     icon: './images/artifacts/bitcoin-mainnet.svg',
     unit: 'HOVM',
@@ -90,7 +90,7 @@ export const CHAIN_INFO: { [key in ChainType]: ChainInfo } = {
   [ChainType.GCT_TESTNET]: {
     label: 'GCT Testnet',
     iconLabel: 'GCT',
-    chainId: 1,
+    chainId: 0x2,
     endpoints: ['http://omegasuite.org:6789'],
     icon: './images/artifacts/bitcoin-mainnet.svg',
     unit: 'GCT',

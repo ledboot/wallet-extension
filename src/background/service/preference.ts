@@ -45,9 +45,7 @@ class PreferenceService {
         currentKeyringKey: '',
         currentAccountIndex: 0,
         balance: {
-          confirm_amount: '0',
-          pending_amount: '0',
-          amount: '0',
+          amount: 0n,
         },
         locale: 'en',
         networkType: NetworkType.MAINNET,

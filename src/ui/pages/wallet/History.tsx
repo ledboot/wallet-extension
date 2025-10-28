@@ -1,31 +1,41 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, RefreshCw, Filter, ExternalLink, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { useNavigate } from '../mainRoute';
-import { useWallet } from '../../utils/walletContext';
+import { useEffect, useState } from 'react';
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle,
+  Clock,
+  Filter,
+  RefreshCw,
+  XCircle,
+} from 'lucide-react';
+
+import { Account, TxHistoryItem, TxType } from '@/shared/types';
+import { useCurrentAccount } from '@/ui/state/hooks';
+
 import { useRootStore } from '../../state';
-import { TxHistoryItem } from '@/shared/types';
-import { toast } from 'sonner';
-import { useCurrentAccount, useCurrentKeyring } from '@/ui/state/hooks';
+import { useWallet } from '../../utils/walletContext';
+import { useNavigate } from '../mainRoute';
 
 interface TransactionDisplayItem extends TxHistoryItem {
-  type: 'send' | 'receive' | 'swap';
+  type: 'send' | 'receive' | 'unknown';
   displayAmount: string;
   displaySymbol: string;
-  status: 'completed' | 'pending' | 'failed';
   timeAgo: string;
 }
 
 export default function History() {
   const navigate = useNavigate();
   const wallet = useWallet();
-  const currentKeyring = useCurrentKeyring();
   const currentAccount = useCurrentAccount();
-  const { current } = useRootStore((state) => state.accounts);
   const { networkType } = useRootStore((state) => state.settings);
-  
-  const [transactions, setTransactions] = useState<TransactionDisplayItem[]>([]);
+
+  const [transactions, setTransactions] = useState<TransactionDisplayItem[]>(
+    []
+  );
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'send' | 'receive' | 'swap'>('all');
+  const [filter, setFilter] = useState<'all' | 'send' | 'receive' | 'unknown'>(
+    'all'
+  );
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
 
@@ -43,37 +53,23 @@ export default function History() {
     return new Date(timestamp * 1000).toLocaleDateString('zh-CN');
   };
 
-  const formatAmount = (value: number): string => {
-    return (value / 100000000).toFixed(8);
+  const formatAmount = (value: bigint | string): string => {
+    // 如果是字符串（从消息传递过来的），转换为 BigInt
+    const bigIntValue = typeof value === 'string' ? BigInt(value) : value;
+    return (bigIntValue / 100000000n).toString();
   };
 
-  const getTransactionType = (tx: TxHistoryItem): 'send' | 'receive' | 'swap' => {
-    const currentAddress = current.address;
-    const isInput = tx.vin.some(input => input.address === currentAddress);
-    const isOutput = tx.vout.some(output => output.address === currentAddress);
-    
-    if (isInput && isOutput) return 'swap';
-    if (isInput) return 'send';
-    return 'receive';
+  const getTransactionType = (
+    tx: TxHistoryItem
+  ): 'send' | 'receive' | 'unknown' => {
+    if (tx.txType === TxType.RECEIVE) return 'receive';
+    if (tx.txType === TxType.SEND) return 'send';
+    return 'unknown';
   };
 
-  const calculateTransactionAmount = (tx: TxHistoryItem): { amount: number; isIncoming: boolean } => {
-    const currentAddress = current.address;
-    const inputValue = tx.vin
-      .filter(input => input.address === currentAddress)
-      .reduce((sum, input) => sum + input.value, 0);
-    const outputValue = tx.vout
-      .filter(output => output.address === currentAddress)
-      .reduce((sum, output) => sum + output.value, 0);
-    
-    const netAmount = outputValue - inputValue;
-    return {
-      amount: Math.abs(netAmount),
-      isIncoming: netAmount > 0
-    };
-  };
-
-  const getTransactionStatus = (tx: TxHistoryItem): 'completed' | 'pending' | 'failed' => {
+  const getTransactionStatus = (
+    tx: TxHistoryItem
+  ): 'completed' | 'pending' | 'failed' => {
     if (tx.confirmations >= 6) return 'completed';
     if (tx.confirmations > 0) return 'pending';
     return 'failed';
@@ -82,156 +78,212 @@ export default function History() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-success" />;
+        return <CheckCircle className='h-4 w-4 text-success' />;
       case 'pending':
-        return <Clock className="h-4 w-4 text-warning" />;
+        return <Clock className='h-4 w-4 text-warning' />;
       case 'failed':
-        return <XCircle className="h-4 w-4 text-error" />;
+        return <XCircle className='h-4 w-4 text-error' />;
       default:
-        return <AlertCircle className="h-4 w-4 text-muted-foreground" />;
+        return <AlertCircle className='text-muted-foreground h-4 w-4' />;
     }
   };
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'send':
-        return <div className="h-8 w-8 rounded-full bg-destructive/10 flex items-center justify-center">
-          <svg className="h-4 w-4 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
-          </svg>
-        </div>;
+        return (
+          <div className='bg-red-500/10 flex h-8 w-8 items-center justify-center rounded-full'>
+            <svg
+              className='text-red-500 h-4 w-4'
+              fill='none'
+              stroke='currentColor'
+              viewBox='0 0 24 24'
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M7 17l9.2-9.2M17 17V7H7'
+              />
+            </svg>
+          </div>
+        );
       case 'receive':
-        return <div className="h-8 w-8 rounded-full bg-success/10 flex items-center justify-center">
-          <svg className="h-4 w-4 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 7l-9.2 9.2M7 7v10h10" />
-          </svg>
-        </div>;
+        return (
+          <div className='flex h-8 w-8 items-center justify-center rounded-full bg-green-500/10'>
+            <svg
+              className='h-4 w-4 text-green-500'
+              fill='none'
+              stroke='currentColor'
+              viewBox='0 0 24 24'
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M17 7l-9.2 9.2M7 7v10h10'
+              />
+            </svg>
+          </div>
+        );
       case 'swap':
-        return <div className="h-8 w-8 rounded-full bg-accent/10 flex items-center justify-center">
-          <svg className="h-4 w-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-          </svg>
-        </div>;
+        return (
+          <div className='bg-accent/10 flex h-8 w-8 items-center justify-center rounded-full'>
+            <svg
+              className='h-4 w-4 text-accent'
+              fill='none'
+              stroke='currentColor'
+              viewBox='0 0 24 24'
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4'
+              />
+            </svg>
+          </div>
+        );
       default:
-        return <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-          <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-          </svg>
-        </div>;
+        return (
+          <div className='flex h-8 w-8 items-center justify-center rounded-full bg-muted'>
+            <svg
+              className='text-muted-foreground h-4 w-4'
+              fill='none'
+              stroke='currentColor'
+              viewBox='0 0 24 24'
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1'
+              />
+            </svg>
+          </div>
+        );
     }
-  };
-
-  const loadTransactions = useCallback(async (reset = false) => {
-    if (!current.address) return;
-    
-    try {
-      setLoading(true);
-      const start = reset ? 0 : page * 20;
-      const limit = 20;
-
-      console.log('currentKeyring', currentKeyring);
-      
-      const result = await wallet.getAddressHistory({
-        account: current,
-        start,
-        limit
-      });
-      
-      if (result && Array.isArray(result)) {
-        const newTransactions: TransactionDisplayItem[] = result.map((tx: TxHistoryItem) => {
-          const { amount } = calculateTransactionAmount(tx);
-          return {
-            ...tx,
-            type: getTransactionType(tx),
-            displayAmount: formatAmount(amount),
-            displaySymbol: 'BTC',
-            status: getTransactionStatus(tx),
-            timeAgo: formatTimeAgo(tx.timestamp)
-          };
-        });
-        
-        if (reset) {
-          setTransactions(newTransactions);
-          setPage(1);
-        } else {
-          setTransactions(prev => [...prev, ...newTransactions]);
-          setPage(prev => prev + 1);
-        }
-        
-        setHasMore(result.length === limit);
-      }
-    } catch (error) {
-      console.error('Failed to load transactions:', error);
-      toast.error('加载交易记录失败');
-    } finally {
-      setLoading(false);
-    }
-  }, [current.address, page, wallet]);
-
-  const handleRefresh = () => {
-    setPage(0);
-    loadTransactions(true);
   };
 
   const handleViewOnExplorer = (txid: string) => {
     // 根据网络类型打开对应的区块浏览器
-    const explorerUrl = networkType === 'mainnet' 
-      ? `https://blockstream.info/tx/${txid}`
-      : `https://blockstream.info/testnet/tx/${txid}`;
+    const explorerUrl =
+      networkType === 'mainnet'
+        ? `https://blockstream.info/tx/${txid}`
+        : `https://blockstream.info/testnet/tx/${txid}`;
     window.open(explorerUrl, '_blank');
   };
 
-  const filteredTransactions = transactions.filter(tx => {
+  const filteredTransactions = transactions.filter((tx) => {
     if (filter === 'all') return true;
     return tx.type === filter;
   });
 
+  const mockTransactions: TxHistoryItem[] = [
+    {
+      txid: '1234567890abcdef',
+      address: 'anex1234567890',
+      txType: TxType.RECEIVE,
+      blockHeight: 123456,
+      blockHash: '1234567890abcdef1234567890abcdef',
+      blockTime: Math.floor(Date.now() / 1000) - 3600, // 1小时前
+      tokenType: '0',
+      value: '100000000',
+      rights: ['0x0000000000000000000000000000000000000000'],
+      confirmations: 10,
+    },
+    {
+      txid: 'abcdef1234567890',
+      address: 'anex0987654321',
+      txType: TxType.SEND,
+      blockHeight: 123450,
+      blockHash: 'abcdef1234567890abcdef1234567890',
+      blockTime: Math.floor(Date.now() / 1000) - 86400, // 1天前
+      tokenType: '0',
+      value: '50000000',
+      rights: ['0x0000000000000000000000000000000000000000'],
+      confirmations: 10,
+    },
+  ];
+
   useEffect(() => {
-    console.log('current', currentKeyring,currentAccount);
-    if (current.address) {
-      loadTransactions(true);
-    }
-  }, [current.address,currentKeyring,currentAccount]);
+    const fetchTransactions = async (account: Account) => {
+      if (account) {
+        console.log('[UI] fetchTransactions start', account);
+        try {
+          setLoading(true);
+          
+          // 转换 mock 数据为 TransactionDisplayItem
+          // const displayTransactions: TransactionDisplayItem[] = mockTransactions.map(
+          //   (tx: TxHistoryItem) => ({
+          //     ...tx,
+          //     type: getTransactionType(tx),
+          //     displayAmount: formatAmount(tx.value),
+          //     displaySymbol: 'ZENT',
+          //     timeAgo: formatTimeAgo(tx.blockTime),
+          //   })
+          // );
+          
+          // setTransactions(displayTransactions);
+          
+          // 真实 API 调用（暂时注释）
+          const result = await wallet.getAddressHistory(account, 0, 20);
+          if (result && Array.isArray(result)) {
+            const displayTransactions: TransactionDisplayItem[] = result.map(
+              (tx: TxHistoryItem) => ({
+                ...tx,
+                type: getTransactionType(tx),
+                displayAmount: formatAmount(tx.value),
+                displaySymbol: 'ZENT',
+                timeAgo: formatTimeAgo(tx.blockTime),
+              })
+            );
+            setTransactions(displayTransactions);
+          }
+        } catch (error) {
+          console.error('[UI] Error fetching transactions:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchTransactions(currentAccount);
+  }, [currentAccount, wallet]);
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className='flex h-screen flex-col bg-background'>
       {/* 头部 */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className='flex items-center justify-between p-4'>
         <button
           onClick={() => navigate('#back')}
-          className="btn btn-ghost btn-sm"
+          className='btn btn-ghost btn-sm'
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className='h-4 w-4' />
         </button>
-        <h1 className="text-lg font-semibold">交易记录</h1>
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          className="btn btn-ghost btn-sm"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+        <h1 className='text-lg font-semibold'>交易记录</h1>
+        <div className='h-4 w-4'/>
       </div>
 
       {/* 筛选器 */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center space-x-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">筛选:</span>
-          <div className="flex space-x-2">
+      <div className='p-4'>
+        <div className='flex items-center space-x-2'>
+          <Filter className='text-muted-foreground h-4 w-4' />
+          <span className='text-muted-foreground text-sm'>筛选:</span>
+          <div className='flex space-x-2'>
             {[
               { key: 'all', label: '全部' },
               { key: 'receive', label: '接收' },
               { key: 'send', label: '发送' },
-              { key: 'swap', label: '交换' }
+              { key: 'unknown', label: '未知' },
             ].map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setFilter(key as any)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                   filter === key
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    ? 'text-primary-foreground bg-primary'
+                    : 'text-muted-foreground bg-muted hover:bg-muted/80'
                 }`}
               >
                 {label}
@@ -242,80 +294,89 @@ export default function History() {
       </div>
 
       {/* 交易列表 */}
-      <div className="flex-1 overflow-y-auto">
+      <div className='flex-1 overflow-y-auto'>
         {filteredTransactions.length === 0 && !loading ? (
-          <div className="flex flex-col items-center justify-center h-full text-center p-8">
-            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <svg className="h-8 w-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <div className='flex h-full flex-col items-center justify-center p-8 text-center'>
+            <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted'>
+              <svg
+                className='text-muted-foreground h-8 w-8'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+                />
               </svg>
             </div>
-            <h3 className="text-lg font-medium mb-2">暂无交易记录</h3>
-            <p className="text-muted-foreground text-sm">
-              {filter === 'all' ? '您的钱包还没有任何交易记录' : `没有${filter === 'send' ? '发送' : filter === 'receive' ? '接收' : '交换'}类型的交易`}
+            <h3 className='mb-2 text-lg font-medium'>暂无交易记录</h3>
+            <p className='text-muted-foreground text-sm'>
+              {filter === 'all'
+                ? '您的钱包还没有任何交易记录'
+                : `没有${filter === 'send' ? '发送' : filter === 'receive' ? '接收' : '交换'}类型的交易`}
             </p>
           </div>
         ) : (
-          <div className="space-y-2 p-4">
+          <div>
             {filteredTransactions.map((tx) => (
               <div
                 key={tx.txid}
-                className="card border border-border bg-card shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                className='flex items-center justify-between px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer'
                 onClick={() => handleViewOnExplorer(tx.txid)}
               >
-                <div className="card-body p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      {getTransactionIcon(tx.type)}
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className="text-sm font-medium capitalize">
-                            {tx.type === 'send' ? '发送' : tx.type === 'receive' ? '接收' : '交换'}
-                          </span>
-                          <span className="text-sm font-mono">
-                            {tx.displayAmount} {tx.displaySymbol}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {tx.confirmations >= 6 ? '已确认' : `${tx.confirmations} 确认中`}
-                        </div>
-                      </div>
+                {/* 左侧：图标和交易信息 */}
+                <div className='flex items-center space-x-3 flex-1 min-w-0'>
+                  {getTransactionIcon(tx.type)}
+                  <div className='flex-1 min-w-0'>
+                    <div className='flex items-center space-x-2 mb-0.5'>
+                      <span className='text-sm font-medium text-foreground'>
+                        {tx.type === 'send'
+                          ? '发送'
+                          : tx.type === 'receive'
+                            ? '接收'
+                            : '未知'}
+                      </span>
                     </div>
+                    <div className='text-xs text-muted-foreground truncate'>
+                      {tx.timeAgo}
+                    </div>
+                  </div>
+                </div>
 
-                    <div className="flex items-center space-x-3">
-                      <div className="text-right">
-                        <div className="text-xs text-muted-foreground">
-                          {tx.timeAgo}
-                        </div>
-                        <div className="flex items-center space-x-1 mt-1">
-                          {getStatusIcon(tx.status)}
-                          <span className={`text-xs ${
-                            tx.status === 'completed' ? 'text-success' :
-                            tx.status === 'pending' ? 'text-warning' : 'text-error'
-                          }`}>
-                            {tx.status === 'completed' ? '已完成' :
-                             tx.status === 'pending' ? '处理中' : '失败'}
-                          </span>
-                        </div>
-                      </div>
-                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                {/* 右侧：金额和箭头 */}
+                <div className='flex items-center space-x-2 ml-3'>
+                  <div className='text-right'>
+                    <div className={`text-sm font-semibold ${
+                      tx.type === 'receive' 
+                        ? 'text-success' 
+                        : tx.type === 'send'
+                          ? 'text-foreground'
+                          : 'text-muted-foreground'
+                    }`}>
+                      {tx.type === 'receive' ? '+' : tx.type === 'send' ? '-' : ''}
+                      {tx.displayAmount}
+                    </div>
+                    <div className='text-xs text-muted-foreground'>
+                      {tx.displaySymbol}
                     </div>
                   </div>
                 </div>
               </div>
             ))}
-            
+
             {/* 加载更多 */}
             {hasMore && (
-              <div className="text-center py-4">
+              <div className='py-4 text-center'>
                 <button
-                  onClick={() => loadTransactions()}
                   disabled={loading}
-                  className="btn btn-outline btn-sm"
+                  className='btn btn-outline btn-sm'
                 >
                   {loading ? (
                     <>
-                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                      <RefreshCw className='mr-2 h-4 w-4 animate-spin' />
                       加载中...
                     </>
                   ) : (

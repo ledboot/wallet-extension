@@ -1,21 +1,21 @@
-import { MsgT } from '../utils/msgTools';
-import { hexToBytes } from '../utils';
 import { ripemd160 as nobleRipemd160 } from '@noble/hashes/ripemd160';
 import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
-import { Account } from '@/shared/types';
+
 import { CHAIN_INFO } from '@/shared/constants';
+import { Account, TxHistoryItem, TxType } from '@/shared/types';
+
+import { addressHexToString, hexToBytes } from '../utils';
+import { MsgT } from '../utils/msgTools';
 import preferenceService from './preference';
 
-
 export class OpenapiService {
-
   constructor() {}
 
   getEndpoint = () => {
     const chainType = preferenceService.getChainType();
     const chainInfo = CHAIN_INFO[chainType];
     return chainInfo.endpoints[0];
-  }
+  };
 
   getRespData = async (res: any) => {
     let jsonRes: { id: number; error: any; result: any };
@@ -32,17 +32,17 @@ export class OpenapiService {
     return jsonRes;
   };
 
-  httpPost = async (url: string,method: string, data: any) => {
+  httpPost = async (url: string, method: string, data: any) => {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Authorization', 'Basic YWRtaW46RkZoNXJM');
     let res: Response;
-    const requestParams ={
-      jsonrpc: "1.0",
-      id: "1",
+    const requestParams = {
+      jsonrpc: '1.0',
+      id: '1',
       method: method,
-      params: data
-    }
+      params: data,
+    };
     try {
       res = await fetch(
         new Request(url, {
@@ -58,201 +58,156 @@ export class OpenapiService {
     }
   };
 
-  getAddressHistory = async (params: { account: Account; start: number; limit: number }) => {
-    const res = await this.httpPost(this.getEndpoint(),'schrt', [params.account.address,0,params.start,params.limit,0,true]);
-    console.log('getAddressHistory res', res);
+  getAddressHistory = async (account: Account, start: number, limit: number) => {
+    const res = await this.httpPost(this.getEndpoint(), 'schrt', [
+      account.address,
+      0,
+      start,
+      limit,
+      0,
+      true,
+    ]);
     if (res.result && Array.isArray(res.result)) {
-      return await this.analyzeResult(params.account, res.result);
+      console.log('res.result', res.result);
+      const analyzed = await this.analyzeResult(account, res.result);
+      console.log('analyzed', analyzed);
+      return analyzed;
     }
     return [];
   };
 
-  private async analyzeResult(account: Account, list: any[]) {
-    // 初始化变量
-    const spends: any[] = [];
-    const adds: any[] = [];
-    let hasitems = false;
-    const summary: any[] = [];
-    let restrict = 1;
-    let rsum = 0;
-    const btc = false; // 假设这是比特币网络
+  decodeMsgHex = (hex: string) => {
+    const msgtx = new MsgT();
+    msgtx.rawDecode(hex);
+    const btc =
+      CHAIN_INFO[preferenceService.getChainType()].chainId == 0x400002; // 假设这是比特币网络
+    const txOUtLen = msgtx?.tOut.length || 0;
+    const tOut: any[] = [];
+    const tIn: any[] = [];
+    for (let j = 0; j < txOUtLen; j++) {
+      const output = msgtx?.tOut[j];
 
-    // 初始化摘要数组
-    for (let i = 0; i < list.length; i++) {
-      summary.push({ TIn: [], TOut: [] });
+      // 跳过无效输出
+      if (output.isSeparator()) continue;
+      if (!btc && (output.tokenType & 1n) == 0n && output.value == 0n) continue;
+      if (btc && output.value == 0n) continue;
+
+      // 提取地址
+      const addressHex = btc
+        ? '00' + output.pkScript.substr(6, 40)
+        : output.pkScript.substr(2, 40);
+      const version = parseInt(output.pkScript.substr(0, 2), 16);
+
+      // 检查跨链交易
+      if (!btc && this.isCrossChain(output.pkScript)) {
+        continue;
+      }
+
+      const address = addressHexToString(hexToBytes(addressHex), version);
+
+      tOut.push({
+        addressHex: addressHex,
+        address: address,
+        rights: output.rights,
+        outPointIndex: j,
+        tokenType: output.tokenType,
+        value: output.value,
+      });
     }
 
-    console.log('list length', list.length);
+    const txInLen = msgtx?.tIn.length || 0;
 
+    for (let j = 0; j < txInLen; j++) {
+      const input = msgtx?.tIn[j];
+
+      if (input.isSeparator()) continue;
+      if (
+        input.previousOutPoint.hash ==
+        '0000000000000000000000000000000000000000000000000000000000000000'
+      ) {
+        continue;
+      }
+
+      tIn.push({
+        previousOutPointIndex: input.previousOutPoint.index,
+        previousOutPointHash: input.previousOutPoint.hash,
+        signatureIndex: input.signatureIndex,
+        sequence: input.sequence,
+      });
+    }
+    return { tIn, tOut };
+  };
+
+  analyzeResult = async (account: Account, list: any[]) => {
+    // 初始化变量
+    const txHistory: TxHistoryItem[] = [];
     // 处理交易输出（UTXO添加）
     for (let i = 0; i < list.length; i++) {
-      hasitems = true;
-
-      // 限制处理数量以避免性能问题
-      if (rsum >= 10000) {
-        list.length = restrict;
-        console.log('batch trim = ' + restrict);
-        break;
-      }
-      restrict++;
-
-      // 解析交易数据
-      let msgtx;
-      if (btc){
-        // msgtx = this.parseTransaction(list[i].hex, btc);
-      }else{
-        msgtx = new MsgT();
-        console.log('list[i].hex', list[i].hex);
-        msgtx.rawDecode(list[i].hex);
-      }
-      rsum += msgtx?.tIn.length || 0;
-
-      const txLen = msgtx?.tOut.length || 0;
-
-      // 处理交易输出
-      for (let j = 0; j < txLen; j++) {
-        const output = msgtx?.tOut[j];
-        
-        // 跳过无效输出
-        if (output.isSeparator()) continue;
-        if ((!btc && ( output.tokenType & 1n) == 0n) && output.value == 0n) continue;
-        if (btc && output.value == 0n) continue;
-
-        // 提取地址
-        const addrhex = btc ?"00" + output.pkScript.substr(6, 40): output.pkScript.substr(0, 42);
-
-        console.log('addrhex---', addrhex, account.address, output.pkScript, btc);
-
-        // 检查是否是我们的地址
-        if (!this.isOurAddress(addrhex, account.addressHex, output.pkScript, btc)) {
-          continue;
+      const { tIn, tOut } = this.decodeMsgHex(list[i].hex);
+      console.log('tIn', tIn, 'tOut', tOut);
+      for (let j = 0; j < tOut.length; j++) {
+        const output = tOut[j];
+        if (account.addressHex == output.addressHex) {
+          const previousTx = await this.getRawTransaction(
+            tIn[0].previousOutPointHash
+          );
+          const { tOut: previousTxOut } = this.decodeMsgHex(previousTx);
+          const sender = previousTxOut[0].address;
+          console.log('sender', sender);
+          const txItem = {
+            txid: list[i].txid,
+            address: sender,
+            txType: TxType.RECEIVE,
+            blockHeight: list[i].height,
+            blockHash: list[i].blockhash,
+            blockTime: list[i].blocktime,
+            tokenType: output.tokenType.toString(),
+            value: output.value.toString(),
+            rights: output.rights,
+            confirmations: 10,
+          };
+          txHistory.push(txItem);
         }
-
-        console.log('output', output);
-
-        // 检查跨链交易
-        if (!btc && this.isCrossChain(output.pkScript)) {
-          continue;
-        }
-
-        const outpoint = { Hash: list[i].txid, Index: j };
-
-        console.log('outpoint', outpoint);
-
-        // 避免重复添加
-        if (adds.findIndex(n => n.outpoint.Hash == outpoint.Hash && n.outpoint.Index == outpoint.Index) >= 0) {
-          continue;
-        }
-
-        adds.push({
-          outpoint: outpoint,
-          utxo: btc ? { tokentype: 0n, pkScript: addrhex, value: output.value } : output,
-          height: list[i].height
-        });
-        console.log('adds', adds);
-
-        summary[i].tOut.push({
-          tokentype: btc ? 0n : output.tokenType,
-          value: output.value
-        });
       }
     }
 
-    // 处理交易输入（UTXO消费）
-    for (let i = 0; i < list.length; i++) {
-      let msgtx;
-      if (btc){
-        // msgtx = new MsgT();
-        // msgtx.rawDecode(list[i].hex);
-      }else{
-        msgtx = new MsgT();
-        msgtx.rawDecode(list[i].hex);
-      }
-
-      const txLen = msgtx?.tIn.length || 0;
-
-      for (let j = 0; j < txLen; j++) {
-        const input = msgtx?.tIn[j];
-        
-        if (input.isSeparator()) continue;
-        if (input.previousOutPoint.hash == "0000000000000000000000000000000000000000000000000000000000000000") {
-          continue;
-        }
-
-        // 检查UTXO是否已被消费
-        const k = adds.findIndex((n) => 
-          n.outpoint.hash == input.previousOutPoint.hash && 
-          n.outpoint.index == input.previousOutPoint.index
-        );
-
-        // 处理输入摘要
-        if (k >= 0) {
-          const ton = btc ? 0n : this.tokentype2Big(adds[k].utxo.tokentype);
-          summary[i].TIn.push({
-            tokentype: btc ? 0n : ton,
-            Value: adds[k].utxo.Value
-          });
-        }
-
-        // 从添加列表中移除已消费的UTXO
-        if (k >= 0) adds.splice(k, 1);
-        spends.push(input.PreviousOutPoint);
-        hasitems = true;
-      }
-    }
-
-    // 如果没有相关交易，返回空数组
-    if (!hasitems) {
-      return [];
-    }
-
-    console.log(adds.length + ' additions ' + spends.length + ' spends');
+    console.log('txHistory', txHistory);
 
     // 构建返回的交易历史数据
-    const processedTransactions = list.map((tx, index) => {
-      const txSummary = summary[index] || { TIn: [], TOut: [] };
-      
-      return {
-        txid: tx.txid,
-        confirmations: tx.confirmations || 0,
-        height: tx.height,
-        timestamp: tx.blocktime || tx.timestamp,
-        size: tx.size || 0,
-        feeRate: tx.feeRate || 0,
-        fee: tx.fee || 0,
-        outputValue: this.calculateOutputValue(txSummary.TOut),
-        vin: this.buildVinList(txSummary.TIn),
-        vout: this.buildVoutList(txSummary.TOut),
-        types: this.determineTransactionTypes(txSummary),
-        methods: this.determineTransactionMethods(txSummary)
-      };
-    });
+    return txHistory;
+  };
 
-    return processedTransactions;
-  }
-
-  private isOurAddress(addrhex: string, targetAddress: string, pkScript: string, btc: boolean): boolean {
+  private isOurAddress(
+    addrhex: string,
+    targetAddress: string,
+    pkScript: string,
+    btc: boolean
+  ): boolean {
     // 检查地址是否匹配
-    console.log('isOurAddress', addrhex, targetAddress);
     if (addrhex === targetAddress) return true;
-    
+
     // 处理P2PKH地址
-    if (btc && pkScript.substr(0, 4) == "5121" && 
-        (pkScript.substr(4, 2) == "02" || pkScript.substr(4, 2) == "03") && 
-        pkScript.substr(-4) == "52ae") {
+    if (
+      btc &&
+      pkScript.substr(0, 4) == '5121' &&
+      (pkScript.substr(4, 2) == '02' || pkScript.substr(4, 2) == '03') &&
+      pkScript.substr(-4) == '52ae'
+    ) {
       // 这里需要实现公钥到地址的转换
       const pk = pkScript.substr(4, 66);
-      addrhex = "00" + nobleRipemd160(nobleSha256(hexToBytes(pk)));
+      addrhex = '00' + nobleRipemd160(nobleSha256(hexToBytes(pk)));
       return addrhex === targetAddress;
     }
-    
+
     return false;
   }
 
   private isCrossChain(pkScript: string): boolean {
     // 检查是否是跨链交易
-    return (pkScript.substr(0, 2) != "88" && pkScript.substr(42, 2) == "66") ||
-           (pkScript.substr(0, 2) != "88" && pkScript.substr(42, 2) == "45");
+    return (
+      (pkScript.substr(0, 2) != '88' && pkScript.substr(42, 2) == '66') ||
+      (pkScript.substr(0, 2) != '88' && pkScript.substr(42, 2) == '45')
+    );
   }
 
   private tokentype2Big(tokentype: any): bigint {
@@ -263,37 +218,27 @@ export class OpenapiService {
     return BigInt(tokentype || 0);
   }
 
-  private calculateOutputValue(tOut: any[]): number {
-    return tOut.reduce((sum, output) => sum + Number(output.Value || 0), 0);
-  }
+  getRawTransaction = async (txid: string) => {
+    const res = await this.httpPost(this.getEndpoint(), 'getrawtransaction', [
+      txid,
+      0,
+      true,
+      false,
+    ]);
+    if (res.result) {
+      return res.result;
+    }
+    return null;
+  };
 
-  private buildVinList(tIn: any[]): any[] {
-    return tIn.map(input => ({
-      address: '', // 需要从UTXO中获取
-      value: Number(input.Value || 0)
-    }));
-  }
-
-  private buildVoutList(tOut: any[]): any[] {
-    return tOut.map(output => ({
-      address: '', // 需要从PkScript中解析
-      value: Number(output.Value || 0)
-    }));
-  }
-
-  private determineTransactionTypes(summary: any): string[] {
-    const types = [];
-    if (summary.TIn.length > 0) types.push('transfer');
-    if (summary.TOut.length > 0) types.push('receive');
-    return types;
-  }
-
-  private determineTransactionMethods(summary: any): string[] {
-    const methods = [];
-    if (summary.TIn.length > 0) methods.push('send');
-    if (summary.TOut.length > 0) methods.push('receive');
-    return methods;
-  }
+  getTxOut = async (txid: string, vout: number) => {
+    const res = await this.httpPost(this.getEndpoint(), 'gettxout', [
+      txid,
+      vout,
+      false,
+    ]);
+    return res;
+  };
 }
 
 export default new OpenapiService();

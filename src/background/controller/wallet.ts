@@ -375,9 +375,11 @@ export class WalletController {
     return keyring.generatePrePrivateKey();
   }
 
-  getAddressHistory = async (params: { account: Account; start: number; limit: number }) => {
+  getAddressHistory = async (account: Account, start: number, limit: number) => {
     this.resetLockTime();
-    return await openapiService.getAddressHistory(params);
+    const res = await openapiService.getAddressHistory(account, start, limit);
+    console.log('getAddressHistory', res);
+    return res;
   };
 
   /**

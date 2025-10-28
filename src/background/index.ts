@@ -58,15 +58,17 @@ browserRuntimeOnConnect((port: any) => {
         switch (data.type) {
           case 'broadcast':
             eventBus.emit(data.method, data.params);
-            break;
+            return;
           case 'controller':
             console.log('received controller', data);
             if (data.method) {
-              return await walletController[
+              const result = await walletController[
                 data.method as keyof typeof walletController
               ].apply(null, data.args);
+              console.log('result-----', result);
+              return result;
             }
-            break;
+            return;
         }
       }
     });
