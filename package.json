@@ -1,7 +1,7 @@
 {
-  "name": "anex-extension",
-  "displayName": "ANEX Wallet Extension",
-  "description": "ANEX Wallet Extension",
+  "name": "wallet-extension",
+  "displayName": "Wallet Extension",
+  "description": "Wallet Extension",
   "private": true,
   "version": "1.0.0",
   "type": "module",
