@@ -37,6 +37,7 @@
     "lodash-es": "^4.17.21",
     "lru-cache": "^11.1.0",
     "lucide-react": "^0.540.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router": "^7.7.1",
