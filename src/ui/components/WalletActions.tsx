@@ -11,7 +11,9 @@ export function WalletActions() {
         <span className='text-xs'>Send</span>
       </button>
 
-      <button className='bg-wallet-card border-border hover:border-primary/50 btn btn-outline flex h-16 flex-col space-y-1 transition-all'>
+      <button 
+        onClick={() => navigate('ReceiveScreen')}
+        className='bg-wallet-card border-border hover:border-primary/50 btn btn-outline flex h-16 flex-col space-y-1 transition-all'>
         <Download className='h-5 w-5' />
         <span className='text-xs'>Receive</span>
       </button>

@@ -10,6 +10,7 @@ import CreateOrImportWalletScreen from './account/createOrImportWalletScreen';
 import AccountSelection from './account/AccountSelection';
 import History from './wallet/History';
 import NetworkSelection from './network/NetworkSelection';
+import Receive from './wallet/Receive';
 
 const routes = {
  BoostScreen: {
@@ -55,6 +56,10 @@ const routes = {
   NetworkSelection: {
     path: '/network/selection',
     element: <NetworkSelection />,
+  },
+  ReceiveScreen: {
+    path: '/wallet/receive',
+    element: <Receive />,
   },
 };
 
