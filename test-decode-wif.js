@@ -30,13 +30,13 @@ function decodeCompressedWalletImportFormat(privateKey) {
   return privateKeyBytes;
 }
 
-
 // Test with a known WIF
-const wif = "KxUWZJcnbjkT41sQA2VDKA9wCCZyXZdTETomr33B4xknshossVyT";
+const wif = "";
 console.log('Testing WIF:', wif);
 
 try {
   const privateKeyBytes = decodeCompressedWalletImportFormat(wif);
+  console.log('privateKeyBytes', privateKeyBytes);
   const privateKeyHex = Array.from(privateKeyBytes).map(b => b.toString(16).padStart(2, '0')).join('');
   
   console.log('Decoded private key (hex):', privateKeyHex);
