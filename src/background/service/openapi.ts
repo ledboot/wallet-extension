@@ -103,22 +103,22 @@ export class OpenapiService {
     ]);
     if (res.result && Array.isArray(res.result)) {
       console.log('res.result', res.result);
-      const analyzed = await this.analyzeResult(account, res.result);
-      console.log('analyzed', analyzed);
-      return analyzed;
+      const { txHistory, utxotype } = await this.analyzeResult(account, res.result);
+      console.log('txHistory', txHistory);
+      console.log('utxotype', utxotype);
+      return { txHistory, utxotype };
     }
-    return [];
+    return { txHistory: [], utxotype: [] };
   };
 
   update = async (account: Account, start: number, limit: number) => {
     console.log('update', account, start, limit);
-    // 改为使用 getAddressHistory 拿 analyzed，再转换为 UTXO 列表
-    const analyzed = await this.getAddressHistory(account, start, limit);
-    console.log('analyzed for update', analyzed);
-    const utxos = await this.insertutxo(account, analyzed);
-    console.log('utxos', utxos);
-    
-    return utxos;
+    const { utxotype } = await this.getAddressHistory(account, start, limit);
+    console.log('utxotype_update', utxotype);
+    // const utxos = await this.insertutxo(account, analyzed);
+    // console.log('utxos', utxos);
+    // return utxos;
+    return utxotype;
   };
 
   fetchTokentype = async (
@@ -164,34 +164,34 @@ export class OpenapiService {
   };
 
   // 由 analyzeResult 的输出（交易历史项）生成 UTXO 列表
-  insertutxo = async (account: Account, list: TxHistoryItem[]) => {
-    const utxotype: utxoType[] = [];
+  // insertutxo = async (account: Account, list: TxHistoryItem[]) => {
+  //   const utxotype: utxoType[] = [];
 
-    for (let i = 0; i < list.length; i++) {
-      const item = list[i] as any;
+  //   for (let i = 0; i < list.length; i++) {
+  //     const item = list[i] as any;
 
-      // 如果该 txid 已在 utxotype 中存在，先删除旧的，避免重复
-      const existingIndex = utxotype.findIndex((u) => u.txid === item.txid);
-      if (existingIndex >= 0) {
-        utxotype.splice(existingIndex, 1);
-      }
+  //     // 如果该 txid 已在 utxotype 中存在，先删除旧的，避免重复
+  //     const existingIndex = utxotype.findIndex((u) => u.txid === item.txid);
+  //     if (existingIndex >= 0) {
+  //       utxotype.splice(existingIndex, 1);
+  //     }
 
-      const txItem: utxoType = {
-        txid: item.txid,
-        address: item.myaddress,
-        scriptPubKey: item.pkScript,
-        blockHeight: item.blockHeight,
-        blockHash: item.blockHash,
-        tokenType: String(item.tokenType),
-        value: item.value.toString(),
-        rights: item.rights || [],
-      };
-      utxotype.push(txItem);
-    }
+  //     // const txItem: utxoType = {
+  //     //   txid: item.txid,
+  //     //   address: item.myaddress,
+  //     //   scriptPubKey: item.pkScript,
+  //     //   blockHeight: item.blockHeight,
+  //     //   blockHash: item.blockHash,
+  //     //   tokenType: String(item.tokenType),
+  //     //   value: item.value.toString(),
+  //     //   rights: item.rights || [],
+  //     // };
+  //     // utxotype.push(txItem);
+  //   }
 
-    console.log('utxotype(from analyzed)', utxotype);
-    return utxotype;
-  };
+  //   console.log('utxotype(from analyzed)', utxotype);
+  //   return utxotype;
+  // };
 
   decodeMsgHex = (hex: string) => {
     const msgtx = new MsgT();
@@ -260,10 +260,24 @@ export class OpenapiService {
   analyzeResult = async (account: Account, list: any[]) => {
     // 初始化变量
     const txHistory: TxHistoryItem[] = [];
+    const utxotype: utxoType[] = [];
     // 处理交易输出（UTXO添加）
     for (let i = 0; i < list.length; i++) {
       const { tIn, tOut } = this.decodeMsgHex(list[i].hex);
       console.log('tIn', tIn, 'tOut', tOut);
+
+      for(let j = 0; j < tIn.length; j++) {
+        const previousOutPointHash = tIn[j].previousOutPointHash;
+        const previousOutPointIndex = tIn[j].previousOutPointIndex;
+        // 从utxotype中查找并删除已消费的UTXO
+        const utxoIndex = utxotype.findIndex(utxo => 
+          utxo.txid === previousOutPointHash && utxo.index === previousOutPointIndex
+        );
+        if (utxoIndex !== -1) {
+          console.log(`Removing spent UTXO: ${previousOutPointHash}:${previousOutPointIndex}`);
+          utxotype.splice(utxoIndex, 1);
+        }
+      }
       for (let j = 0; j < tOut.length; j++) {
         const output = tOut[j];
         if (account.addressHex == output.addressHex) {
@@ -271,10 +285,12 @@ export class OpenapiService {
             tIn[0].previousOutPointHash
           );
           const { tOut: previousTxOut } = this.decodeMsgHex(previousTx);
+          console.log('previousTxOut', previousTxOut);
           const sender = previousTxOut[0].address;
           console.log('sender', sender);
-          const txItem = {
+          const txItemHistory = {
             txid: list[i].txid,
+            index: j,
             address: sender,
             txType: TxType.RECEIVE,
             blockHeight: list[i].height,
@@ -287,15 +303,24 @@ export class OpenapiService {
             pkScript: output.pkScript,
             myaddress: account.address,
           };
-          txHistory.push(txItem);
+          const txItemUtxo: utxoType = {
+            txid: list[i].txid,
+            index: j,
+            address: account.address,
+            scriptPubKey: output.pkScript,
+            blockHeight: list[i].blockHeight,
+            blockHash: list[i].blockHash,
+            tokenType: output.tokenType.toString(),
+            value: output.value.toString(),
+            rights: output.rights || [],
+          };
+          txHistory.push(txItemHistory);
+          utxotype.push(txItemUtxo);
         }
       }
     }
-
-    console.log('txHistory', txHistory);
-
     // 构建返回的交易历史数据
-    return txHistory;
+    return {txHistory, utxotype};
   };
 
   // insertutxo = async (account: Account, list: any[]) => {

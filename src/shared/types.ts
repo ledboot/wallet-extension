@@ -46,6 +46,7 @@ export interface TxHistoryItem {
   confirmations: number;
   pkScript: string;
   myaddress: string;
+  index:number;
 }
 
 export enum TxType {
@@ -80,6 +81,7 @@ export type utxoType = {
   blockHeight: number;
   blockHash: string;
   rights: string[];
+  index:number;
 };
 
 export type utxoAddressSumInfo = {

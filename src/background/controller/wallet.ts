@@ -411,9 +411,9 @@ export class WalletController {
 
   getAddressHistory = async (account: Account, start: number, limit: number) => {
     this.resetLockTime();
-    const res = await openapiService.getAddressHistory(account, start, limit);
-    console.log('getAddressHistory', res);
-    return res;
+    const { txHistory } = await openapiService.getAddressHistory(account, start, limit);
+    console.log('getAddressHistory', txHistory);
+    return txHistory;
   };
 
   /**
