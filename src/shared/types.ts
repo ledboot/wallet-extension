@@ -44,6 +44,8 @@ export interface TxHistoryItem {
   value: string;
   rights: string[];
   confirmations: number;
+  pkScript: string;
+  myaddress: string;
 }
 
 export enum TxType {
@@ -68,3 +70,39 @@ export type ChainInfo = {
   unit: string;
   networkType: NetworkType;
 };
+
+export type utxoType = {
+  txid: string;
+  address: string;
+  value: string;
+  tokenType: string;
+  scriptPubKey: string;
+  blockHeight: number;
+  blockHash: string;
+  rights: string[];
+};
+
+export type utxoAddressSumInfo = {
+  address: string;
+  value: number;
+  chainId: number;
+  tokenType: string;
+  blockHeight: number;
+  blockHash: string;
+};
+
+export const CONAMES_DEFAULT_CHAIN_ID = 1;
+export const CONAMES_DEFAULT_DECIMALPOINT = 0;
+export type conamesType = {
+  name: string;
+  chainId: number; // default: 1
+  tokenType: string;
+  html: string;
+  decimalpoint: number; // default: '0'
+  updated?: number;
+  currency?:number;
+};
+
+ 
+  
+  

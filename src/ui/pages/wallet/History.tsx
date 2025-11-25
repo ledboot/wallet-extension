@@ -36,6 +36,8 @@ export default function History() {
   const [filter, setFilter] = useState<'all' | 'send' | 'receive' | 'unknown'>(
     'all'
   );
+  
+  // const wif = wallet.getWIF(currentAccount.address); 获取私钥
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
 

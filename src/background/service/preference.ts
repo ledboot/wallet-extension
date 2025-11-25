@@ -4,6 +4,8 @@ import { ChainType, DEFAULT_LOCKTIME_ID, NetworkType } from '@/shared/constants'
 import {
   AnexBalance,
   TxHistoryItem,
+  utxoAddressSumInfo,
+  conamesType,
 } from '@/shared/types';
 
 import createPersistStore from '../utils/persisitStore';
@@ -28,6 +30,8 @@ export interface PreferenceStore {
   keyringAlianNames: {
     [key: string]: string;
   };
+  utxoSums: utxoAddressSumInfo[];
+  conames: conamesType[];
 }
 
 // const SUPPORTED_LOCALES = ['en', 'zh_CN'];
@@ -48,8 +52,10 @@ class PreferenceService {
           amount: 0n,
         },
         locale: 'en',
-        networkType: NetworkType.MAINNET,
-        chainType: ChainType.ZENT_MAINNET,
+        // networkType: NetworkType.MAINNET,
+        // chainType: ChainType.ZENT_MAINNET,
+        networkType: NetworkType.TESTNET,
+        chainType: ChainType.ZENT_TESTNET,
         currentVersion: '0',
         firstOpen: false,
         txHistory: [],
@@ -59,8 +65,15 @@ class PreferenceService {
         accountAlianNames: {},
         addressFlags: {},
         keyringAlianNames: {},
+        utxoSums: [],
+        conames: [],
       },
     });
+
+    if (!Array.isArray(this.store.utxoSums)) {
+      this.store.utxoSums = [];
+      this.store.utxoSums = [...this.store.utxoSums]; // 强制保存
+    }
     if (typeof this.store.autoLockTimeId !== 'number') {
       this.store.autoLockTimeId = DEFAULT_LOCKTIME_ID;
     }
@@ -161,10 +174,33 @@ class PreferenceService {
     return this.store.chainType;
   };
 
-  setChainType = (chainTyp: ChainType) =>{
-    this.store.chainType = chainTyp
-  }
+  setChainType = (chainTyp: ChainType) => {
+    this.store.chainType = chainTyp;
+  };
 
+  // conames management
+  setConames = (conames: conamesType[]) => {
+    this.store.conames = conames;
+  };
+
+  getConames = () => {
+    return this.store.conames || [];
+  };
+
+  updateConames = (newConames: conamesType[]) => {
+    const existingConames = this.getConames();
+    const conamesMap = new Map(
+      existingConames.map(coname => [coname.tokenType, coname])
+    );
+
+    // Update or add new conames
+    newConames.forEach(coname => {
+      conamesMap.set(coname.tokenType, coname);
+    });
+
+    this.store.conames = Array.from(conamesMap.values());
+    return this.store.conames;
+  };
 }
 
 export default new PreferenceService();

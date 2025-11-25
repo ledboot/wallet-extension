@@ -15,6 +15,8 @@ import { DisplayedKeyring } from '../service/keyring/index';
 import preferenceService from '../service/preference';
 import { openapiService } from '../service';
 import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
+import AssetsList from '@/background/service/assetslist';
+import type { utxoType, utxoAddressSumInfo, conamesType } from '@/shared/types';
 
 export class WalletController {
   timer: any = null;
@@ -70,6 +72,33 @@ export class WalletController {
       }
     }
     eventBus.emit(EVENTS.broadcastToUI, { method: 'unlock', params: {} });
+  };
+
+  /**
+   * 初始化更新：获取账户最新UTXO并聚合写入loadStore
+   */
+  updateInit = async (start: number, limit: number): Promise<{ utxos: utxoType[]; sums: utxoAddressSumInfo[]; conames: conamesType[] }> => {
+    console.log('updateInit', start, limit);
+    this.resetLockTime();
+    const account = await this.getCurrentAccount();
+    console.log('account', account);
+    if (!account) return { utxos: [], sums: [], conames: [] };
+
+    const utxos: utxoType[] = await openapiService.update(account, start, limit);
+    console.log('utxos', utxos);
+
+    const chainId = CHAIN_INFO[preferenceService.getChainType()].chainId;
+    const chainIdStr = chainId.toString();
+    let conames: conamesType[] = [];
+    if (utxos.length > 0) {
+      const { conames: fetchedConames } = await openapiService.fetchTokentype(utxos, chainIdStr);
+      console.log('wallet conames:', fetchedConames);
+      conames = fetchedConames;
+      console.log('update utxo', utxos);
+    }
+    const sums = AssetsList.aggregateToLoadStore(...utxos);
+    console.log('sums', sums);
+    return { utxos, sums, conames };
   };
 
   /**
@@ -158,6 +187,10 @@ export class WalletController {
     if (!currentKeyring) return null;
     const account = currentKeyring.accounts[preferenceService.getCurrentAccountIndex()];
     return account;
+  };
+
+  getWIF = (address: string) => {
+    return keyringService.exportAccount(address);
   };
 
   displayedKeyringToWalletKeyring = (
@@ -381,6 +414,14 @@ export class WalletController {
     const res = await openapiService.getAddressHistory(account, start, limit);
     console.log('getAddressHistory', res);
     return res;
+  };
+
+  /**
+   * 获取已聚合的 UTXO 汇总（用于确定最新的 blockHeight）
+   */
+  getUtxoSums = async (): Promise<utxoAddressSumInfo[]> => {
+    const state = (keyringService as any)?.store?.getState?.() || {};
+    return state.utxoSums || [];
   };
 
   /**
