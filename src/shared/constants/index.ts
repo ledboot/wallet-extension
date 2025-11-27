@@ -128,6 +128,6 @@ export const TestnetPrivateKeyPrefix = 0xEF;
 export const TestnetAddressPrefix = 0x6F;
 
 export const ServerConfiguration = {
-  serverrequest: "http://omegasuite.org/omega",
+  serverEndpoint: "http://omegasuite.org",
   chainclass: 0,
 }

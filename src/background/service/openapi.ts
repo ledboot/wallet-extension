@@ -123,9 +123,9 @@ export class OpenapiService {
     console.log('tokenTypesStr', tokenTypesStr);
     let updated: number = 0;
     if (coinnames.length > 0) updated = Math.max(0, ...coinnames.map((c) => Number(c.updated || 0)));
-    const { serverrequest, chainclass } = ServerConfiguration;
+    const { serverEndpoint, chainclass } = ServerConfiguration;
     
-    const url = `${serverrequest}/index.php?module=ncx&MOD_op=gettokendef&class=${chainclass}&tokentype=${tokenTypesStr}`+(chainId ? `&chainid=${chainId}` : '')+(updated ? `&updated=${updated}` : '');
+    const url = `${serverEndpoint}/omega/index.php?module=ncx&MOD_op=gettokendef&class=${chainclass}&tokentype=${tokenTypesStr}`+(chainId ? `&chainid=${chainId}` : '')+(updated ? `&updated=${updated}` : '');
     console.log('url', url);
     const res = await this.httpGet(url);
     console.log('gettokendefres', res);
