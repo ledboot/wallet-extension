@@ -1,15 +1,13 @@
-// Test to validate that our implementation of createAddress 
-// matches the behavior of the omega.js createaddress method
-
-import { getSECCurveByName } from './src/shared/ecdsa.js';
-import bigInt from 'big-integer';
-import bs58check from 'bs58check';
-import { base58_to_binary } from 'base58-js';
+// Traditional Bitcoin P2PKH implementation using open-source libraries
 import { ripemd160 as nobleRipemd160 } from '@noble/hashes/ripemd160';
 import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
+import { getPublicKey, utils as secpUtils } from '@noble/secp256k1';
+import bs58check from 'bs58check';
 
-class ECKeyImpl {
-  privateKey;
+export class ECKeyImpl {
+  privateKeyPrefix = 0x80; // mainnet 0x80    testnet 0xEF
+  addressPrefix = 0; // mainnet 0x0    testnet 0x6F
+  privateKey; // Uint8Array(32)
   compressed;
 
   constructor(privateKey, compressed) {
@@ -18,13 +16,8 @@ class ECKeyImpl {
   }
 
   getPub() {
-    const secp256k1 = getSECCurveByName('secp256k1');
-    const pubPoint = secp256k1.getG().multiply(this.privateKey);
-    if (this.compressed) {
-      return new Uint8Array(pubPoint.getEncoded(1));
-    } else {
-      return new Uint8Array(pubPoint.getEncoded(0));
-    }
+    const pub = getPublicKey(this.privateKey, this.compressed);
+    return pub;
   }
 
   getPubKeyHash() {
@@ -33,132 +26,107 @@ class ECKeyImpl {
   }
 
   toWIF() {
-    const bytes = this.toByteArray();
-    if (bytes == null) return '';
-
-    // Add version byte (0x80 for mainnet)
-    let bytesArray = [0x80, ...bytes];
-
-    // Add compression flag if compressed
-    if (this.compressed) {
-      bytesArray.push(0x01);
-    }
-
-    // Use bs58check to encode directly - it handles checksum internally
-    return bs58check.encode(new Uint8Array(bytesArray));
+    const key = this.privateKey; // 32 bytes
+    const payload = new Uint8Array(this.compressed ? 34 : 33);
+    payload[0] = this.privateKeyPrefix;
+    payload.set(key, 1);
+    if (this.compressed) payload[33] = 0x01;
+    return bs58check.encode(Uint8Array.from(payload));
   }
 
   toByteArray() {
-    if (this.privateKey == null) return null;
-
-    const bytes = this.privateKey.toArray(256).value;
-    while (bytes.length < 32) bytes.unshift(0x00);
-
-    return new Uint8Array(bytes);
+    return Array.from(this.privateKey);
   }
 
   getAddress() {
-    const pubHash = this.getPubKeyHash();
-    // Create array with version byte
-    const hashWithVersion = new Uint8Array([0x00, ...pubHash]);
-    // Use bs58check to encode directly - it handles checksum internally
-    return bs58check.encode(hashWithVersion);
+    const pubHash = this.getPubKeyHash(); // 20 bytes
+    const payload = new Uint8Array(21);
+    payload[0] = this.addressPrefix;
+    payload.set(pubHash, 1);
+    return bs58check.encode(Uint8Array.from(payload));
   }
 
   getAddressHex() {
     const pubHash = this.getPubKeyHash();
-    const version = 0x00;
-
-    const versionHex = Array.from([version])
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-    const hashHex = Array.from(pubHash)
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-
+    const versionHex = bytesToHex2(new Uint8Array([this.addressPrefix]));
+    const hashHex = bytesToHex2(pubHash);
     return versionHex + hashHex;
   }
 }
 
-// 等价于 omega.js 的 getBigRandom 实现
-function getBigRandom(limit) {
-  const bitLen = limit.toString(2).length;
-  const byteLen = Math.ceil(bitLen / 8);
-  const bytes = new Uint8Array(byteLen);
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    crypto.getRandomValues(bytes);
-  } else {
-    console.log('Using Math.random for random bytes generation. This is not cryptographically secure.');
-    for (let i = 0; i < byteLen; i++) bytes[i] = Math.floor(Math.random() * 256);
+function bytesToHex2(bytes) {
+  const hex = [];
+  for (let i = 0; i < bytes.length; i++) {
+    hex.push((bytes[i] >>> 4).toString(16));
+    hex.push((bytes[i] & 0xf).toString(16));
   }
-  const rnd = bigInt(Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(''), 16);
-  return rnd.mod(limit.subtract(bigInt.one)).add(bigInt.one);
+  return hex.join('');
 }
 
-// Implementation of the createAddress function (equivalent to createaddress in omega.js)
+function decodeCompressedWalletImportFormat(wif) {
+  const decoded = bs58check.decode(wif); // version + key [+ 0x01]
+  if (decoded[0] !== 0x80) throw 'Version ' + decoded[0] + ' not supported!';
+  const compressed = decoded.length === 34 && decoded[33] === 0x01;
+  const priv = decoded.slice(1, 33);
+  return { privateKeyBytes: priv, compressed };
+}
+
+// Secure private key generation (1..n-1)
+function randomPrivateKey() {
+  return secpUtils.randomPrivateKey(); // Uint8Array(32)
+}
+
+// Create address using random private key (compressed)
 function createAddress() {
-  // 使用与 omega.js 一致的随机私钥生成方式（范围在 1..n-1）
-  const n = bigInt('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141', 16);
-  const privateKey = getBigRandom(n);
-  
-  // Create a new EC key with compressed=true
+  const privateKey = randomPrivateKey();
   const ec = new ECKeyImpl(privateKey, true);
-  
-  // Get WIF, address and hex
   const wif = ec.toWIF();
   const address = ec.getAddress();
   const hex = ec.getAddressHex();
-  
   return { wif, address, hex };
 }
 
-// Test the createAddress function
-console.log('=== Testing createAddress function ===');
+function decodeWIF(wif) {
+  const { privateKeyBytes, compressed } =
+    decodeCompressedWalletImportFormat(wif);
+  const ec = new ECKeyImpl(privateKeyBytes, compressed);
+  const address = ec.getAddress();
+  const addrHex = ec.getAddressHex();
+  console.log('address:', address);
+  console.log('addrHex:', addrHex);
+  ec.toWIF();
+}
 
-// Run multiple tests to verify consistency
-for (let i = 0; i < 5; i++) {
-  const result = createAddress();
-  console.log(`Test ${i + 1}:`);
-  console.log('  WIF:', result.wif);
-  console.log('  Address:', result.address);
-  console.log('  Hex:', result.hex);
-  
-  // Verify the WIF can be decoded back to the same key
-  try {
+function testGetAddress() {
+  // Test the createAddress function
+  console.log('=== Testing createAddress function ===');
+  // Run multiple tests to verify consistency
+  for (let i = 0; i < 5; i++) {
+    const result = createAddress();
+    console.log(`Test ${i + 1}:`);
+    console.log('  WIF:', result.wif);
+    console.log('  Address:', result.address);
+    console.log('  Hex:', result.hex);
+
+    // Verify the WIF can be decoded back to the same key
     // Decode WIF
-    const wifBytes = base58_to_binary(result.wif);
-    
+    const wifBytes = bs58check.decode(result.wif);
+
     // Check version byte (should be 0x80)
     if (wifBytes[0] !== 0x80) {
       console.log('  ✗ Invalid version byte in WIF');
       continue;
     }
-    
+
     // Check if it's compressed (should have 0x01 at end before checksum)
-    const isCompressed = wifBytes.length === 38 && wifBytes[33] === 0x01;
-    const privateKeyBytes = isCompressed ? wifBytes.slice(1, 33) : wifBytes.slice(1, 33);
-    
-    // Verify checksum
-    const dataToCheck = wifBytes.slice(0, isCompressed ? 34 : 33);
-    const checksum = nobleSha256(nobleSha256(new Uint8Array(dataToCheck)));
-    
-    const checksumStartIndex = isCompressed ? 34 : 33;
-    if (
-      checksum[0] !== wifBytes[checksumStartIndex] ||
-      checksum[1] !== wifBytes[checksumStartIndex + 1] ||
-      checksum[2] !== wifBytes[checksumStartIndex + 2] ||
-      checksum[3] !== wifBytes[checksumStartIndex + 3]
-    ) {
-      console.log('  ✗ Invalid checksum in WIF');
-      continue;
-    }
-    
-    // Recreate key from WIF and verify address
-    const privateKeyHex = Array.from(privateKeyBytes).map(b => b.toString(16).padStart(2, '0')).join('');
-    const privateKey = bigInt(privateKeyHex, 16);
-    const ecFromWIF = new ECKeyImpl(privateKey, isCompressed);
+    const isCompressed = wifBytes.length === 34 && wifBytes[33] === 0x01;
+    const privateKeyBytes = isCompressed
+      ? wifBytes.slice(1, 33)
+      : wifBytes.slice(1, 32);
+
+    const ecFromWIF = new ECKeyImpl(privateKeyBytes, isCompressed);
     const addressFromWIF = ecFromWIF.getAddress();
-    
+
     if (addressFromWIF === result.address) {
       console.log('  ✓ Address verification passed');
     } else {
@@ -166,11 +134,15 @@ for (let i = 0; i < 5; i++) {
       console.log('    Expected:', result.address);
       console.log('    Got:', addressFromWIF);
     }
-  } catch (error) {
-    console.log('  ✗ Error during WIF verification:', error.message);
   }
-  
-  console.log('');
 }
 
-console.log('=== All tests completed ===');
+// const result = createAddress();
+// 触发一次地址创建，避免未使用函数警告
+// const created = createAddress();
+// console.log('generated:', created.wif, created.address, created.hex);
+
+const wif = '';
+decodeWIF(wif);
+
+// testGetAddress();
