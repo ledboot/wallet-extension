@@ -127,7 +127,7 @@ export const MainnetAddressPrefix = 0;
 export const TestnetPrivateKeyPrefix = 0xEF;
 export const TestnetAddressPrefix = 0x6F;
 
-export const ServerConfigurationIndex = {
-  serverrequest: "omegasuite.org/omega",
+export const ServerConfiguration = {
+  serverrequest: "http://omegasuite.org/omega",
   chainclass: 0,
 }

@@ -16,7 +16,7 @@ import preferenceService from '../service/preference';
 import { openapiService } from '../service';
 import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
 import AssetsList from '@/background/service/assetslist';
-import type { utxoType, utxoAddressSumInfo, conamesType } from '@/shared/types';
+import type { Utxo, UtxoAddressSumInfo, Coinnames } from '@/shared/types';
 
 export class WalletController {
   timer: any = null;
@@ -77,28 +77,46 @@ export class WalletController {
   /**
    * 初始化更新：获取账户最新UTXO并聚合写入loadStore
    */
-  updateInit = async (start: number, limit: number): Promise<{ utxos: utxoType[]; sums: utxoAddressSumInfo[]; conames: conamesType[] }> => {
+  updateInit = async (start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; coinnames: Coinnames[] }> => {
     console.log('updateInit', start, limit);
     this.resetLockTime();
     const account = await this.getCurrentAccount();
     console.log('account', account);
-    if (!account) return { utxos: [], sums: [], conames: [] };
+    if (!account) return { sums: [], coinnames: [] };
 
-    const utxos: utxoType[] = await openapiService.update(account, start, limit);
-    console.log('utxos', utxos);
+    const utxoItems = await openapiService.update(account, start, limit);
+
+    // Save UTXOs to preference store with block height check
+    if (utxoItems.length > 0) {
+      const existingUtxos = preferenceService.getUtxos().filter(utxo => utxo.address === account.address);
+      // const existingUtxos = preferenceService.getUtxos();
+      const shouldUpdate = existingUtxos.length === 0 ||
+                         utxoItems[0].blockHeight >= existingUtxos[0].blockHeight;
+      
+      if (shouldUpdate) {
+        preferenceService.updateUtxos(utxoItems);
+        console.log('UTXOs saved to preference store');
+      } else {
+        console.log('Skipping UTXO update: New UTXOs are from an older block');
+      }
+    }
 
     const chainId = CHAIN_INFO[preferenceService.getChainType()].chainId;
     const chainIdStr = chainId.toString();
-    let conames: conamesType[] = [];
-    if (utxos.length > 0) {
-      const { conames: fetchedConames } = await openapiService.fetchTokentype(utxos, chainIdStr);
-      console.log('wallet conames:', fetchedConames);
-      conames = fetchedConames;
-      console.log('update utxo', utxos);
+    let coinnames: Coinnames[] = [];
+    if (utxoItems.length > 0) {
+      const { coinnames: fetchedConames } = await openapiService.fetchTokentype(utxoItems, chainIdStr);
+      console.log('wallet coinnames:', fetchedConames);
+      coinnames = fetchedConames;
+      console.log('update utxo', utxoItems);
     }
-    const sums = AssetsList.aggregateToLoadStore(...utxos);
+    const sums = AssetsList.aggregate(...utxoItems);
+
+    const assetsLists = AssetsList.assetsLists();
+    console.log('assetsLists', assetsLists);
+    
     console.log('sums', sums);
-    return { utxos, sums, conames };
+    return { sums, coinnames };
   };
 
   /**
@@ -419,7 +437,7 @@ export class WalletController {
   /**
    * 获取已聚合的 UTXO 汇总（用于确定最新的 blockHeight）
    */
-  getUtxoSums = async (): Promise<utxoAddressSumInfo[]> => {
+  getUtxoSums = async (): Promise<UtxoAddressSumInfo[]> => {
     const state = (keyringService as any)?.store?.getState?.() || {};
     return state.utxoSums || [];
   };

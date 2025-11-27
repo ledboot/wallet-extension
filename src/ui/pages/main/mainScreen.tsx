@@ -29,6 +29,7 @@ export default function MainScreen() {
         : 0) || 0;
       runUpdate(0, 2048);
       // runUpdate(latest, 2048);
+      console.log('latest', latest);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

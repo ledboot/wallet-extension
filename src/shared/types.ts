@@ -72,7 +72,7 @@ export type ChainInfo = {
   networkType: NetworkType;
 };
 
-export type utxoType = {
+export type Utxo = {
   txid: string;
   address: string;
   value: string;
@@ -84,7 +84,7 @@ export type utxoType = {
   index:number;
 };
 
-export type utxoAddressSumInfo = {
+export type UtxoAddressSumInfo = {
   address: string;
   value: number;
   chainId: number;
@@ -95,7 +95,7 @@ export type utxoAddressSumInfo = {
 
 export const CONAMES_DEFAULT_CHAIN_ID = 1;
 export const CONAMES_DEFAULT_DECIMALPOINT = 0;
-export type conamesType = {
+export type Coinnames = {
   name: string;
   chainId: number; // default: 1
   tokenType: string;

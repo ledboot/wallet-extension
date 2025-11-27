@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 
-import { Account, WalletKeyring, utxoType, utxoAddressSumInfo, conamesType } from '@/shared/types';
+import { Account, WalletKeyring, Utxo, UtxoAddressSumInfo, Coinnames } from '@/shared/types';
 import { ChainType,NetworkType } from '@/shared/constants';
 
 export interface WalletController {
@@ -41,9 +41,9 @@ export interface WalletController {
   importPrivateKey(wif: string): Promise<void>;
   
   getAddressHistory(account: Account, start: number, limit: number): Promise<any>;
-  updateInit(start: number, limit: number): Promise<{ utxos: utxoType[]; sums: utxoAddressSumInfo[]; conames: conamesType[] }>;
+  updateInit(start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; coinnames: Coinnames[] }>;
 
-  getUtxoSums(): Promise<utxoAddressSumInfo[]>;
+  getUtxoSums(): Promise<UtxoAddressSumInfo[]>;
 
   updateAccountAlianName(accountKey: string, newName: string): Promise<void>;
   updateKeyringAlianName(keyringKey: string, newName: string): Promise<void>;

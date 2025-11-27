@@ -1,8 +1,8 @@
 import { ripemd160 as nobleRipemd160 } from '@noble/hashes/ripemd160';
 import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
 
-import { CHAIN_INFO, ServerConfigurationIndex } from '@/shared/constants';
-import { Account, TxHistoryItem, TxType, utxoType, conamesType } from '@/shared/types';
+import { CHAIN_INFO, ServerConfiguration } from '@/shared/constants';
+import { Account, TxHistoryItem, TxType, Utxo, Coinnames } from '@/shared/types';
 
 import { addressHexToString, hexToBytes } from '../utils';
 import { MsgT } from '../utils/msgTools';
@@ -103,46 +103,46 @@ export class OpenapiService {
     ]);
     if (res.result && Array.isArray(res.result)) {
       console.log('res.result', res.result);
-      const { txHistory, utxotype } = await this.analyzeResult(account, res.result);
+      const { txHistory, utxoItems } = await this.analyzeResult(account, res.result);
       console.log('txHistory', txHistory);
-      console.log('utxotype', utxotype);
-      return { txHistory, utxotype };
+      console.log('utxotype',utxoItems);
+      return { txHistory, utxoItems };
     }
-    return { txHistory: [], utxotype: [] };
+    return { txHistory: [], utxoItems: [] };
   };
 
   update = async (account: Account, start: number, limit: number) => {
     console.log('update', account, start, limit);
-    const { utxotype } = await this.getAddressHistory(account, start, limit);
-    console.log('utxotype_update', utxotype);
+    const { utxoItems } = await this.getAddressHistory(account, start, limit);
+    console.log('utxoItems_update', utxoItems);
     // const utxos = await this.insertutxo(account, analyzed);
     // console.log('utxos', utxos);
     // return utxos;
-    return utxotype;
+    return utxoItems;
   };
 
   fetchTokentype = async (
-    utxos: utxoType[] = [],
+    utxos: Utxo[] = [],
     chainId?: string,
-    conames: conamesType[] = []
-  ): Promise<{ conames: conamesType[] }> => {
+    coinnames: Coinnames[] = []
+  ): Promise<{ coinnames: Coinnames[] }> => {
     const tokenTypes = utxos.map(u => u.tokenType).filter(t => t !== undefined && t !== null && t !== '');
     console.log('tokenTypes', tokenTypes);
     const tokenTypesStr = [...new Set(tokenTypes)].join(',');
     console.log('tokenTypesStr', tokenTypesStr);
     let updated: number = 0;
-    if (conames.length > 0) updated = Math.max(0, ...conames.map((c) => Number(c.updated || 0)));
-    const { serverrequest, chainclass } = ServerConfigurationIndex;
+    if (coinnames.length > 0) updated = Math.max(0, ...coinnames.map((c) => Number(c.updated || 0)));
+    const { serverrequest, chainclass } = ServerConfiguration;
     
-    const url = `http://${serverrequest}/index.php?module=ncx&MOD_op=gettokendef&class=${chainclass}&tokentype=${tokenTypesStr}`+(chainId ? `&chainid=${chainId}` : '')+(updated ? `&updated=${updated}` : '');
+    const url = `${serverrequest}/index.php?module=ncx&MOD_op=gettokendef&class=${chainclass}&tokentype=${tokenTypesStr}`+(chainId ? `&chainid=${chainId}` : '')+(updated ? `&updated=${updated}` : '');
     console.log('url', url);
     const res = await this.httpGet(url);
     console.log('gettokendefres', res);
 
-    const newConames: conamesType[] = [];
+    const newConames: Coinnames[] = [];
     for (let i = 0; i < res.result.length; i++) {
       const item = res.result[i];
-      const coname: conamesType = {
+      const coname: Coinnames = {
         name: String(item?.name ?? ''),
         chainId: item.chainId,
         tokenType: String(item?.tokenType ?? ''),
@@ -158,14 +158,14 @@ export class OpenapiService {
     
     // Save to preference store
     const updatedConames = preferenceService.updateConames(newConames);
-    console.log('Updated conames in preference store', updatedConames);
+    console.log('Updated coinnames in preference store', updatedConames);
 
-    return { conames: updatedConames };
+    return { coinnames: updatedConames };
   };
 
   // 由 analyzeResult 的输出（交易历史项）生成 UTXO 列表
   // insertutxo = async (account: Account, list: TxHistoryItem[]) => {
-  //   const utxotype: utxoType[] = [];
+  //   const utxotype: Utxo[] = [];
 
   //   for (let i = 0; i < list.length; i++) {
   //     const item = list[i] as any;
@@ -176,7 +176,7 @@ export class OpenapiService {
   //       utxotype.splice(existingIndex, 1);
   //     }
 
-  //     // const txItem: utxoType = {
+  //     // const txItem: Utxo = {
   //     //   txid: item.txid,
   //     //   address: item.myaddress,
   //     //   scriptPubKey: item.pkScript,
@@ -260,9 +260,10 @@ export class OpenapiService {
   analyzeResult = async (account: Account, list: any[]) => {
     // 初始化变量
     const txHistory: TxHistoryItem[] = [];
-    const utxotype: utxoType[] = [];
+    const utxotype: Utxo[] = preferenceService.getUtxos();
+    const utxoItems = [];
     // 处理交易输出（UTXO添加）
-    for (let i = 0; i < list.length; i++) {
+    for (let i = list.length - 1; i >= 0; i--) {
       const { tIn, tOut } = this.decodeMsgHex(list[i].hex);
       console.log('tIn', tIn, 'tOut', tOut);
 
@@ -276,6 +277,14 @@ export class OpenapiService {
         if (utxoIndex !== -1) {
           console.log(`Removing spent UTXO: ${previousOutPointHash}:${previousOutPointIndex}`);
           utxotype.splice(utxoIndex, 1);
+        }
+
+        const utxoItemIndex = utxoItems.findIndex(item => 
+            item.txid === previousOutPointHash && item.index === previousOutPointIndex
+        );
+        if (utxoItemIndex !== -1) {
+          console.log(`Removing from utxoItems: ${previousOutPointHash}:${previousOutPointIndex}`);
+          utxoItems.splice(utxoItemIndex, 1);
         }
       }
       for (let j = 0; j < tOut.length; j++) {
@@ -303,29 +312,29 @@ export class OpenapiService {
             pkScript: output.pkScript,
             myaddress: account.address,
           };
-          const txItemUtxo: utxoType = {
+          const txItemUtxo: Utxo = {
             txid: list[i].txid,
             index: j,
             address: account.address,
             scriptPubKey: output.pkScript,
-            blockHeight: list[i].blockHeight,
-            blockHash: list[i].blockHash,
+            blockHeight: list[i].height,
+            blockHash: list[i].blockhash,
             tokenType: output.tokenType.toString(),
             value: output.value.toString(),
             rights: output.rights || [],
           };
           txHistory.push(txItemHistory);
-          utxotype.push(txItemUtxo);
+          utxoItems.push(txItemUtxo);
         }
       }
     }
     // 构建返回的交易历史数据
-    return {txHistory, utxotype};
+    return {txHistory, utxoItems};
   };
 
   // insertutxo = async (account: Account, list: any[]) => {
   //   // 初始化变量
-  //   const utxotype: utxoType[] = [];
+  //   const utxotype: Utxo[] = [];
   //   // 处理交易输出（UTXO添加）
   //   for (let i = 0; i < list.length; i++) {
   //     const { tIn, tOut } = this.decodeMsgHex(list[i].hex);
@@ -341,7 +350,7 @@ export class OpenapiService {
   //     for (let j = 0; j < tOut.length; j++) {
   //       const output = tOut[j];
   //       if (account.addressHex == output.addressHex) {
-  //         const txItem: utxoType = {
+  //         const txItem: Utxo = {
   //           txid: txid,
   //           address: output.address,
   //           scriptPubKey: output.pkScript,
