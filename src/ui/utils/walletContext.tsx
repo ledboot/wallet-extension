@@ -50,6 +50,7 @@ export interface WalletController {
   generatePrePrivateKey(keyringType: string): Promise<any>;
   
   getWIF(address: string): Promise<string>;
+  assetsListsPage(): Promise<{assetsData: Array<UtxoAddressSumInfo & Partial<Coinnames>>, chainName: string}>;
 }
 
 const WalletContext = createContext<WalletController | null>(null);

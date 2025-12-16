@@ -17,6 +17,7 @@ import { openapiService } from '../service';
 import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
 import AssetsList from '@/background/service/assetslist';
 import type { Utxo, UtxoAddressSumInfo, Coinnames } from '@/shared/types';
+import sendService from '@/background/service/send';
 
 export class WalletController {
   timer: any = null;
@@ -78,6 +79,23 @@ export class WalletController {
    * 初始化更新：获取账户最新UTXO并聚合写入loadStore
    */
   updateInit = async (start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; coinnames: Coinnames[] }> => {
+
+    // const chainId1 = CHAIN_INFO[preferenceService.getChainType()].chainId;
+    // const chainIdStr1 = chainId1.toString();
+    // const account1 = await this.getCurrentAccount();
+    // const existingUtxos = preferenceService.getUtxos().filter(utxo => utxo.address === account1?.address);
+    // const { coinnames: fetchedConames } = await openapiService.fetchTokentype(existingUtxos, chainIdStr1);
+    // console.log('fetchedConames', fetchedConames);
+    // const assetsLists1 = await AssetsList.assetsLists();
+    // console.log('assetsLists1', assetsLists1);mszzWYjHEpmGx2LmdZLtud64PADqFHNhHD
+
+    // const tx = await sendService.send(100000000n, 0n, 'mtzcn3r73TypSRctdEPxF1GqhhgWxyxj64', '11111111', 'mjhLuwhSiXJ1dGyvDVoqqruKQLAD2vERC5', 0, 15);
+    // console.log('tx', tx);
+
+    // const blockchains = await openapiService.fetchBlockchains();
+    // console.log('blockchains', blockchains);
+
+
     console.log('updateInit', start, limit);
     this.resetLockTime();
     const account = await this.getCurrentAccount();
@@ -110,13 +128,20 @@ export class WalletController {
       coinnames = fetchedConames;
       console.log('update utxo', utxoItems);
     }
-    const sums = AssetsList.aggregate(...utxoItems);
+    const sums = await AssetsList.aggregate(account.address);
 
-    const assetsLists = AssetsList.assetsLists();
-    console.log('assetsLists', assetsLists);
+    // const assetsLists = await AssetsList.assetsLists();
+    // console.log('assetsLists', assetsLists);
     
     console.log('sums', sums);
     return { sums, coinnames };
+  };
+
+  assetsListsPage = async () => {
+    const assetsLists = await AssetsList.assetsLists();
+    console.log('assetsLists', assetsLists);
+    const chainName = CHAIN_INFO[preferenceService.getChainType()].iconLabel;
+    return {assetsData: assetsLists.assets, chainName};
   };
 
   /**

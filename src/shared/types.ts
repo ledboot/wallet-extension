@@ -41,7 +41,7 @@ export interface TxHistoryItem {
   blockHash: string;
   blockTime: number;
   tokenType: string;
-  value: string;
+  value: number;
   rights: string[];
   confirmations: number;
   pkScript: string;
@@ -75,7 +75,7 @@ export type ChainInfo = {
 export type Utxo = {
   txid: string;
   address: string;
-  value: string;
+  value: number;
   tokenType: string;
   scriptPubKey: string;
   blockHeight: number;

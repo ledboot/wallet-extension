@@ -1,49 +1,61 @@
 import { Utxo, UtxoAddressSumInfo, Coinnames } from '@/shared/types';
-import { CHAIN_INFO } from '@/shared/constants';
+import { CHAIN_INFO, KEYRING_TYPE } from '@/shared/constants';
 import preferenceService from './preference';
 import keyringService from './keyring';
 
 // 工具类：聚合 UTXO，按 address + tokenType + chainId 分组累加 value
 export class AssetsList {
   // 静态方法：调用方无需实例化
-  static aggregate(...utxos: Utxo[]): UtxoAddressSumInfo[] {
-    const map = new Map<string, UtxoAddressSumInfo>();
+  static async aggregate(address: string): Promise<UtxoAddressSumInfo[]> {
+    
     const currentChainId = CHAIN_INFO[preferenceService.getChainType()].chainId;
-
-    const existingSums = preferenceService.getUtxoSums() || [];
-    const existingSumsMap = new Map(
-      existingSums.map(sum => [`${sum.address}|${sum.tokenType}`, sum])
+    const allUtxos = preferenceService.getUtxos();
+    
+    // Filter UTXOs to only include those from current addresses
+    const utxos = allUtxos.filter(utxo => 
+      address === utxo.address
     );
+    
+    // Create a map to group UTXOs by address and tokenType
+    const sumsMap = new Map<string, UtxoAddressSumInfo>();
 
-    for (const u of utxos) {
-      const key = `${u.address}|${u.tokenType}`;
-      const existingSum = existingSumsMap.get(key);
+    for (const utxo of utxos) {
+      const key = `${utxo.address}|${utxo.tokenType}`;
+      const existingSum = sumsMap.get(key);
+
       if (existingSum) {
-        existingSum.value += Number(u.value || 0);
-        if (typeof u.blockHeight === 'number' && 
-          (existingSum.blockHeight === undefined || u.blockHeight > existingSum.blockHeight)) {
-          existingSum.blockHeight = u.blockHeight;
-          existingSum.blockHash = u.blockHash;
+        // If we already have an entry for this address+tokenType, add the value
+        existingSum.value = Number(existingSum.value) + Number(utxo.value);
+        // Update block info if current UTXO has a higher block height
+        if (utxo.blockHeight > existingSum.blockHeight) {
+          existingSum.blockHeight = utxo.blockHeight;
+          existingSum.blockHash = utxo.blockHash;
         }
       } else {
-        map.set(key, {
-          address: u.address,
-          tokenType: u.tokenType,
+        // Otherwise create a new entry
+        sumsMap.set(key, {
+          address: utxo.address,
+          tokenType: utxo.tokenType,
+          value: Number(utxo.value),
           chainId: currentChainId,
-          value: Number(u.value || 0),
-          blockHeight: u.blockHeight,
-          blockHash: u.blockHash,
+          blockHeight: utxo.blockHeight,
+          blockHash: utxo.blockHash
         });
       }
     }
 
-    const sums = Array.from(map.values());
+    // Convert map values to array
+    const sums = Array.from(sumsMap.values());
+    
+    // Update the sums in preference service
+    preferenceService.setUtxoSums([]);
     preferenceService.setUtxoSums(sums);
+    
     return sums;
   }
 
 
-  static assetsLists(): { assets: Array<UtxoAddressSumInfo & Partial<Coinnames>> } {
+  static async assetsLists(): Promise<{ assets: Array<UtxoAddressSumInfo & Partial<Coinnames>> }> {
 
     const existingSums = preferenceService.getUtxoSums() || [];
     const existingConames = preferenceService.getConames() || [];

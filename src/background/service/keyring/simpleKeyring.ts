@@ -22,8 +22,8 @@ interface ECKey {
   getPub(): Uint8Array;
 }
 
-class ECKeyImpl implements ECKey {
-  privateKey: any;
+export class ECKeyImpl implements ECKey {
+  privateKey: any; // secpUtils.Bytes
   compressed: boolean;
 
   constructor(privateKey: any, compressed: boolean) {
@@ -160,6 +160,18 @@ export class SimpleKeyring {
   exportAccount(address: string) {
     const wallet = this.getWalletForAccount(address);
     return wallet.toWIF();
+  }
+
+  exportPrivateKeyHex(address: string): string {
+    const wallet = this.getWalletForAccount(address);
+    console.log('exportPrivateKeyHex wallet pk', wallet.privateKey);
+    return wallet.toHex();
+  }
+
+  exportPrivateKey(address: string): string {
+    const wallet = this.getWalletForAccount(address);
+    console.log('exportPrivateKeyHex wallet pk', wallet.privateKey);
+    return wallet.privateKey;
   }
 
   removeAccount(publicKey: string) {

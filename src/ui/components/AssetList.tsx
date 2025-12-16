@@ -1,12 +1,12 @@
-interface Asset {
-  id: string;
-  symbol: string;
-  name: string;
-  balance: string;
-  usdValue: string;
-  change24h: number;
-  icon: string;
-}
+// interface Asset {
+//   id: string;
+//   symbol: string;
+//   name: string;
+//   balance: string;
+//   usdValue: string;
+//   change24h: number;
+//   icon: string;
+// }
 
 interface NFT {
   id: string;
@@ -17,35 +17,35 @@ interface NFT {
   lastSale: string;
 }
 
-const assets: Asset[] = [
-  {
-    id: 'eth',
-    symbol: 'ETH',
-    name: 'Ethereum',
-    balance: '12.45678',
-    usdValue: '31,234.56',
-    change24h: 2.34,
-    icon: '⟠',
-  },
-  {
-    id: 'usdc',
-    symbol: 'USDC',
-    name: 'USD Coin',
-    balance: '1,250.00',
-    usdValue: '1,250.00',
-    change24h: 0.01,
-    icon: '💵',
-  },
-  {
-    id: 'uni',
-    symbol: 'UNI',
-    name: 'Uniswap',
-    balance: '45.28',
-    usdValue: '567.89',
-    change24h: -1.23,
-    icon: '🦄',
-  },
-];
+// const assets: Asset[] = [
+//   {
+//     id: 'eth',
+//     symbol: 'ETH',
+//     name: 'Ethereum',
+//     balance: '12.45678',
+//     usdValue: '31,234.56',
+//     change24h: 2.34,
+//     icon: '⟠',
+//   },
+//   {
+//     id: 'usdc',
+//     symbol: 'USDC',
+//     name: 'USD Coin',
+//     balance: '1,250.00',
+//     usdValue: '1,250.00',
+//     change24h: 0.01,
+//     icon: '💵',
+//   },
+//   {
+//     id: 'uni',
+//     symbol: 'UNI',
+//     name: 'Uniswap',
+//     balance: '45.28',
+//     usdValue: '567.89',
+//     change24h: -1.23,
+//     icon: '🦄',
+//   },
+// ];
 
 const nfts: NFT[] = [
   {
@@ -74,10 +74,55 @@ const nfts: NFT[] = [
   },
 ];
 
-import { useState } from 'react';
+import AssetsList from '@background/service/assetslist';
+import { useEffect, useState } from 'react';
+import { useWallet } from '@/ui/utils/walletContext';
+import type { UtxoAddressSumInfo, Coinnames } from '@/shared/types';
+import { CHAIN_INFO } from '@/shared/constants';
+import preferenceService from '@/background/service/preference';
+
+type AssetItem = UtxoAddressSumInfo & Partial<Coinnames> & {
+  icon?: string;
+};
 
 export function AssetList() {
   const [activeTab, setActiveTab] = useState<'crypto' | 'nft'>('crypto');
+
+  const [assets, setAssets] = useState<AssetItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [chainName, setChainName] = useState<string>('');
+  const wallet = useWallet();
+
+  const toWIF = wallet.getWIF('mszzWYjHEpmGx2LmdZLtud64PADqFHNhHD');
+  console.log('toWIF', toWIF);
+
+  useEffect(() => {
+    const fetchAssets = async () => {
+      try {
+        setLoading(true);
+        const {assetsData, chainName} = await wallet.assetsListsPage();
+        console.log('Assets data received:', assetsData);
+        setAssets(assetsData);
+        setChainName(chainName);
+      } catch (err) {
+        console.error('Failed to fetch assets:', err);
+        setError('获取资产列表失败，请重试');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssets();
+  }, [wallet]);
+
+  if (loading) {
+    return <div className="p-4 text-center">加载中...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4 text-red-500 text-center">{error}</div>;
+  }
 
   return (
     <div className='w-full sticky top-0 z-10 bg-background h-full flex flex-col'>
@@ -104,26 +149,34 @@ export function AssetList() {
           <div className='space-y-2'>
             {assets.map((asset) => (
               <div
-                key={asset.id}
+                key={asset.tokenType}
                 className='card cursor-pointer border border-base-300 bg-base-100 shadow-sm transition-all hover:shadow-md'
               >
                 <div className='card-body p-3'>
                   <div className='flex items-center justify-between'>
                     <div className='flex items-center space-x-3'>
-                      <div className='flex h-8 w-8 items-center justify-center rounded-full bg-base-200 text-lg'>
-                        {asset.icon}
+                      <div className='flex h-8 w-8 items-center justify-center rounded-full bg-base-200 overflow-hidden'>
+                        <img 
+                          src={asset.html} 
+                          alt={asset.name || '代币图标'} 
+                          className='w-full h-full object-cover'
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/images/default-token.png';
+                          }}
+                        />
                       </div>
                       <div>
-                        <div className='text-sm font-medium'>{asset.symbol}</div>
+                        <div className='text-sm font-medium'>{asset.name}</div>
                         <div className='text-base-content/60 text-xs'>
-                          {asset.name}
+                          {chainName}
                         </div>
                       </div>
                     </div>
 
                     <div className='text-right'>
-                      <div className='text-sm font-medium'>{asset.balance}</div>
-                      <div className='flex items-center space-x-1'>
+                      <div className='text-sm font-medium'>{(asset.value / 1e8).toFixed(8)}</div>
+                      {/* <div className='flex items-center space-x-1'>
                         <span className='text-base-content/60 text-xs'>
                           ${asset.usdValue}
                         </span>
@@ -135,7 +188,7 @@ export function AssetList() {
                           {asset.change24h >= 0 ? '+' : ''}
                           {asset.change24h}%
                         </span>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </div>

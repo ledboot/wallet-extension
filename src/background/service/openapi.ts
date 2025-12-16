@@ -4,7 +4,7 @@ import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
 import { CHAIN_INFO, ServerConfiguration } from '@/shared/constants';
 import { Account, TxHistoryItem, TxType, Utxo, Coinnames } from '@/shared/types';
 
-import { addressHexToString, hexToBytes } from '../utils';
+import { addressHexToString, hexToBytes, bytesToHex } from '../utils';
 import { MsgT } from '../utils/msgTools';
 import preferenceService from './preference';
 
@@ -74,6 +74,7 @@ export class OpenapiService {
   httpGet = async <T = any>(url: string): Promise<{ id: number; error: any; result: T }> => {
     console.log('httpGet', url);
     const headers = new Headers();
+    // headers.append('Content-Type', 'application/json');
     headers.append('Authorization', 'Basic YWRtaW46RkZoNXJM');
     let res: Response;
     try {
@@ -123,17 +124,16 @@ export class OpenapiService {
 
   fetchTokentype = async (
     utxos: Utxo[] = [],
-    chainId?: string,
-    coinnames: Coinnames[] = []
+    chainId?: string
   ): Promise<{ coinnames: Coinnames[] }> => {
+    const coinnames = preferenceService.getConames();
     const tokenTypes = utxos.map(u => u.tokenType).filter(t => t !== undefined && t !== null && t !== '');
     console.log('tokenTypes', tokenTypes);
     const tokenTypesStr = [...new Set(tokenTypes)].join(',');
     console.log('tokenTypesStr', tokenTypesStr);
     let updated: number = 0;
-    if (coinnames.length > 0) updated = Math.max(0, ...coinnames.map((c) => Number(c.updated || 0)));
+    // if (coinnames.length > 0) updated = Math.max(0, ...coinnames.map((c) => Number(c.updated || 0)));
     const { serverrequest, chainclass } = ServerConfiguration;
-    
     const url = `${serverrequest}/index.php?module=ncx&MOD_op=gettokendef&class=${chainclass}&tokentype=${tokenTypesStr}`+(chainId ? `&chainid=${chainId}` : '')+(updated ? `&updated=${updated}` : '');
     console.log('url', url);
     const res = await this.httpGet(url);
@@ -144,8 +144,8 @@ export class OpenapiService {
       const item = res.result[i];
       const coname: Coinnames = {
         name: String(item?.name ?? ''),
-        chainId: item.chainId,
-        tokenType: String(item?.tokenType ?? ''),
+        chainId: Number(item.chainid),
+        tokenType: String(item?.tokentype ?? ''),
         html: String(item?.html ?? ''),
         decimalpoint: Number(item.decimalpoint),
         updated: Number(item?.updated ?? 0),
@@ -161,6 +161,17 @@ export class OpenapiService {
     console.log('Updated coinnames in preference store', updatedConames);
 
     return { coinnames: updatedConames };
+  };
+
+  fetchBlockchains = async () => {
+    const { serverrequest, chainclass } = ServerConfiguration;
+    const maxchainid = 0;
+    const updated = 0;
+    const url = `${serverrequest}/index.php?module=ncx&MOD_op=getblockchains&class=${chainclass}&id=${maxchainid}&updated=${updated}`;
+    console.log('url', url);
+    const res = await this.httpGet(url);
+    console.log('getblockchainsres', res);
+    return res.result;
   };
 
   // 由 analyzeResult 的输出（交易历史项）生成 UTXO 列表
@@ -299,14 +310,14 @@ export class OpenapiService {
           console.log('sender', sender);
           const txItemHistory = {
             txid: list[i].txid,
-            index: j,
+            index: output.outPointIndex,
             address: sender,
             txType: TxType.RECEIVE,
             blockHeight: list[i].height,
             blockHash: list[i].blockhash,
             blockTime: list[i].blocktime,
             tokenType: output.tokenType.toString(),
-            value: output.value.toString(),
+            value: Number(output.value),
             rights: output.rights,
             confirmations: 10,
             pkScript: output.pkScript,
@@ -314,15 +325,16 @@ export class OpenapiService {
           };
           const txItemUtxo: Utxo = {
             txid: list[i].txid,
-            index: j,
+            index: output.outPointIndex,
             address: account.address,
             scriptPubKey: output.pkScript,
             blockHeight: list[i].height,
             blockHash: list[i].blockhash,
             tokenType: output.tokenType.toString(),
-            value: output.value.toString(),
+            value: Number(output.value),
             rights: output.rights || [],
           };
+          console.log('txItemUtxo', txItemUtxo,"output",output);
           txHistory.push(txItemHistory);
           utxoItems.push(txItemUtxo);
         }
@@ -454,6 +466,17 @@ export class OpenapiService {
     const res = await this.httpPost(this.getEndpoint(), 'gbc', []);
     return res;
   };
+
+  srt = async (txhex: any, waitconfirmation: number) => {
+    if (typeof txhex != "string")
+      txhex = bytesToHex(Array.from(txhex.encode(1)));
+    const res = await this.httpPost(this.getEndpoint(), 'srt', [
+      txhex,
+      true,
+      waitconfirmation
+    ]);
+    return res;
+  }
 }
 
 export default new OpenapiService();

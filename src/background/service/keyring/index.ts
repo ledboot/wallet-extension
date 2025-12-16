@@ -5,7 +5,7 @@ import { EventEmitter } from 'eventemitter3';
 import { EVENTS, KEYRING_TYPE } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
 import { ObservableStore } from '@/shared/observableStore';
-import { Account } from '@/shared/types';
+import { Account, Utxo } from '@/shared/types';
 
 import DisplayKeyring from './display';
 import { SimpleKeyring } from './simpleKeyring';
@@ -19,6 +19,12 @@ interface MemStoreState {
   keyringTypes: string[];
   keyrings: any[];
 }
+
+// interface KeyringState {
+
+//   utxosMap: Map<string, Utxo[]>;// address_chainid: Utxo[]
+//   utxoSumsMap: Map<string, UtxoAddressSumInfo[]>;// address_chainid_tokenType: UtxoAddressSumInfo[]
+// }
 
 export interface DisplayedKeyring {
   type: string;
@@ -40,6 +46,8 @@ export interface Keyring {
   addAccounts(n: number): string[];
   getAccounts(): Account[];
   exportAccount(address: string): string;
+  exportPrivateKeyHex(address: string): string;
+  exportPrivateKey(address: string): string;
   removeAccount(address: string): void;
   getIndexByAddress(address: string): number;
   activeAccount(index: number): Account;
@@ -356,6 +364,18 @@ class KeyringService extends EventEmitter {
     return wif;
   };
 
+  exportPrivateKeyHex = (address: string): string => {
+    const keyring = this.getKeyringForAccount(address);
+    const privateKeyHex = keyring.exportPrivateKeyHex(address);
+    return privateKeyHex;
+  };
+
+  exportPrivateKey = (address: string): string => {
+    const keyring = this.getKeyringForAccount(address);
+    const privateKey = keyring.exportPrivateKey(address);
+    return privateKey;
+  };
+
   /**
    *
    * Remove Account
@@ -607,7 +627,7 @@ class KeyringService extends EventEmitter {
     for (let i = 0; i < keyrings.length; i++) {
       const keyring = keyrings[i];
       const accounts = keyring.getAccounts();
-      if (accounts.some((account) => account.addressHex === address)) {
+      if (accounts.some((account) => account.address === address)) {
         return keyring;
       }
     }
