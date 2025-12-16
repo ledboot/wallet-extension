@@ -19,7 +19,6 @@ export class OpenapiService {
 
   getRespData = async <T = any>(res: Response): Promise<{ id: number; error: any; result: T }> => {
     let jsonRes: { id: number; error: any; result: T };
-    console.log('res', res);
 
     if (!res) throw new Error('Network error, no response');
     if (res.status !== 200)
@@ -29,12 +28,6 @@ export class OpenapiService {
       jsonRes = await res.json();
       console.log('jsonRes', jsonRes);
     } catch (e) {
-      console.log('getRespData JSON 解析失败: ', e, '响应内容可能不是合法 JSON');
-      // 打印真实返回体（调试用）
-      try {
-        console.log('返回文本:', await res.clone().text());
-      } catch (_) {}
-      
       throw new Error('Network error, json parse error');
     }
     if (!jsonRes) throw new Error('Network error,no response data');
@@ -46,7 +39,6 @@ export class OpenapiService {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Authorization', 'Basic YWRtaW46RkZoNXJM');
-    // headers.append('Accept', 'application/json');
     let res: Response;
     const requestParams = {
       jsonrpc: '1.0',
@@ -63,7 +55,6 @@ export class OpenapiService {
           headers,
         })
       );
-      console.log('res', res);
       return await this.getRespData<T>(res);
     } catch (e) {
       console.error('httpPost 报错:', e);
@@ -132,9 +123,10 @@ export class OpenapiService {
     const tokenTypesStr = [...new Set(tokenTypes)].join(',');
     console.log('tokenTypesStr', tokenTypesStr);
     let updated: number = 0;
-    // if (coinnames.length > 0) updated = Math.max(0, ...coinnames.map((c) => Number(c.updated || 0)));
-    const { serverrequest, chainclass } = ServerConfiguration;
-    const url = `${serverrequest}/index.php?module=ncx&MOD_op=gettokendef&class=${chainclass}&tokentype=${tokenTypesStr}`+(chainId ? `&chainid=${chainId}` : '')+(updated ? `&updated=${updated}` : '');
+    if (coinnames.length > 0) updated = Math.max(0, ...coinnames.map((c) => Number(c.updated || 0)));
+    const { serverEndpoint, chainclass } = ServerConfiguration;
+    
+    const url = `${serverEndpoint}/omega/index.php?module=ncx&MOD_op=gettokendef&class=${chainclass}&tokentype=${tokenTypesStr}`+(chainId ? `&chainid=${chainId}` : '')+(updated ? `&updated=${updated}` : '');
     console.log('url', url);
     const res = await this.httpGet(url);
     console.log('gettokendefres', res);
