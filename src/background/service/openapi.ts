@@ -130,6 +130,7 @@ export class OpenapiService {
     console.log('url', url);
     const res = await this.httpGet(url);
     console.log('gettokendefres', res);
+    if (!res.result) return { coinnames: [] };
 
     const newConames: Coinnames[] = [];
     for (let i = 0; i < res.result.length; i++) {
@@ -156,10 +157,10 @@ export class OpenapiService {
   };
 
   fetchBlockchains = async () => {
-    const { serverrequest, chainclass } = ServerConfiguration;
+    const { serverEndpoint, chainclass } = ServerConfiguration;
     const maxchainid = 0;
     const updated = 0;
-    const url = `${serverrequest}/index.php?module=ncx&MOD_op=getblockchains&class=${chainclass}&id=${maxchainid}&updated=${updated}`;
+    const url = `${serverEndpoint}/index.php?module=ncx&MOD_op=getblockchains&class=${chainclass}&id=${maxchainid}&updated=${updated}`;
     console.log('url', url);
     const res = await this.httpGet(url);
     console.log('getblockchainsres', res);
