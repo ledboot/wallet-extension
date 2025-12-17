@@ -5,10 +5,11 @@ import { EventEmitter } from 'eventemitter3';
 import { EVENTS, KEYRING_TYPE } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
 import { ObservableStore } from '@/shared/observableStore';
-import { Account, Utxo } from '@/shared/types';
+import { Account, Coinnames, Utxo, UtxoAddressSumInfo } from '@/shared/types';
 
 import DisplayKeyring from './display';
 import { SimpleKeyring } from './simpleKeyring';
+import createPersistStore from '@background/utils/persisitStore';
 
 const KEYRING_SDK_TYPES = new Map([
   [KEYRING_TYPE.SimpleKeyring, SimpleKeyring],
@@ -19,12 +20,24 @@ interface MemStoreState {
   keyringTypes: string[];
   keyrings: any[];
 }
-
+export type UtxosMap = {
+  [key: string]: {  // key 格式为 "address_chainId"
+    utxos: Utxo[];
+  };
+};
 // interface KeyringState {
 
 //   utxosMap: Map<string, Utxo[]>;// address_chainid: Utxo[]
 //   utxoSumsMap: Map<string, UtxoAddressSumInfo[]>;// address_chainid_tokenType: UtxoAddressSumInfo[]
 // }
+
+interface KeyringState {
+  utxoSums: UtxoAddressSumInfo[];
+  coinNames: Coinnames[];
+  utxos: Utxo[];
+  utxosMap: Map<string, Utxo[]>;// address_chainid: Utxo[]
+  utxoSumsMap: Map<string, UtxoAddressSumInfo[]>;// address_chainid_tokenType: UtxoAddressSumInfo[]
+}
 
 export interface DisplayedKeyring {
   type: string;
@@ -737,6 +750,310 @@ class KeyringService extends EventEmitter {
   changeNetwork = () => {
     this.cachedDisplayedKeyring = null;
   }
+
+  UtxoCoin = async () => {
+    const { UtxoCoin} = this.store.getState();
+      if (!UtxoCoin || !UtxoCoin.utxos || !UtxoCoin.utxoSums || !UtxoCoin.coinNames || !UtxoCoin.utxosMap) {
+        this.store.updateState({
+            UtxoCoin: {
+              ...(UtxoCoin || {}), 
+              utxos: UtxoCoin?.utxos || [],
+              utxoSums: UtxoCoin?.utxoSums || [],
+              coinNames: UtxoCoin?.coinNames || [],
+              utxosMap: UtxoCoin?.coinNames || {} as UtxosMap
+            }
+        });
+    }
+  };
+  // 添加 UTXO
+  addUTXO = (utxo: Utxo): Utxo[] => {
+    const { UtxoCoin } = this.store.getState();
+    const updatedUtxos = [...(UtxoCoin.utxos || []), utxo];
+    
+    this.store.updateState({
+      UtxoCoin: {
+        ...UtxoCoin,
+        utxos: updatedUtxos
+      }
+    });
+    
+    return updatedUtxos;
+  };
+  // 批量添加 UTXOs
+  addUTXOs = (utxos: Utxo[]): Utxo[] => {
+    const { UtxoCoin } = this.store.getState();
+    const updatedUtxos = [...(UtxoCoin.utxos || []), ...utxos];
+    
+    this.store.updateState({
+      UtxoCoin: {
+        ...UtxoCoin,
+        utxos: updatedUtxos
+      }
+    });
+    
+    return updatedUtxos;
+  };
+  // 获取所有 UTXOs
+  getUTXOs = (): Utxo[] => {
+    const { UtxoCoin } = this.store.getState();
+    return [...(UtxoCoin.utxos || [])];
+  };
+  // 根据地址获取 UTXOs
+  // getUTXOsByAddress = (address: string): Utxo[] => {
+  //   const { keyringState } = this.store.getState();
+  //   return (keyringState.utxos || []).filter((utxo: { address: string; }) => utxo.address === address);
+  // };
+  // 移除特定 UTXO
+  removeUTXO = (txid: string, vout: number): Utxo[] => {
+    const { UtxoCoin } = this.store.getState();
+    const updatedUtxos = (UtxoCoin.utxos || []).filter(
+      (      // utxo => !(utxo.txid === txid && utxo.vout === vout)
+      utxo: { txid: string; vout: number; }) => !(utxo.txid === txid && utxo.vout === vout)
+    );
+    
+    this.store.updateState({
+      UtxoCoin: {
+        ...UtxoCoin,
+        utxos: updatedUtxos
+      }
+    });
+    
+    return updatedUtxos;
+  };
+  // 清空所有 UTXOs
+  clearUTXOs = (): void => {
+    const { UtxoCoin } = this.store.getState();
+    
+    this.store.updateState({
+      UtxoCoin: {
+        ...UtxoCoin,
+        utxos: []
+      }
+    });
+  };
+  // 更新 UTXO
+updateUTXO = (updatedUtxos: Utxo | Utxo[])=> {
+    const { UtxoCoin } = this.store.getState();
+    const currentUtxos = UtxoCoin.utxos || [];
+    
+    // 将单个 UTXO 转换为数组以统一处理
+    const utxosToUpdate = Array.isArray(updatedUtxos) ? updatedUtxos : [updatedUtxos];
+    
+    // 创建现有 UTXO 的映射以便快速查找
+    const utxoMap = new Map(currentUtxos.map((utxo: { txid: any;}) => [`${utxo.txid}`, utxo]));
+    
+    // 更新或添加新的 UTXO
+    utxosToUpdate.forEach(utxo => {
+        const key = `${utxo.txid}`;
+        utxoMap.set(key, utxo);
+    });
+    
+    // 转换回数组
+    const finalUtxos = Array.from(utxoMap.values());
+    
+    // 更新状态
+    this.store.updateState({
+        UtxoCoin: {
+            ...UtxoCoin,
+            utxos: finalUtxos
+        }
+    });
+};
+
+  addUtxoSum = (utxoSum: UtxoAddressSumInfo[]): UtxoAddressSumInfo[] => {
+    const { UtxoCoin } = this.store.getState();
+    const updatedUtxos = [...(UtxoCoin.utxoSums || []), ...utxoSum];
+    
+    this.store.updateState({
+      UtxoCoin: {
+        ...UtxoCoin,
+        utxoSums: updatedUtxos
+      }
+    });
+    
+    return updatedUtxos;
+  };
+  updateUTXOsum = (newSums: UtxoAddressSumInfo[]) => {
+      const { UtxoCoin } = this.store.getState();
+      const currentSums = UtxoCoin.utxoSums || [];
+      
+      // 创建一个映射，用于快速查找
+      const sumMap = new Map(
+          currentSums.map((sum: { address: string; chainId: number; }) => 
+              [`${sum.address}_${sum.chainId}`, sum]
+          )
+      );
+      
+      // 更新或添加新的汇总信息
+      newSums.forEach(newSum => {
+          const key = `${newSum.address}_${newSum.chainId}`;
+          sumMap.set(key, newSum);
+      });
+      
+      const updatedSums = Array.from(sumMap.values());
+      
+      // 更新状态
+      this.store.updateState({
+          UtxoCoin: {
+              ...UtxoCoin,
+              utxoSums: updatedSums
+          }
+      });
+  };
+  getUTXOsums = (): UtxoAddressSumInfo[] => {
+    const { UtxoCoin } = this.store.getState();
+    return [...(UtxoCoin.utxoSums || [])];
+  };
+  removeUTXOsum = (address: string, chainId: number): UtxoAddressSumInfo[] => {
+    const { UtxoCoin } = this.store.getState();
+    const updatedUtxos = (UtxoCoin.utxoSums || []).filter(
+      (      // utxo => !(utxo.txid === txid && utxo.vout === vout)
+      utxo: { address: string; chainId: number; }) => !(utxo.address === address && utxo.chainId === chainId)
+    );
+    
+    this.store.updateState({
+      UtxoCoin: {
+        ...UtxoCoin,
+        utxoSums: updatedUtxos
+      }
+    });
+    return updatedUtxos;
+  };
+
+  addCoinName = (coinName: Coinnames[]): Coinnames[] => {
+    const { UtxoCoin } = this.store.getState();
+    const updatedUtxos = [...(UtxoCoin.coinNames || []), ...coinName];
+    
+    this.store.updateState({
+      UtxoCoin: {
+        ...UtxoCoin,
+        coinNames: updatedUtxos
+      }
+    });
+    
+    return updatedUtxos;
+  };
+  getCoinNames = (): Coinnames[] => {
+    const { UtxoCoin } = this.store.getState();
+    return [...(UtxoCoin.coinNames || [])];
+  };
+  removeCoinName = (tokenType: string, chainId: number): Coinnames[] => {
+    const { UtxoCoin } = this.store.getState();
+    const updatedUtxos = (UtxoCoin.coinNames || []).filter(
+      (      // utxo => !(utxo.txid === txid && utxo.vout === vout)
+      utxo: { tokenType: string; chainId: number; }) => !(utxo.tokenType === tokenType && utxo.chainId === chainId)
+    );
+    
+    this.store.updateState({
+      UtxoCoin: {
+        ...UtxoCoin,
+        coinNames: updatedUtxos
+      }
+    });
+    return updatedUtxos;
+  };
+  updateCoinName = (updatedCoins: Coinnames[]): Coinnames[] => {
+    const { UtxoCoin } = this.store.getState();
+    const coinNames = UtxoCoin.coinNames || [];
+    let hasChanges = false;
+    updatedCoins.forEach(updatedCoin => {
+        const existingIndex = coinNames.findIndex(
+          (coin: { tokenType: string; chainId: number; }) => 
+                coin.tokenType === updatedCoin.tokenType && 
+                coin.chainId === updatedCoin.chainId
+        );
+
+        if (existingIndex >= 0) {
+            // 更新已存在的币种
+            if (JSON.stringify(coinNames[existingIndex]) !== JSON.stringify(updatedCoin)) {
+                coinNames[existingIndex] = updatedCoin;
+                hasChanges = true;
+            }
+        } else {
+            // 添加新币种
+            coinNames.push(updatedCoin);
+            hasChanges = true;
+        }
+    });
+    
+    if (hasChanges) {
+        this.store.updateState({
+            UtxoCoin: {
+                ...UtxoCoin,
+                coinNames
+            }
+        });
+    }
+    
+    return coinNames;
+};
+
+
+  addUtxosMap(address: string, chainId: number, utxo: Utxo[]) {
+    const { UtxoCoin } = this.store.getState();
+    const key = `${address}_${chainId}`;
+    // const existingUTXOs = UtxoCoin.utxosMap.get(key) || [];
+    // UtxoCoin.utxosMap.set(key, [...existingUTXOs, utxo]);
+
+    // // 获取现有的 UTXOs
+    // const existingUTXOs = UtxoCoin.utxosMap?.get(key) || [];
+    
+    // // 创建新的 Map 实例以保持不可变性
+    // const newUtxosMap = new Map(UtxoCoin.utxosMap || []);
+  
+    // // 更新指定键的值
+    // newUtxosMap.set(key, [...existingUTXOs, ...utxo]);
+    
+    // 更新状态
+    this.store.updateState({
+        UtxoCoin: {
+            ...UtxoCoin,
+            utxosMap: {
+                ...(UtxoCoin?.utxosMap || {}),
+                [key]: {
+                    ...(UtxoCoin?.utxosMap?.[key]?.utxos || []), ...utxo
+                }
+            }
+        }
+    });
+  }
+  getUtxosMap = (address: string, chainId: number): Coinnames[] => {
+    const { UtxoCoin } = this.store.getState();
+    const key = `${address}_${chainId}`;
+    return UtxoCoin?.utxosMap?.[key]?.utxos || [];
+    // const key = `${address}_${chainId}`;
+    // return [...(UtxoCoin.utxosMap.get(key) || [])];
+  };
+  removeUtxosMap = (address: string, chainId: number, txid?: string, index?: number): Utxo[] => {
+  // 获取当前状态
+  const { UtxoCoin } = this.store.getState();
+  const key = `${address}_${chainId}`;
+  const existingUTXOs = UtxoCoin.utxosMap.get(key) || [];
+  
+  // 筛选要保留的 UTXO
+  const updatedUTXOs = txid !== undefined && index !== undefined
+    ? existingUTXOs.filter((utxo: { txid: string; index: number; }) => !(utxo.txid === txid && utxo.index === index))
+    : []; // 如果没有指定具体 UTXO，则清空该地址和链的所有 UTXO
+
+  // 创建新的 Map 以保持不可变性
+  const newUtxosMap = new Map(UtxoCoin.utxosMap);
+  
+  if (updatedUTXOs.length > 0) {
+    newUtxosMap.set(key, updatedUTXOs);
+  } else {
+    newUtxosMap.delete(key); // 如果没有剩余 UTXO，删除该键
+  }
+
+  // 更新状态
+  this.store.updateState({
+    UtxoCoin: {
+      ...UtxoCoin,
+      utxosMap: newUtxosMap
+    }
+  });
+
+  return updatedUTXOs;
+};
 }
 
 export default new KeyringService();

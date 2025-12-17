@@ -249,6 +249,4 @@ export function verifyWalletImportFormat(wif: string, compressed: boolean): bool
     }
   }
   return true;
-
-
 }

@@ -1,7 +1,7 @@
 import { Utxo, UtxoAddressSumInfo, Coinnames } from '@/shared/types';
 import { CHAIN_INFO, KEYRING_TYPE } from '@/shared/constants';
 import preferenceService from './preference';
-import keyringService from './keyring';
+import keyringService from '../service/keyring';
 
 // 工具类：聚合 UTXO，按 address + tokenType + chainId 分组累加 value
 export class AssetsList {
@@ -9,7 +9,7 @@ export class AssetsList {
   static async aggregate(address: string): Promise<UtxoAddressSumInfo[]> {
     
     const currentChainId = CHAIN_INFO[preferenceService.getChainType()].chainId;
-    const allUtxos = preferenceService.getUtxos();
+    const allUtxos = keyringService.getUTXOs();
     
     // Filter UTXOs to only include those from current addresses
     const utxos = allUtxos.filter(utxo => 
@@ -48,8 +48,8 @@ export class AssetsList {
     const sums = Array.from(sumsMap.values());
     
     // Update the sums in preference service
-    preferenceService.setUtxoSums([]);
-    preferenceService.setUtxoSums(sums);
+    keyringService.updateUTXOsum([]);
+    keyringService.updateUTXOsum(sums);
     
     return sums;
   }
@@ -57,8 +57,8 @@ export class AssetsList {
 
   static async assetsLists(): Promise<{ assets: Array<UtxoAddressSumInfo & Partial<Coinnames>> }> {
 
-    const existingSums = preferenceService.getUtxoSums() || [];
-    const existingConames = preferenceService.getConames() || [];
+    const existingSums = keyringService.getUTXOsums() || [];
+    const existingConames = keyringService.getCoinNames() || [];
     
      // Create a map of tokenType to Coinname for quick lookup
     const coinnameMap = new Map(

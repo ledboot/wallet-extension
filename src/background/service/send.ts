@@ -50,10 +50,11 @@ import CryptoJS, { mode } from 'crypto-js';
 // export { ECKeyImpl };
 import { ECKeyImpl, SimpleKeyring } from './keyring/simpleKeyring';
 import { KEYRING_TYPE } from '@/shared/constants';
-import { keyringService } from '.';
+// import { keyringService } from '.';
 import keyring from './keyring';
 import { getPublicKey, utils as secpUtils, sign, Signature, etc, signAsync} from '@noble/secp256k1';
 import {hexToBytes} from '@noble/hashes/utils';
+import keyringService from '../service/keyring';
 
 interface ConditionType {
       level: number;
@@ -278,7 +279,7 @@ export class SendService {
 
   signTransaction = async (tx: MsgT, mode: number, password: string) => {
 
-    const allUtxos = await preferenceService.getUtxos();
+    const allUtxos = await keyringService.getUTXOs();
     for(let i=0; i<tx.tIn.length; i++){
 
       const utxo = allUtxos.find(u => 
@@ -339,7 +340,7 @@ export class SendService {
   }
 
   assets = async (condition: ConditionType) => {
-    const allUtxos = await preferenceService.getUtxos();
+    const allUtxos = await keyringService.getUTXOs();
     let assets = allUtxos.filter(utxo => utxo.address === condition.sendAddress);
     assets.sort((a, b) => {
       // 将值转换为BigInt进行比较

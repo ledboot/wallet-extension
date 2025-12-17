@@ -7,6 +7,7 @@ import { Account, TxHistoryItem, TxType, Utxo, Coinnames } from '@/shared/types'
 import { addressHexToString, hexToBytes, bytesToHex } from '../utils';
 import { MsgT } from '../utils/msgTools';
 import preferenceService from './preference';
+import keyringService from '../service/keyring';
 
 export class OpenapiService {
   constructor() {}
@@ -117,7 +118,7 @@ export class OpenapiService {
     utxos: Utxo[] = [],
     chainId?: string
   ): Promise<{ coinnames: Coinnames[] }> => {
-    const coinnames = preferenceService.getConames();
+    const coinnames = keyringService.getCoinNames();
     const tokenTypes = utxos.map(u => u.tokenType).filter(t => t !== undefined && t !== null && t !== '');
     console.log('tokenTypes', tokenTypes);
     const tokenTypesStr = [...new Set(tokenTypes)].join(',');
@@ -150,7 +151,7 @@ export class OpenapiService {
     console.log('newConames', newConames);
     
     // Save to preference store
-    const updatedConames = preferenceService.updateConames(newConames);
+    const updatedConames = keyringService.updateCoinName(newConames);
     console.log('Updated coinnames in preference store', updatedConames);
 
     return { coinnames: updatedConames };
@@ -264,7 +265,7 @@ export class OpenapiService {
   analyzeResult = async (account: Account, list: any[]) => {
     // 初始化变量
     const txHistory: TxHistoryItem[] = [];
-    const utxotype: Utxo[] = preferenceService.getUtxos();
+    const utxotype: Utxo[] = keyringService.getUTXOs();
     const utxoItems = [];
     // 处理交易输出（UTXO添加）
     for (let i = list.length - 1; i >= 0; i--) {

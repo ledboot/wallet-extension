@@ -74,12 +74,14 @@ export class WalletController {
     }
     eventBus.emit(EVENTS.broadcastToUI, { method: 'unlock', params: {} });
   };
-
+   UtxoCoin = () =>keyringService.UtxoCoin();
+  
   /**
    * 初始化更新：获取账户最新UTXO并聚合写入loadStore
    */
   updateInit = async (start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; coinnames: Coinnames[] }> => {
 
+    
     // const chainId1 = CHAIN_INFO[preferenceService.getChainType()].chainId;
     // const chainIdStr1 = chainId1.toString();
     // const account1 = await this.getCurrentAccount();
@@ -94,7 +96,7 @@ export class WalletController {
 
     // const blockchains = await openapiService.fetchBlockchains();
     // console.log('blockchains', blockchains);
-
+    
 
     console.log('updateInit', start, limit);
     this.resetLockTime();
@@ -106,13 +108,16 @@ export class WalletController {
 
     // Save UTXOs to preference store with block height check
     if (utxoItems.length > 0) {
-      const existingUtxos = preferenceService.getUtxos().filter(utxo => utxo.address === account.address);
+      const existingUtxos = keyringService.getUTXOs().filter(utxo => utxo.address === account.address);
       // const existingUtxos = preferenceService.getUtxos();
       const shouldUpdate = existingUtxos.length === 0 ||
                          utxoItems[0].blockHeight >= existingUtxos[0].blockHeight;
       
       if (shouldUpdate) {
-        preferenceService.updateUtxos(utxoItems);
+        keyringService.updateUTXO(utxoItems);
+        keyringService.addUtxosMap(account.address, CHAIN_INFO[preferenceService.getChainType()].chainId, utxoItems);
+        const utxosMap = keyringService.getUtxosMap(account.address, CHAIN_INFO[preferenceService.getChainType()].chainId);
+        console.log('---utxosMap',utxosMap)
         console.log('UTXOs saved to preference store');
       } else {
         console.log('Skipping UTXO update: New UTXOs are from an older block');
@@ -140,8 +145,13 @@ export class WalletController {
   assetsListsPage = async () => {
     const assetsLists = await AssetsList.assetsLists();
     console.log('assetsLists', assetsLists);
+    const account = await this.getCurrentAccount();
+    // 过滤出当前账户的资产
+    const filteredAssets = assetsLists.assets.filter(asset => 
+        asset.address === account?.address
+    );
     const chainName = CHAIN_INFO[preferenceService.getChainType()].iconLabel;
-    return {assetsData: assetsLists.assets, chainName};
+    return {assetsData: filteredAssets, chainName};
   };
 
   /**

@@ -114,6 +114,23 @@ export function AssetList() {
     };
 
     fetchAssets();
+
+    // 设置定时器
+    const intervalId = setInterval(fetchAssets, 30000);
+    // 添加可见性变化监听
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchAssets(); // 页面变为可见时立即刷新
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // 清理函数
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [wallet]);
 
   if (loading) {
