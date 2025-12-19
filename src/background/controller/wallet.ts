@@ -16,7 +16,7 @@ import preferenceService from '../service/preference';
 import { openapiService } from '../service';
 import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
 import AssetsList from '@/background/service/assetslist';
-import type { Utxo, UtxoAddressSumInfo, Coinnames } from '@/shared/types';
+import type { Utxo, UtxoAddressSumInfo, CoinNames } from '@/shared/types';
 import sendService from '@/background/service/send';
 
 export class WalletController {
@@ -74,19 +74,19 @@ export class WalletController {
     }
     eventBus.emit(EVENTS.broadcastToUI, { method: 'unlock', params: {} });
   };
-   UtxoCoin = () =>keyringService.UtxoCoin();
+  // UtxoCoin = () =>keyringService.UtxoCoin();
   
   /**
    * 初始化更新：获取账户最新UTXO并聚合写入loadStore
    */
-  updateInit = async (start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; coinnames: Coinnames[] }> => {
+  updateInit = async (start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; CoinNames: CoinNames[] }> => {
 
     
     // const chainId1 = CHAIN_INFO[preferenceService.getChainType()].chainId;
     // const chainIdStr1 = chainId1.toString();
     // const account1 = await this.getCurrentAccount();
     // const existingUtxos = preferenceService.getUtxos().filter(utxo => utxo.address === account1?.address);
-    // const { coinnames: fetchedConames } = await openapiService.fetchTokentype(existingUtxos, chainIdStr1);
+    // const { CoinNames: fetchedConames } = await openapiService.fetchTokentype(existingUtxos, chainIdStr1);
     // console.log('fetchedConames', fetchedConames);
     // const assetsLists1 = await AssetsList.assetsLists();
     // console.log('assetsLists1', assetsLists1);mszzWYjHEpmGx2LmdZLtud64PADqFHNhHD
@@ -102,19 +102,19 @@ export class WalletController {
     this.resetLockTime();
     const account = await this.getCurrentAccount();
     console.log('account', account);
-    if (!account) return { sums: [], coinnames: [] };
+    if (!account) return { sums: [], CoinNames: [] };
 
     const utxoItems = await openapiService.update(account, start, limit);
 
     // Save UTXOs to preference store with block height check
     if (utxoItems.length > 0) {
-      const existingUtxos = keyringService.getUTXOs().filter(utxo => utxo.address === account.address);
+      const existingUtxos = keyringService.getUtxos().filter(utxo => utxo.address === account.address);
       // const existingUtxos = preferenceService.getUtxos();
       const shouldUpdate = existingUtxos.length === 0 ||
                          utxoItems[0].blockHeight >= existingUtxos[0].blockHeight;
       
       if (shouldUpdate) {
-        keyringService.updateUTXO(utxoItems);
+        keyringService.updateUtxos(utxoItems);
         keyringService.addUtxosMap(account.address, CHAIN_INFO[preferenceService.getChainType()].chainId, utxoItems);
         const utxosMap = keyringService.getUtxosMap(account.address, CHAIN_INFO[preferenceService.getChainType()].chainId);
         console.log('---utxosMap',utxosMap)
@@ -126,11 +126,11 @@ export class WalletController {
 
     const chainId = CHAIN_INFO[preferenceService.getChainType()].chainId;
     const chainIdStr = chainId.toString();
-    let coinnames: Coinnames[] = [];
+    let CoinNames: CoinNames[] = [];
     if (utxoItems.length > 0) {
-      const { coinnames: fetchedConames } = await openapiService.fetchTokentype(utxoItems, chainIdStr);
-      console.log('wallet coinnames:', fetchedConames);
-      coinnames = fetchedConames;
+      const { CoinNames: fetchedConames } = await openapiService.fetchTokentype(utxoItems, chainIdStr);
+      console.log('wallet CoinNames:', fetchedConames);
+      CoinNames = fetchedConames;
       console.log('update utxo', utxoItems);
     }
     const sums = await AssetsList.aggregate(account.address);
@@ -139,7 +139,7 @@ export class WalletController {
     // console.log('assetsLists', assetsLists);
     
     console.log('sums', sums);
-    return { sums, coinnames };
+    return { sums, CoinNames };
   };
 
   assetsListsPage = async () => {

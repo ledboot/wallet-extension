@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 
-import { Account, WalletKeyring, Utxo, UtxoAddressSumInfo, Coinnames } from '@/shared/types';
+import { Account, WalletKeyring, Utxo, UtxoAddressSumInfo, CoinNames } from '@/shared/types';
 import { ChainType,NetworkType } from '@/shared/constants';
 
 export interface WalletController {
@@ -41,7 +41,7 @@ export interface WalletController {
   importPrivateKey(wif: string): Promise<void>;
   
   getAddressHistory(account: Account, start: number, limit: number): Promise<any>;
-  updateInit(start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; coinnames: Coinnames[] }>;
+  updateInit(start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; CoinNames: CoinNames[] }>;
 
   getUtxoSums(): Promise<UtxoAddressSumInfo[]>;
 
@@ -50,7 +50,8 @@ export interface WalletController {
   generatePrePrivateKey(keyringType: string): Promise<any>;
   
   getWIF(address: string): Promise<string>;
-  assetsListsPage(): Promise<{assetsData: Array<UtxoAddressSumInfo & Partial<Coinnames>>, chainName: string}>;
+  assetsListsPage(): Promise<{assetsData: Array<UtxoAddressSumInfo & Partial<CoinNames>>, chainName: string}>;
+
 }
 
 const WalletContext = createContext<WalletController | null>(null);

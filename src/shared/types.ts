@@ -95,7 +95,7 @@ export type UtxoAddressSumInfo = {
 
 export const CONAMES_DEFAULT_CHAIN_ID = 1;
 export const CONAMES_DEFAULT_DECIMALPOINT = 0;
-export type Coinnames = {
+export type CoinNames = {
   name: string;
   chainId: number; // default: 1
   tokenType: string;

@@ -2,7 +2,7 @@
 import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
 
 // import { CHAIN_INFO, ServerConfiguration } from '@/shared/constants';
-// import { Account, TxHistoryItem, TxType, Utxo, Coinnames } from '@/shared/types';
+// import { Account, TxHistoryItem, TxType, Utxo, CoinNames } from '@/shared/types';
 
 // import { addressHexToString, hexToBytes } from '../utils';
 // import preferenceService from './preference';
@@ -279,7 +279,7 @@ export class SendService {
 
   signTransaction = async (tx: MsgT, mode: number, password: string) => {
 
-    const allUtxos = await keyringService.getUTXOs();
+    const allUtxos = await keyringService.getUtxos();
     for(let i=0; i<tx.tIn.length; i++){
 
       const utxo = allUtxos.find(u => 
@@ -340,7 +340,7 @@ export class SendService {
   }
 
   assets = async (condition: ConditionType) => {
-    const allUtxos = await keyringService.getUTXOs();
+    const allUtxos = await keyringService.getUtxos();
     let assets = allUtxos.filter(utxo => utxo.address === condition.sendAddress);
     assets.sort((a, b) => {
       // 将值转换为BigInt进行比较

@@ -2,7 +2,7 @@ import { ripemd160 as nobleRipemd160 } from '@noble/hashes/ripemd160';
 import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
 
 import { CHAIN_INFO, ServerConfiguration } from '@/shared/constants';
-import { Account, TxHistoryItem, TxType, Utxo, Coinnames } from '@/shared/types';
+import { Account, TxHistoryItem, TxType, Utxo, CoinNames } from '@/shared/types';
 
 import { addressHexToString, hexToBytes, bytesToHex } from '../utils';
 import { MsgT } from '../utils/msgTools';
@@ -117,26 +117,26 @@ export class OpenapiService {
   fetchTokentype = async (
     utxos: Utxo[] = [],
     chainId?: string
-  ): Promise<{ coinnames: Coinnames[] }> => {
-    const coinnames = keyringService.getCoinNames();
+  ): Promise<{ CoinNames: CoinNames[] }> => {
+    const CoinNames = keyringService.getCoinNames();
     const tokenTypes = utxos.map(u => u.tokenType).filter(t => t !== undefined && t !== null && t !== '');
     console.log('tokenTypes', tokenTypes);
     const tokenTypesStr = [...new Set(tokenTypes)].join(',');
     console.log('tokenTypesStr', tokenTypesStr);
     let updated: number = 0;
-    if (coinnames.length > 0) updated = Math.max(0, ...coinnames.map((c) => Number(c.updated || 0)));
+    if (CoinNames.length > 0) updated = Math.max(0, ...CoinNames.map((c) => Number(c.updated || 0)));
     const { serverEndpoint, chainclass } = ServerConfiguration;
     
     const url = `${serverEndpoint}/omega/index.php?module=ncx&MOD_op=gettokendef&class=${chainclass}&tokentype=${tokenTypesStr}`+(chainId ? `&chainid=${chainId}` : '')+(updated ? `&updated=${updated}` : '');
     console.log('url', url);
     const res = await this.httpGet(url);
     console.log('gettokendefres', res);
-    if (!res.result) return { coinnames: [] };
+    if (!res.result) return { CoinNames: [] };
 
-    const newConames: Coinnames[] = [];
+    const newConames: CoinNames[] = [];
     for (let i = 0; i < res.result.length; i++) {
       const item = res.result[i];
-      const coname: Coinnames = {
+      const coname: CoinNames = {
         name: String(item?.name ?? ''),
         chainId: Number(item.chainid),
         tokenType: String(item?.tokentype ?? ''),
@@ -151,10 +151,11 @@ export class OpenapiService {
     console.log('newConames', newConames);
     
     // Save to preference store
-    const updatedConames = keyringService.updateCoinName(newConames);
-    console.log('Updated coinnames in preference store', updatedConames);
+    keyringService.addCoinName(newConames);
+    const updatedConames = keyringService.getCoinNames();
+    console.log('Updated CoinNames in preference store', updatedConames);
 
-    return { coinnames: updatedConames };
+    return { CoinNames: updatedConames };
   };
 
   fetchBlockchains = async () => {
@@ -265,7 +266,7 @@ export class OpenapiService {
   analyzeResult = async (account: Account, list: any[]) => {
     // 初始化变量
     const txHistory: TxHistoryItem[] = [];
-    const utxotype: Utxo[] = keyringService.getUTXOs();
+    const utxotype: Utxo[] = keyringService.getUtxos();
     const utxoItems = [];
     // 处理交易输出（UTXO添加）
     for (let i = list.length - 1; i >= 0; i--) {

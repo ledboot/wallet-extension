@@ -77,11 +77,11 @@ const nfts: NFT[] = [
 import AssetsList from '@background/service/assetslist';
 import { useEffect, useState } from 'react';
 import { useWallet } from '@/ui/utils/walletContext';
-import type { UtxoAddressSumInfo, Coinnames } from '@/shared/types';
+import type { UtxoAddressSumInfo, CoinNames } from '@/shared/types';
 import { CHAIN_INFO } from '@/shared/constants';
 import preferenceService from '@/background/service/preference';
 
-type AssetItem = UtxoAddressSumInfo & Partial<Coinnames> & {
+type AssetItem = UtxoAddressSumInfo & Partial<CoinNames> & {
   icon?: string;
 };
 

@@ -1,4 +1,4 @@
-import { Utxo, UtxoAddressSumInfo, Coinnames } from '@/shared/types';
+import { Utxo, UtxoAddressSumInfo, CoinNames } from '@/shared/types';
 import { CHAIN_INFO, KEYRING_TYPE } from '@/shared/constants';
 import preferenceService from './preference';
 import keyringService from '../service/keyring';
@@ -9,7 +9,7 @@ export class AssetsList {
   static async aggregate(address: string): Promise<UtxoAddressSumInfo[]> {
     
     const currentChainId = CHAIN_INFO[preferenceService.getChainType()].chainId;
-    const allUtxos = keyringService.getUTXOs();
+    const allUtxos = keyringService.getUtxos();
     
     // Filter UTXOs to only include those from current addresses
     const utxos = allUtxos.filter(utxo => 
@@ -47,17 +47,15 @@ export class AssetsList {
     // Convert map values to array
     const sums = Array.from(sumsMap.values());
     
-    // Update the sums in preference service
-    keyringService.updateUTXOsum([]);
-    keyringService.updateUTXOsum(sums);
+    keyringService.updateUtxoSum(sums);
     
     return sums;
   }
 
 
-  static async assetsLists(): Promise<{ assets: Array<UtxoAddressSumInfo & Partial<Coinnames>> }> {
+  static async assetsLists(): Promise<{ assets: Array<UtxoAddressSumInfo & Partial<CoinNames>> }> {
 
-    const existingSums = keyringService.getUTXOsums() || [];
+    const existingSums = keyringService.getUtxoSum() || [];
     const existingConames = keyringService.getCoinNames() || [];
     
      // Create a map of tokenType to Coinname for quick lookup
@@ -65,7 +63,7 @@ export class AssetsList {
         existingConames.map(coin => [coin.tokenType, coin])
     );
 
-    // Filter and map existingSums to include matching coinnames
+    // Filter and map existingSums to include matching CoinNames
     // Merge data where tokenType matches
     const mergedAssets = existingSums.map(sum => {
         const coinInfo = coinnameMap.get(sum.tokenType);

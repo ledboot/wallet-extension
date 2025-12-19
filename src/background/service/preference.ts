@@ -5,7 +5,7 @@ import {
   AnexBalance,
   TxHistoryItem,
   UtxoAddressSumInfo,
-  Coinnames,
+  CoinNames,
   Utxo,
 } from '@/shared/types';
 
@@ -32,7 +32,7 @@ export interface PreferenceStore {
     [key: string]: string;
   };
   // utxoSums: UtxoAddressSumInfo[];
-  // coinnames: Coinnames[];
+  // CoinNames: CoinNames[];
   // utxos: Utxo[];
 }
 
@@ -68,7 +68,7 @@ class PreferenceService {
         addressFlags: {},
         keyringAlianNames: {},
         // utxoSums: [],
-        // coinnames: [],
+        // CoinNames: [],
         // utxos: [],
       },
     });
@@ -186,13 +186,13 @@ class PreferenceService {
     this.store.chainType = chainTyp;
   };
 
-  // coinnames management
-  // setConames = (coinnames: Coinnames[]) => {
-  //   this.store.coinnames = coinnames;
+  // CoinNames management
+  // setConames = (CoinNames: CoinNames[]) => {
+  //   this.store.CoinNames = CoinNames;
   // };
 
   // getConames = () => {
-  //   return this.store.coinnames || [];
+  //   return this.store.CoinNames || [];
   // };
 
   // // UTXOs management
@@ -220,19 +220,19 @@ class PreferenceService {
   //   return this.store.utxos;
   // };
 
-  // updateConames = (newConames: Coinnames[]) => {
+  // updateConames = (newConames: CoinNames[]) => {
   //   const existingConames = this.getConames();
   //   const conamesMap = new Map(
   //     existingConames.map(coname => [coname.tokenType, coname])
   //   );
 
-  //   // Update or add new coinnames
+  //   // Update or add new CoinNames
   //   newConames.forEach(coname => {
   //     conamesMap.set(coname.tokenType, coname);
   //   });
 
-  //   this.store.coinnames = Array.from(conamesMap.values());
-  //   return this.store.coinnames;
+  //   this.store.CoinNames = Array.from(conamesMap.values());
+  //   return this.store.CoinNames;
   // };
 
   // setUtxoSums = (utxoSums: UtxoAddressSumInfo[]) => {
