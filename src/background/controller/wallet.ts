@@ -17,7 +17,6 @@ import { openapiService } from '../service';
 import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
 import AssetsList from '@/background/service/assetslist';
 import type { Utxo, UtxoAddressSumInfo, CoinNames } from '@/shared/types';
-import sendService from '@/background/service/send';
 
 export class WalletController {
   timer: any = null;

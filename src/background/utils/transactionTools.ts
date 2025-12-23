@@ -1,7 +1,7 @@
 import Address from './address';
 import { bytesToHex, hexToBytes } from "./index";
 import { TinDef, ToutDef } from "./defs";
-import { keyringService } from "@background/service";
+import { keyringService } from "../service";
 import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
 import { signAsync } from "@noble/secp256k1";
 import { getPublicKey } from "@noble/secp256k1";
