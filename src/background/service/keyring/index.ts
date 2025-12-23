@@ -763,6 +763,21 @@ class KeyringService extends EventEmitter {
   getUtxos = (): Utxo[] => {
     return this.store.getState().utxos || [];
   };
+
+  getUtxosByAddress = (address: string): Utxo[] => {
+    const utxos = this.store.getState().utxos?.filter((utxo: { address: string; }) => utxo.address === address) || [];
+    utxos.sort((a: Utxo, b: Utxo) => {
+      // 将值转换为BigInt进行比较
+      const valueA = BigInt(a.value);
+      const valueB = BigInt(b.value);
+
+      // 按值降序排序（从大到小）
+      if (valueA > valueB) return -1;
+      if (valueA < valueB) return 1;
+      return 0;
+    });
+    return utxos;
+  };
   // 根据地址获取 UTXOs
   // getUTXOsByAddress = (address: string): Utxo[] => {
   //   const { keyringState } = this.store.getState();

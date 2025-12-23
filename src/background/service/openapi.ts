@@ -9,6 +9,8 @@ import { MsgT } from '../utils/msgTools';
 import preferenceService from './preference';
 import keyringService from '../service/keyring';
 
+import Address from '../utils/address';
+import { buildTx, signTransaction } from '../utils/transactionTools';
 export class OpenapiService {
   constructor() {}
 
@@ -462,7 +464,7 @@ export class OpenapiService {
     return res;
   };
 
-  srt = async (txhex: any, waitconfirmation: number) => {
+  sendRawTransaction = async (txhex: any, waitconfirmation: number) => {
     if (typeof txhex != "string")
       txhex = bytesToHex(Array.from(txhex.encode(1)));
     const res = await this.httpPost(this.getEndpoint(), 'srt', [
@@ -471,6 +473,37 @@ export class OpenapiService {
       waitconfirmation
     ]);
     return res;
+  }
+
+  transfer = async ( amount: bigint, tokenType: bigint, receivedAddress: string, password: string, senderAddress: string, crosschain: number, timeLimit: number) => {
+    var adb = Array.from(Address.decodeString(receivedAddress));
+        const op = adb[0] === 0 || adb[0] === 0x6f ? 0x41 : adb[0] === 0x78 ? 0x43 : 0x42;
+        adb = adb.concat([op, 0, 0, 0]);
+        const pks = bytesToHex(adb);
+        const merge = (receivedAddress === senderAddress);
+    
+        let tx = await buildTx(tokenType, amount, pks, senderAddress, false, false, merge, crosschain);
+    
+        if(timeLimit){
+          const height = await this.gbc();
+          if(!height || height.error) tx.version = 0x11;
+          else {
+            tx.version = 0x41;
+            tx.lockTime = height.result + timeLimit;
+          }
+        }
+    
+        const r = await signTransaction(tx, 1, password);
+        // const raw = r.encode(1)
+        // // const rawTx = bytesToHex2(raw)
+        // const rawTx = bytesToHex(raw)
+        // console.log('rawTx', rawTx);
+        const hextx = await this.sendRawTransaction(r, 0);
+        // console.log('hextx', hextx);
+    
+        // hextx.expire = tx.lockTime;
+    
+        return hextx;
   }
 }
 
