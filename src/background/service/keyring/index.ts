@@ -754,10 +754,12 @@ class KeyringService extends EventEmitter {
 
   // 批量添加 Utxos, newUtxos新增的
   updateUtxos = (newUtxos: Utxo[]) => {
-    // const { UtxoCoin } = this.store.getState();
-    // const updatedUtxos = [...(UtxoCoin.utxos || []), ...utxos];
-    this.store.updateState({ utxos: newUtxos })
-
+    const utxos = this.getUtxos()
+    const utxoMap = new Map(utxos.map(u => [`${u.txid}:${u.index}`, u]))
+    for (const u of newUtxos) {
+      utxoMap.set(`${u.txid}:${u.index}`, u)
+    }
+    this.store.updateState({ utxos: [...utxoMap.values()] })
   };
   // 获取所有 Utxos
   getUtxos = (): Utxo[] => {
@@ -826,11 +828,15 @@ class KeyringService extends EventEmitter {
   //     }
   //   });
   // };
-
+  
   updateUtxoSum = (newSums: UtxoAddressSumInfo[]) => {
-    this.store.updateState({
-      utxoSum: newSums
-    });
+    // this.store.updateState({utxoSum: newSums});
+    const utxoSum = this.getUtxoSum()
+    const utxoSumMap = new Map(utxoSum.map(u => [`${u.address}:${u.chainId}:${u.tokenType}`, u]))
+    for (const u of newSums) {
+      utxoSumMap.set(`${u.address}:${u.chainId}:${u.tokenType}`, u)
+    }
+    this.store.updateState({ utxoSum: [...utxoSumMap.values()] })
   };
 
   getUtxoSum = (): UtxoAddressSumInfo[] => {
