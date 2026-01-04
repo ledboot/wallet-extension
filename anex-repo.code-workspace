@@ -1,0 +1,12 @@
+{
+    "folders": [
+        {
+            "name": "wallet-extension",
+            "path": "."
+        },
+        {
+            "name": "old-extension",
+            "path": "../ANEX"
+        }
+    ]
+}

@@ -198,36 +198,6 @@ export class OpenapiService {
     return res.result;
   };
 
-  // 由 analyzeResult 的输出（交易历史项）生成 UTXO 列表
-  // insertutxo = async (account: Account, list: TxHistoryItem[]) => {
-  //   const utxotype: Utxo[] = [];
-
-  //   for (let i = 0; i < list.length; i++) {
-  //     const item = list[i] as any;
-
-  //     // 如果该 txid 已在 utxotype 中存在，先删除旧的，避免重复
-  //     const existingIndex = utxotype.findIndex((u) => u.txid === item.txid);
-  //     if (existingIndex >= 0) {
-  //       utxotype.splice(existingIndex, 1);
-  //     }
-
-  //     // const txItem: Utxo = {
-  //     //   txid: item.txid,
-  //     //   address: item.myaddress,
-  //     //   scriptPubKey: item.pkScript,
-  //     //   blockHeight: item.blockHeight,
-  //     //   blockHash: item.blockHash,
-  //     //   tokenType: String(item.tokenType),
-  //     //   value: item.value.toString(),
-  //     //   rights: item.rights || [],
-  //     // };
-  //     // utxotype.push(txItem);
-  //   }
-
-  //   console.log('utxotype(from analyzed)', utxotype);
-  //   return utxotype;
-  // };
-
   decodeMsgHex = (hex: string) => {
     const msgtx = new MsgT();
     msgtx.rawDecode(hex);
@@ -238,7 +208,6 @@ export class OpenapiService {
     const tIn: any[] = [];
     for (let j = 0; j < txOUtLen; j++) {
       const output = msgtx?.tOut[j];
-      console.log('output', output);
 
       // 跳过无效输出
       if (output.isSeparator()) continue;
@@ -334,16 +303,14 @@ export class OpenapiService {
         const output = tOut[j];
         if (account.addressHex == output.addressHex) {
           console.log('tIn', tIn);
-          if (tIn.length === 0) {
-            continue;
+          let sender = '';
+          if (tIn.length > 0) {
+            const previousTx = await this.getRawTransaction(
+              tIn[0].previousOutPointHash
+            );
+            const { tOut: previousTxOut } = this.decodeMsgHex(previousTx);
+            sender = previousTxOut[0].address;
           }
-          const previousTx = await this.getRawTransaction(
-            tIn[0].previousOutPointHash
-          );
-          const { tOut: previousTxOut } = this.decodeMsgHex(previousTx);
-          console.log('previousTxOut', previousTxOut);
-          const sender = previousTxOut[0].address;
-          console.log('sender', sender);
           const txItemHistory = {
             txid: list[i].txid,
             index: output.outPointIndex,
@@ -563,25 +530,33 @@ export class OpenapiService {
     return hextx;
   };
 
-
-  computeTransactioFeesMax = async ( tokenType: number, senderAddress: string) =>{
+  computeTransactioFeesMax = async (
+    tokenType: number,
+    senderAddress: string
+  ) => {
     let fees = 0;
     const addrs: string[] = [];
     const assets = keyringService.getUtxosByAddress(senderAddress || '');
     fees += assets.length * 356;
-    for(let i = 0; i < assets.length; i++) {
-      if(addrs.findIndex(e => e == assets[i].address) < 0){
+    for (let i = 0; i < assets.length; i++) {
+      if (addrs.findIndex((e) => e == assets[i].address) < 0) {
         addrs.push(assets[i].address);
         fees += 240;
       }
     }
-    if(tokenType === 0 || tokenType ===16) fees += 1400;
+    if (tokenType === 0 || tokenType === 16) fees += 1400;
     return fees;
-  }
+  };
 
-  computeTransactioFees = async ( tokenType: number, senderAddress: string, amount: number, receivedAddress: string) =>{
+  computeTransactioFees = async (
+    tokenType: number,
+    senderAddress: string,
+    amount: number,
+    receivedAddress: string
+  ) => {
     var adb = Array.from(Address.decodeString(receivedAddress));
-    const op = adb[0] === 0 || adb[0] === 0x6f ? 0x41 : adb[0] === 0x78 ? 0x43 : 0x42;
+    const op =
+      adb[0] === 0 || adb[0] === 0x6f ? 0x41 : adb[0] === 0x78 ? 0x43 : 0x42;
     adb = adb.concat([op, 0, 0, 0]);
     const receivedPks = bytesToHex(adb);
     var fees = 1200 + (receivedPks ? receivedPks.length : 0);
@@ -591,10 +566,10 @@ export class OpenapiService {
     const addrs: string[] = [];
     let sum = 0;
     var minTxfee = 0;
-    for(let i = 0; i < assets.length; i++) {
+    for (let i = 0; i < assets.length; i++) {
       sum += assets[i].value;
       fees += 356;
-      if(addrs.findIndex(e => e == assets[i].address) < 0){
+      if (addrs.findIndex((e) => e == assets[i].address) < 0) {
         addrs.push(assets[i].address);
         fees += 240;
       }
@@ -604,7 +579,7 @@ export class OpenapiService {
       if (sum - minTxfee >= amount) break;
     }
     return minTxfee;
-  }
+  };
 }
 
 export default new OpenapiService();
