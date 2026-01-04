@@ -80,6 +80,7 @@ import { useWallet } from '@/ui/utils/walletContext';
 import type { UtxoAddressSumInfo, CoinNames } from '@/shared/types';
 import { CHAIN_INFO } from '@/shared/constants';
 import preferenceService from '@/background/service/preference';
+import { Wallet } from 'lucide-react';
 
 type AssetItem = UtxoAddressSumInfo & Partial<CoinNames> & {
   icon?: string;
@@ -116,7 +117,7 @@ export function AssetList() {
     fetchAssets();
 
     // 设置定时器
-    const intervalId = setInterval(fetchAssets, 30000);
+    const intervalId = setInterval(fetchAssets, 3000);
     // 添加可见性变化监听
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -164,7 +165,16 @@ export function AssetList() {
       {activeTab === 'crypto' && (
         <div className='mt-4'>
           <div className='space-y-2'>
-            {assets.map((asset) => (
+            {assets.length === 0 ? (
+              <div className='flex flex-col items-center justify-center h-64 p-4 text-center'>
+                <div className='w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4'>
+                  <Wallet className='w-8 h-8 text-gray-400' />
+                </div>
+                <div className='text-gray-400 text-lg font-medium mb-2'>没有找到代币</div>
+                <div className='text-gray-500 text-sm'>您当前没有可用的代币</div>
+              </div>
+            ) : (
+              assets.map((asset) => (
               <div
                 key={asset.tokenType}
                 className='card cursor-pointer border border-base-300 bg-base-100 shadow-sm transition-all hover:shadow-md'
@@ -174,7 +184,7 @@ export function AssetList() {
                     <div className='flex items-center space-x-3'>
                       <div className='flex h-8 w-8 items-center justify-center rounded-full bg-base-200 overflow-hidden'>
                         <img 
-                          src={asset.html} 
+                          src={asset.iconHtml} 
                           alt={asset.name || '代币图标'} 
                           className='w-full h-full object-cover'
                           onError={(e) => {
@@ -210,7 +220,7 @@ export function AssetList() {
                   </div>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       )}

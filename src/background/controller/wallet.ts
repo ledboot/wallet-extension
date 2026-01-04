@@ -16,7 +16,7 @@ import preferenceService from '../service/preference';
 import { openapiService } from '../service';
 import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
 import AssetsList from '@/background/service/assetslist';
-import type { Utxo, UtxoAddressSumInfo, CoinNames } from '@/shared/types';
+import type { Utxo, UtxoAddressSumInfo, CoinNames, transferAddressHistory } from '@/shared/types';
 
 export class WalletController {
   timer: any = null;
@@ -78,7 +78,7 @@ export class WalletController {
   /**
    * 初始化更新：获取账户最新UTXO并聚合写入loadStore
    */
-  updateInit = async (start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; CoinNames: CoinNames[] }> => {
+  updateInit = async (start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; CoinNames: CoinNames[]; utxoItems: Utxo[] }> => {
 
     
     // const chainId1 = CHAIN_INFO[preferenceService.getChainType()].chainId;
@@ -87,10 +87,10 @@ export class WalletController {
     // const existingUtxos = preferenceService.getUtxos().filter(utxo => utxo.address === account1?.address);
     // const { CoinNames: fetchedConames } = await openapiService.fetchTokentype(existingUtxos, chainIdStr1);
     // console.log('fetchedConames', fetchedConames);
-    // const assetsLists1 = await AssetsList.assetsLists();
+    // const assetsLists1 = await AssetsList.assetsLists();mjhLuwhSiXJ1dGyvDVoqqruKQLAD2vERC5
     // console.log('assetsLists1', assetsLists1);mszzWYjHEpmGx2LmdZLtud64PADqFHNhHD
 
-    // const tx = await sendService.send(100000000n, 0n, 'mtzcn3r73TypSRctdEPxF1GqhhgWxyxj64', '11111111', 'mjhLuwhSiXJ1dGyvDVoqqruKQLAD2vERC5', 0, 15);
+    // const tx = await openapiService.transfer(10000000n, 0n, 'mjhLuwhSiXJ1dGyvDVoqqruKQLAD2vERC5', '12345678', 'mtzcn3r73TypSRctdEPxF1GqhhgWxyxj64', 0, 15);
     // console.log('tx', tx);
 
     // const blockchains = await openapiService.fetchBlockchains();
@@ -101,7 +101,7 @@ export class WalletController {
     this.resetLockTime();
     const account = await this.getCurrentAccount();
     console.log('account', account);
-    if (!account) return { sums: [], CoinNames: [] };
+    if (!account) return { sums: [], CoinNames: [], utxoItems: []};
 
     const utxoItems = await openapiService.update(account, start, limit);
 
@@ -138,7 +138,7 @@ export class WalletController {
     // console.log('assetsLists', assetsLists);
     
     console.log('sums', sums);
-    return { sums, CoinNames };
+    return { sums, CoinNames, utxoItems };
   };
 
   assetsListsPage = async () => {
@@ -471,9 +471,9 @@ export class WalletController {
   /**
    * 获取已聚合的 UTXO 汇总（用于确定最新的 blockHeight）
    */
-  getUtxoSums = async (): Promise<UtxoAddressSumInfo[]> => {
+  getUtxoSum = async (): Promise<UtxoAddressSumInfo[]> => {
     const state = (keyringService as any)?.store?.getState?.() || {};
-    return state.utxoSums || [];
+    return state.utxoSum || [];
   };
 
   /**
@@ -503,6 +503,41 @@ export class WalletController {
       params: {}
     });
   };
+
+  getTransferAddressHistory = async () : Promise<transferAddressHistory[]>=> {
+    const addresses = keyringService.getTransferAddressHistory();
+    return addresses;
+  }
+  
+  updateTransferAddressesHistory = async (newAddress: string) => {
+    const addresses = newAddress.includes(',') 
+      ? newAddress.split(',').map(addr => addr.trim()).filter(addr => addr.length > 0)
+      : [newAddress];
+    const historyList: transferAddressHistory[] = addresses.map(address => ({
+      address,
+      updated: Date.now()
+    }));
+    keyringService.updateTransferAddressesHistory(historyList);
+  }
+
+  getTransferFees = async (tokenType: number, senderAddress: string, isAll: boolean, amount?: string, receivedAddress?: string) => {
+    let fees = 0;
+    if (isAll) {
+      fees = await openapiService.computeTransactioFeesMax(tokenType, senderAddress);
+    } else {
+      fees = await openapiService.computeTransactioFees(tokenType, senderAddress, Number(amount), receivedAddress || '');
+    }
+    return fees;
+  }
+  transfer = async ( amount: string, tokenType: string, receivedAddress: string, password: string, senderAddress: string, crosschain: number, timeLimit: number) => {
+    const res = await openapiService.transfer(BigInt(Number(amount) * 1e8), BigInt(Number(tokenType)), receivedAddress, password, senderAddress, crosschain, timeLimit)
+    let result = null;
+    if (res && res.result) {
+      result = res.result;
+    }
+    console.log('transfer res:', res);
+    return result;
+  }
 }
 
 

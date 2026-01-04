@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Check, ChevronDown, Copy, Globe, Settings } from 'lucide-react';
+import { Check, ChevronDown, Copy, Globe, Settings, RefreshCw } from 'lucide-react';
 import { useNavigate } from '@/ui/pages/mainRoute';
 import { useCurrentAccount } from '@/ui/state/hooks';
 import { toast } from 'sonner';
 
-export function WalletHeader() {
+interface WalletHeaderProps {
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+}
+
+export function WalletHeader({ onRefresh, isRefreshing = false }: WalletHeaderProps) {
   const navigate = useNavigate();
   const currentAccount = useCurrentAccount();
   const [shortAddress, setShortAddress] = useState('');
@@ -54,6 +59,23 @@ export function WalletHeader() {
             )}
           </button>
         </div>
+         <button
+          className={`p-1.5 rounded-full ${
+            isRefreshing
+              ? 'text-gray-400 cursor-not-allowed' 
+              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+          } transition-colors`}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onRefresh && !isRefreshing) {
+              onRefresh();
+            }
+          }}
+          disabled={isRefreshing}
+          title="刷新"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </button>
       </div>
       <div className='flex items-center space-x-2'>
         <Settings className='h-7 w-7 p-1 cursor-pointer hover:bg-gray-100 rounded' />

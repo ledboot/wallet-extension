@@ -1,7 +1,15 @@
 import { Utxo, UtxoAddressSumInfo, CoinNames } from '@/shared/types';
-import { CHAIN_INFO, KEYRING_TYPE } from '@/shared/constants';
+import { CHAIN_INFO, KEYRING_TYPE, ChainType } from '@/shared/constants';
 import preferenceService from './preference';
 import keyringService from '../service/keyring';
+
+// 辅助函数：根据 chainId 获取链的显示名称
+function getChainLabel(chainId: number): string {
+  const chainEntry = Object.entries(CHAIN_INFO).find(
+    ([_, info]) => info.chainId === chainId
+  );
+  return chainEntry ? chainEntry[1].iconLabel : 'Unknown Chain';
+}
 
 // 工具类：聚合 UTXO，按 address + tokenType + chainId 分组累加 value
 export class AssetsList {
@@ -53,7 +61,7 @@ export class AssetsList {
   }
 
 
-  static async assetsLists(): Promise<{ assets: Array<UtxoAddressSumInfo & Partial<CoinNames>> }> {
+  static async assetsLists(): Promise<{ assets: Array<UtxoAddressSumInfo & Partial<CoinNames> & { chainLabel: string }> }> {
 
     const existingSums = keyringService.getUtxoSum() || [];
     const existingConames = keyringService.getCoinNames() || [];
@@ -63,13 +71,14 @@ export class AssetsList {
         existingConames.map(coin => [coin.tokenType, coin])
     );
 
-    // Filter and map existingSums to include matching CoinNames
-    // Merge data where tokenType matches
+    // Filter and map existingSums to include matching CoinNames and chain label
     const mergedAssets = existingSums.map(sum => {
         const coinInfo = coinnameMap.get(sum.tokenType);
         return {
             ...sum,
-            ...(coinInfo || {})
+            ...(coinInfo || {}),
+            chainId: sum.chainId,
+            chainLabel: getChainLabel(sum.chainId)
         };
     });
 

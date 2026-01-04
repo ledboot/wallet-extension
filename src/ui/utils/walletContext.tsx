@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 
-import { Account, WalletKeyring, Utxo, UtxoAddressSumInfo, CoinNames } from '@/shared/types';
+import { Account, WalletKeyring, Utxo, UtxoAddressSumInfo, CoinNames, transferAddressHistory } from '@/shared/types';
 import { ChainType,NetworkType } from '@/shared/constants';
 
 export interface WalletController {
@@ -41,9 +41,9 @@ export interface WalletController {
   importPrivateKey(wif: string): Promise<void>;
   
   getAddressHistory(account: Account, start: number, limit: number): Promise<any>;
-  updateInit(start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; CoinNames: CoinNames[] }>;
+  updateInit(start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; CoinNames: CoinNames[]; utxoItems: Utxo[]}>;
 
-  getUtxoSums(): Promise<UtxoAddressSumInfo[]>;
+  getUtxoSum(): Promise<UtxoAddressSumInfo[]>;
 
   updateAccountAlianName(accountKey: string, newName: string): Promise<void>;
   updateKeyringAlianName(keyringKey: string, newName: string): Promise<void>;
@@ -51,6 +51,10 @@ export interface WalletController {
   
   getWIF(address: string): Promise<string>;
   assetsListsPage(): Promise<{assetsData: Array<UtxoAddressSumInfo & Partial<CoinNames>>, chainName: string}>;
+  getTransferAddressHistory(): Promise<transferAddressHistory[]>;
+  updateTransferAddressesHistory(newAddress: string): Promise<void>;
+  getTransferFees(tokenType: number, senderAddress: string, isAll: boolean, amount?: string, receivedAddress?: string): Promise<number>;
+  transfer(amount: string, tokenType: string, receivedAddress: string, password: string, senderAddress: string, crosschain: number, timeLimit: number): Promise<any>;
 
 }
 

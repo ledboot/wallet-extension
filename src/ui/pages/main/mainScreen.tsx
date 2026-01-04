@@ -20,7 +20,7 @@ export default function MainScreen() {
     (async () => {
       const [account, sums] = await Promise.all([
         wallet.getCurrentAccount(),
-        wallet.getUtxoSums(),
+        wallet.getUtxoSum(),
       ]);
       // console.log('account', account);
       // console.log('sums', sums);
@@ -34,43 +34,77 @@ export default function MainScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleRefresh = async () => {
+    // 获取当前最新区块高度并开始同步
+    const [account, sums] = await Promise.all([
+      wallet.getCurrentAccount(),
+      wallet.getUtxoSum(),
+    ]);
+    const latest = (Array.isArray(sums)
+      ? sums.find((s) => s.blockHeight && s.blockHeight > 0)?.blockHeight
+      : 0) || 0;
+    
+    runUpdate(latest, 2048);
+  };
+
+  // return (
+  //   <div className="h-screen flex flex-col">
+  //     {/* 固定在顶部的 WalletHeader */}
+  //     <WalletHeader />
+      
+  //     {/* 可滚动的内容区域 */}
+  //     <div className="flex-1 overflow-y-auto hide-scrollbar">
+  //       <div className="flex flex-col">
+  //         {/* WalletActions 区域 */}
+  //         <div className="flex items-center justify-center p-4">
+  //           <WalletActions />
+  //         </div>
+          
+  //         {/* AssetList 区域 */}
+  //         <AssetList />
+  //       </div>
+  //     </div>
+
+  //     <div className="p-4 border-t border-gray-200">
+  //       <button
+  //         className={`w-full py-2 rounded-md text-white ${
+  //           loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+  //         }`}
+  //         onClick={async () => {
+  //           const [account, sums] = await Promise.all([
+  //             wallet.getCurrentAccount(),
+  //             wallet.getUtxoSum(),
+  //           ]);
+  //           const latest = (Array.isArray(sums)
+  //             ? sums.find((s) => s.address === account?.address)?.blockHeight
+  //             : 0) || 0;
+  //           runUpdate(latest, 2048);
+  //         }}
+  //         disabled={loading}
+  //       >
+  //         {loading ? '刷新中…' : '刷新'}
+  //       </button>
+  //     </div>
+  //   </div>
+  // );
+
   return (
     <div className="h-screen flex flex-col">
       {/* 固定在顶部的 WalletHeader */}
-      <WalletHeader />
+      <WalletHeader onRefresh={handleRefresh} isRefreshing={loading} />
       
-      {/* 可滚动的内容区域 */}
-      <div className="flex-1 overflow-y-auto hide-scrollbar">
+      <div className="flex-1 overflow-y-auto px-4 pb-4 pt-2 hide-scrollbar">
         <div className="flex flex-col">
           {/* WalletActions 区域 */}
           <div className="flex items-center justify-center p-4">
             <WalletActions />
           </div>
           
-          {/* AssetList 区域 */}
-          <AssetList />
+          {/* 资产列表 */}
+          <div className="mt-2">
+            <AssetList />
+          </div>
         </div>
-      </div>
-
-      <div className="p-4 border-t border-gray-200">
-        <button
-          className={`w-full py-2 rounded-md text-white ${
-            loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-          }`}
-          onClick={async () => {
-            const [account, sums] = await Promise.all([
-              wallet.getCurrentAccount(),
-              wallet.getUtxoSums(),
-            ]);
-            const latest = (Array.isArray(sums)
-              ? sums.find((s) => s.address === account?.address)?.blockHeight
-              : 0) || 0;
-            runUpdate(latest, 2048);
-          }}
-          disabled={loading}
-        >
-          {loading ? '刷新中…' : '刷新'}
-        </button>
       </div>
     </div>
   );

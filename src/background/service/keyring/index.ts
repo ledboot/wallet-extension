@@ -5,7 +5,7 @@ import { EventEmitter } from 'eventemitter3';
 import { EVENTS, KEYRING_TYPE } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
 import { ObservableStore } from '@/shared/observableStore';
-import { Account, CoinNames, Utxo, UtxoAddressSumInfo } from '@/shared/types';
+import { Account, CoinNames, Utxo, UtxoAddressSumInfo, transferAddressHistory } from '@/shared/types';
 
 import DisplayKeyring from './display';
 import { SimpleKeyring } from './simpleKeyring';
@@ -942,8 +942,21 @@ class KeyringService extends EventEmitter {
   };
 
   getUtxosAllMap = (): Utxo[] => {
-    return this.store.getState().utxoMap || [];
-  };
+      return this.store.getState().utxoMap || [];
+    };
+
+  updateTransferAddressesHistory = (newAddressHistory: transferAddressHistory[]) => {
+    const transferAddressHistory = this.getTransferAddressHistory();
+    const existingHistoryMap = new Map(transferAddressHistory.map(u => [`${u.address}`, u]));
+    for (const u of newAddressHistory) {
+      existingHistoryMap.set(`${u.address}`, u)
+    }
+    this.store.updateState({ transferAddressHistory: [...existingHistoryMap.values()] })
+  }
+
+  getTransferAddressHistory = (): transferAddressHistory[] => {
+    return this.store.getState().transferAddressHistory || []
+  }
 
 }
 

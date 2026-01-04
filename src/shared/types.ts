@@ -99,11 +99,16 @@ export type CoinNames = {
   name: string;
   chainId: number; // default: 1
   tokenType: string;
-  html: string;
+  iconHtml: string;
   decimalpoint: number; // default: '0'
   updated?: number;
   currency?:number;
 };
+
+export type transferAddressHistory = {
+  address: string;
+  updated?: number; // Defaults to 0 if not provided
+}
 
  
   

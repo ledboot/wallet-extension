@@ -6,7 +6,9 @@ export function WalletActions() {
 
   return (
     <div className='grid w-full grid-cols-4 gap-3'>
-      <button className='bg-wallet-card border-border hover:border-primary/50 btn btn-outline flex h-16 flex-col space-y-1 transition-all'>
+      <button 
+      onClick={() => navigate('TokenSelectionScreen')}
+      className='bg-wallet-card border-border hover:border-primary/50 btn btn-outline flex h-16 flex-col space-y-1 transition-all'>
         <Send className='h-5 w-5' />
         <span className='text-xs'>Send</span>
       </button>

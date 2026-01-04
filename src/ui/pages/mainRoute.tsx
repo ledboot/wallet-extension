@@ -12,6 +12,12 @@ import History from './wallet/History';
 import NetworkSelection from './network/NetworkSelection';
 import Receive from './wallet/Receive';
 
+// Import transfer screens
+import TokenSelectionScreen from './wallet/transfer/TokenSelectionScreen';
+import RecipientAddressScreen from './wallet/transfer/RecipientAddressScreen';
+import AmountInputScreen from './wallet/transfer/AmountInputScreen';
+import TransactionConfirmScreen from './wallet/transfer/TransactionConfirmScreen';
+
 const routes = {
  BoostScreen: {
     path: '/',
@@ -48,6 +54,23 @@ const routes = {
   AccountSelection: {
     path: '/account/selection',
     element: <AccountSelection />,
+  },
+  // Transfer flow routes
+  TokenSelectionScreen: {
+    path: '/wallet/transfer/select-token',
+    element: <TokenSelectionScreen />,
+  },
+  RecipientAddressScreen: {
+    path: '/wallet/transfer/recipient-address',
+    element: <RecipientAddressScreen />,
+  },
+  AmountInputScreen: {
+    path: '/wallet/transfer/amount-input',
+    element: <AmountInputScreen />,
+  },
+  TransactionConfirmScreen: {
+    path: '/wallet/transfer/confirm',
+    element: <TransactionConfirmScreen />,
   },
   HistoryScreen: {
     path: '/wallet/history',

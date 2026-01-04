@@ -142,7 +142,7 @@ export class OpenapiService {
         name: String(item?.name ?? ''),
         chainId: Number(item.chainid),
         tokenType: String(item?.tokentype ?? ''),
-        html: String(item?.html ?? ''),
+        iconHtml: String(item?.html ?? ''),
         decimalpoint: Number(item.decimalpoint),
         updated: Number(item?.updated ?? 0),
         currency: Number(item?.currency ?? 0),
@@ -504,6 +504,49 @@ export class OpenapiService {
         // hextx.expire = tx.lockTime;
     
         return hextx;
+  }
+
+
+  computeTransactioFeesMax = async ( tokenType: number, senderAddress: string) =>{
+    let fees = 0;
+    const addrs: string[] = [];
+    const assets = keyringService.getUtxosByAddress(senderAddress || '');
+    fees += assets.length * 356;
+    for(let i = 0; i < assets.length; i++) {
+      if(addrs.findIndex(e => e == assets[i].address) < 0){
+        addrs.push(assets[i].address);
+        fees += 240;
+      }
+    }
+    if(tokenType === 0 || tokenType ===16) fees += 1400;
+    return fees;
+  }
+
+  computeTransactioFees = async ( tokenType: number, senderAddress: string, amount: number, receivedAddress: string) =>{
+    var adb = Array.from(Address.decodeString(receivedAddress));
+    const op = adb[0] === 0 || adb[0] === 0x6f ? 0x41 : adb[0] === 0x78 ? 0x43 : 0x42;
+    adb = adb.concat([op, 0, 0, 0]);
+    const receivedPks = bytesToHex(adb);
+    var fees = 1200 + (receivedPks ? receivedPks.length : 0);
+
+    const inclfee = tokenType === 0;
+    const assets = keyringService.getUtxosByAddress(senderAddress || '');
+    const addrs: string[] = [];
+    let sum = 0;
+    var minTxfee = 0;
+    for(let i = 0; i < assets.length; i++) {
+      sum += assets[i].value;
+      fees += 356;
+      if(addrs.findIndex(e => e == assets[i].address) < 0){
+        addrs.push(assets[i].address);
+        fees += 240;
+      }
+      if (inclfee) {
+        minTxfee = Math.max(fees, 1000);
+      }
+      if (sum - minTxfee >= amount) break;
+    }
+    return minTxfee;
   }
 }
 
