@@ -9,7 +9,6 @@ import { Account, CoinNames, Utxo, UtxoAddressSumInfo, transferAddressHistory } 
 
 import DisplayKeyring from './display';
 import { SimpleKeyring } from './simpleKeyring';
-import createPersistStore from '@background/utils/persisitStore';
 
 const KEYRING_SDK_TYPES = new Map([
   [KEYRING_TYPE.SimpleKeyring, SimpleKeyring],
@@ -632,8 +631,9 @@ class KeyringService extends EventEmitter {
    */
   getKeyringForAccount = (
     address: string,
-    type?: string
+    type: string = KEYRING_TYPE.SimpleKeyring
   ): Keyring => {
+    console.log('getKeyringForAccount', address, type);
     const keyrings = type
       ? this.keyrings.filter((keyring) => keyring.type === type)
       : this.keyrings;

@@ -1,3 +1,12 @@
+import { useEffect, useState } from 'react';
+import type { CoinNames, UtxoAddressSumInfo } from '@/shared/types';
+import AssetsList from '@background/service/assetslist';
+import { Wallet } from 'lucide-react';
+
+import preferenceService from '@/background/service/preference';
+import { CHAIN_INFO } from '@/shared/constants';
+import { useWallet } from '@/ui/utils/walletContext';
+
 // interface Asset {
 //   id: string;
 //   symbol: string;
@@ -74,17 +83,10 @@ const nfts: NFT[] = [
   },
 ];
 
-import AssetsList from '@background/service/assetslist';
-import { useEffect, useState } from 'react';
-import { useWallet } from '@/ui/utils/walletContext';
-import type { UtxoAddressSumInfo, CoinNames } from '@/shared/types';
-import { CHAIN_INFO } from '@/shared/constants';
-import preferenceService from '@/background/service/preference';
-import { Wallet } from 'lucide-react';
-
-type AssetItem = UtxoAddressSumInfo & Partial<CoinNames> & {
-  icon?: string;
-};
+type AssetItem = UtxoAddressSumInfo &
+  Partial<CoinNames> & {
+    icon?: string;
+  };
 
 export function AssetList() {
   const [activeTab, setActiveTab] = useState<'crypto' | 'nft'>('crypto');
@@ -95,14 +97,11 @@ export function AssetList() {
   const [chainName, setChainName] = useState<string>('');
   const wallet = useWallet();
 
-  const toWIF = wallet.getWIF('mszzWYjHEpmGx2LmdZLtud64PADqFHNhHD');
-  console.log('toWIF', toWIF);
-
   useEffect(() => {
     const fetchAssets = async () => {
       try {
         setLoading(true);
-        const {assetsData, chainName} = await wallet.assetsListsPage();
+        const { assetsData, chainName } = await wallet.assetsListsPage();
         console.log('Assets data received:', assetsData);
         setAssets(assetsData);
         setChainName(chainName);
@@ -124,7 +123,7 @@ export function AssetList() {
         fetchAssets(); // 页面变为可见时立即刷新
       }
     };
-    
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // 清理函数
@@ -135,75 +134,83 @@ export function AssetList() {
   }, [wallet]);
 
   if (loading) {
-    return <div className="p-4 text-center">加载中...</div>;
+    return <div className='p-4 text-center'>加载中...</div>;
   }
 
   if (error) {
-    return <div className="p-4 text-red-500 text-center">{error}</div>;
+    return <div className='p-4 text-center text-red-500'>{error}</div>;
   }
 
   return (
-    <div className='w-full sticky top-0 z-10 bg-background h-full flex flex-col'>
-      <div className='px-4 pt-2 pb-2 border-b border-gray-200'>
+    <div className='sticky top-0 z-10 flex h-full w-full flex-col bg-background'>
+      <div className='border-b border-gray-200 px-4 pb-2 pt-2'>
         <div className='tabs tabs-border'>
-        <a 
-          className={`tab ${activeTab === 'crypto' ? 'tab-active' : ''}`}
-          onClick={() => setActiveTab('crypto')}
-        >
-          Crypto
-        </a>
-        <a 
-          className={`tab ${activeTab === 'nft' ? 'tab-active' : ''}`}
-          onClick={() => setActiveTab('nft')}
-        >
-          NFT
-        </a>
+          <a
+            className={`tab ${activeTab === 'crypto' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('crypto')}
+          >
+            Crypto
+          </a>
+          <a
+            className={`tab ${activeTab === 'nft' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('nft')}
+          >
+            NFT
+          </a>
         </div>
       </div>
-      <div className='flex-1 overflow-y-auto px-4 pb-4 pt-2 hide-scrollbar'>
-      {/* Crypto Tab Content */}
-      {activeTab === 'crypto' && (
-        <div className='mt-4'>
-          <div className='space-y-2'>
-            {assets.length === 0 ? (
-              <div className='flex flex-col items-center justify-center h-64 p-4 text-center'>
-                <div className='w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4'>
-                  <Wallet className='w-8 h-8 text-gray-400' />
+      <div className='hide-scrollbar flex-1 overflow-y-auto px-4 pb-4 pt-2'>
+        {/* Crypto Tab Content */}
+        {activeTab === 'crypto' && (
+          <div className='mt-4'>
+            <div className='space-y-2'>
+              {assets.length === 0 ? (
+                <div className='flex h-64 flex-col items-center justify-center p-4 text-center'>
+                  <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800'>
+                    <Wallet className='h-8 w-8 text-gray-400' />
+                  </div>
+                  <div className='mb-2 text-lg font-medium text-gray-400'>
+                    没有找到代币
+                  </div>
+                  <div className='text-sm text-gray-500'>
+                    您当前没有可用的代币
+                  </div>
                 </div>
-                <div className='text-gray-400 text-lg font-medium mb-2'>没有找到代币</div>
-                <div className='text-gray-500 text-sm'>您当前没有可用的代币</div>
-              </div>
-            ) : (
-              assets.map((asset) => (
-              <div
-                key={asset.tokenType}
-                className='card cursor-pointer border border-base-300 bg-base-100 shadow-sm transition-all hover:shadow-md'
-              >
-                <div className='card-body p-3'>
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center space-x-3'>
-                      <div className='flex h-8 w-8 items-center justify-center rounded-full bg-base-200 overflow-hidden'>
-                        <img 
-                          src={asset.iconHtml} 
-                          alt={asset.name || '代币图标'} 
-                          className='w-full h-full object-cover'
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '/images/default-token.png';
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <div className='text-sm font-medium'>{asset.name}</div>
-                        <div className='text-base-content/60 text-xs'>
-                          {chainName}
+              ) : (
+                assets.map((asset) => (
+                  <div
+                    key={asset.tokenType}
+                    className='card cursor-pointer border border-base-300 bg-base-100 shadow-sm transition-all hover:shadow-md'
+                  >
+                    <div className='card-body p-3'>
+                      <div className='flex items-center justify-between'>
+                        <div className='flex items-center space-x-3'>
+                          <div className='flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-base-200'>
+                            <img
+                              src={asset.iconHtml}
+                              alt={asset.name || '代币图标'}
+                              className='h-full w-full object-cover'
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = '/images/default-token.png';
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <div className='text-sm font-medium'>
+                              {asset.name}
+                            </div>
+                            <div className='text-base-content/60 text-xs'>
+                              {chainName}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
 
-                    <div className='text-right'>
-                      <div className='text-sm font-medium'>{(asset.value / 1e8).toFixed(8)}</div>
-                      {/* <div className='flex items-center space-x-1'>
+                        <div className='text-right'>
+                          <div className='text-sm font-medium'>
+                            {(asset.value / 1e8).toFixed(8)}
+                          </div>
+                          {/* <div className='flex items-center space-x-1'>
                         <span className='text-base-content/60 text-xs'>
                           ${asset.usdValue}
                         </span>
@@ -216,51 +223,54 @@ export function AssetList() {
                           {asset.change24h}%
                         </span>
                       </div> */}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )))}
-          </div>
-        </div>
-      )}
-
-      {/* NFT Tab Content */}
-      {activeTab === 'nft' && (
-        <div className='mt-4'>
-          <div className='space-y-2'>
-            {nfts.map((nft) => (
-              <div
-                key={nft.id}
-                className='card cursor-pointer border border-base-300 bg-base-100 shadow-sm transition-all hover:shadow-md'
-              >
-                <div className='card-body p-3'>
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center space-x-3'>
-                      <div className='flex h-12 w-12 items-center justify-center rounded-lg bg-base-200 text-2xl'>
-                        {nft.image}
-                      </div>
-                      <div>
-                        <div className='text-sm font-medium'>{nft.name}</div>
-                        <div className='text-base-content/60 text-xs'>
-                          {nft.collection}
                         </div>
                       </div>
                     </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
 
-                    <div className='text-right'>
-                      <div className='text-sm font-medium'>Floor: {nft.floorPrice}</div>
-                      <div className='text-base-content/60 text-xs'>
-                        Last: {nft.lastSale}
+        {/* NFT Tab Content */}
+        {activeTab === 'nft' && (
+          <div className='mt-4'>
+            <div className='space-y-2'>
+              {nfts.map((nft) => (
+                <div
+                  key={nft.id}
+                  className='card cursor-pointer border border-base-300 bg-base-100 shadow-sm transition-all hover:shadow-md'
+                >
+                  <div className='card-body p-3'>
+                    <div className='flex items-center justify-between'>
+                      <div className='flex items-center space-x-3'>
+                        <div className='flex h-12 w-12 items-center justify-center rounded-lg bg-base-200 text-2xl'>
+                          {nft.image}
+                        </div>
+                        <div>
+                          <div className='text-sm font-medium'>{nft.name}</div>
+                          <div className='text-base-content/60 text-xs'>
+                            {nft.collection}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className='text-right'>
+                        <div className='text-sm font-medium'>
+                          Floor: {nft.floorPrice}
+                        </div>
+                        <div className='text-base-content/60 text-xs'>
+                          Last: {nft.lastSale}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </div>
   );

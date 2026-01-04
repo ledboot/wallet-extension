@@ -1,26 +1,21 @@
 import { compareVersions } from 'compare-versions';
 
-import { ChainType, DEFAULT_LOCKTIME_ID, NetworkType } from '@/shared/constants';
 import {
-  AnexBalance,
-  TxHistoryItem,
-  UtxoAddressSumInfo,
-  CoinNames,
-  Utxo,
-} from '@/shared/types';
+  ChainType,
+  DEFAULT_LOCKTIME_ID,
+  NetworkType,
+} from '@/shared/constants';
 
 import createPersistStore from '../utils/persisitStore';
 
 export interface PreferenceStore {
   currentKeyringKey: string;
   currentAccountIndex: number;
-  balance: AnexBalance;
   locale: string;
   networkType: NetworkType;
   chainType: ChainType;
   currentVersion: string;
   firstOpen: boolean;
-  txHistory: TxHistoryItem[];
   enableSignData: boolean;
   autoLockTimeId: number;
   openInSidePanel: boolean;
@@ -31,9 +26,6 @@ export interface PreferenceStore {
   keyringAlianNames: {
     [key: string]: string;
   };
-  // utxoSums: UtxoAddressSumInfo[];
-  // CoinNames: CoinNames[];
-  // utxos: Utxo[];
 }
 
 // const SUPPORTED_LOCALES = ['en', 'zh_CN'];
@@ -50,9 +42,6 @@ class PreferenceService {
       template: {
         currentKeyringKey: '',
         currentAccountIndex: 0,
-        balance: {
-          amount: 0n,
-        },
         locale: 'en',
         // networkType: NetworkType.MAINNET,
         // chainType: ChainType.ZENT_MAINNET,
@@ -60,31 +49,19 @@ class PreferenceService {
         chainType: ChainType.ZENT_TESTNET,
         currentVersion: '0',
         firstOpen: false,
-        txHistory: [],
         enableSignData: false,
         autoLockTimeId: DEFAULT_LOCKTIME_ID,
         openInSidePanel: false,
         accountAlianNames: {},
         addressFlags: {},
         keyringAlianNames: {},
-        // utxoSums: [],
-        // CoinNames: [],
-        // utxos: [],
       },
     });
 
-    // if (!Array.isArray(this.store.utxoSums)) {
-    //   this.store.utxoSums = [];
-    //   this.store.utxoSums = [...this.store.utxoSums]; // 强制保存
-    // }
     if (typeof this.store.autoLockTimeId !== 'number') {
       this.store.autoLockTimeId = DEFAULT_LOCKTIME_ID;
     }
-    // if (!Array.isArray(this.store.utxos)) {
-    //   this.store.utxos = [];
-    //   this.store.utxos = [...this.store.utxos]; // 强制保存
-    //   console.log('utxos', this.store.utxos);
-    // }
+
   };
 
   getIsFirstOpen = () => {
@@ -249,7 +226,7 @@ class PreferenceService {
   //     existingSums.map(sum => [`${sum.address}|${sum.tokenType}`, sum])
   //   );
 
-    // Update or add new sums
+  // Update or add new sums
   //   newSums.forEach(sum => {
   //     sumsMap.set(`${sum.address}|${sum.tokenType}`, sum);
   //   });

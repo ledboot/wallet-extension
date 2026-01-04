@@ -5,6 +5,7 @@ export enum ChainType {
   ZENT_TESTNET = 'ZENT_TESTNET',
   HOVM_MAINNET = 'HOVM_MAINNET',
   GCT_TESTNET = 'GCT_TESTNET',
+  ZENT_LOCAL = 'ZENT_LOCAL',
 }
 
 export enum NetworkType {
@@ -96,6 +97,15 @@ export const CHAIN_INFO: { [key in ChainType]: ChainInfo } = {
     unit: 'GCT',
     networkType: NetworkType.TESTNET,
   },
+  [ChainType.ZENT_LOCAL]: {
+    label: 'ZENT Local',
+    iconLabel: 'ZENT',
+    chainId: 0x1,
+    endpoints: ['http://localhost:7700'],
+    icon: './images/artifacts/bitcoin-mainnet.svg',
+    unit: 'ZENT',
+    networkType: NetworkType.TESTNET,
+  },
 };
 
 export const AUTO_LOCK_TIMES = [
@@ -124,10 +134,10 @@ export const DEFAULT_LOCKTIME_ID = 5;
 
 export const MainnetPrivateKeyPrefix = 0x80;
 export const MainnetAddressPrefix = 0;
-export const TestnetPrivateKeyPrefix = 0xEF;
-export const TestnetAddressPrefix = 0x6F;
+export const TestnetPrivateKeyPrefix = 0xef;
+export const TestnetAddressPrefix = 0x6f;
 
 export const ServerConfiguration = {
-  serverEndpoint: "http://omegasuite.org",
+  serverEndpoint: 'http://omegasuite.org',
   chainclass: 0,
-}
+};

@@ -2,15 +2,21 @@ import { ripemd160 as nobleRipemd160 } from '@noble/hashes/ripemd160';
 import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
 
 import { CHAIN_INFO, ServerConfiguration } from '@/shared/constants';
-import { Account, TxHistoryItem, TxType, Utxo, CoinNames } from '@/shared/types';
+import {
+  Account,
+  CoinNames,
+  TxHistoryItem,
+  TxType,
+  Utxo,
+} from '@/shared/types';
 
-import { addressHexToString, hexToBytes, bytesToHex } from '../utils';
-import { MsgT } from '../utils/msgTools';
-import preferenceService from './preference';
 import keyringService from '../service/keyring';
-
+import { addressHexToString, bytesToHex, hexToBytes } from '../utils';
 import Address from '../utils/address';
+import { MsgT } from '../utils/msgTools';
 import { buildTx, signTransaction } from '../utils/transactionTools';
+import preferenceService from './preference';
+
 export class OpenapiService {
   constructor() {}
 
@@ -20,7 +26,9 @@ export class OpenapiService {
     return chainInfo.endpoints[0];
   };
 
-  getRespData = async <T = any>(res: Response): Promise<{ id: number; error: any; result: T }> => {
+  getRespData = async <T = any>(
+    res: Response
+  ): Promise<{ id: number; error: any; result: T }> => {
     let jsonRes: { id: number; error: any; result: T };
 
     if (!res) throw new Error('Network error, no response');
@@ -37,7 +45,11 @@ export class OpenapiService {
     return jsonRes;
   };
 
-  httpPost = async <T = any>(url: string, method: string, data: any): Promise<{ id: number; error: any; result: T }> => {
+  httpPost = async <T = any>(
+    url: string,
+    method: string,
+    data: any
+  ): Promise<{ id: number; error: any; result: T }> => {
     console.log('httpPost', url, method, data);
     const headers = new Headers();
     headers.append('Content-Type', 'application/json');
@@ -65,7 +77,9 @@ export class OpenapiService {
     }
   };
 
-  httpGet = async <T = any>(url: string): Promise<{ id: number; error: any; result: T }> => {
+  httpGet = async <T = any>(
+    url: string
+  ): Promise<{ id: number; error: any; result: T }> => {
     console.log('httpGet', url);
     const headers = new Headers();
     // headers.append('Content-Type', 'application/json');
@@ -87,7 +101,11 @@ export class OpenapiService {
     }
   };
 
-  getAddressHistory = async (account: Account, start: number, limit: number) => {
+  getAddressHistory = async (
+    account: Account,
+    start: number,
+    limit: number
+  ) => {
     const res = await this.httpPost(this.getEndpoint(), 'schrt', [
       account.address,
       0,
@@ -98,9 +116,12 @@ export class OpenapiService {
     ]);
     if (res.result && Array.isArray(res.result)) {
       console.log('res.result', res.result);
-      const { txHistory, utxoItems } = await this.analyzeResult(account, res.result);
+      const { txHistory, utxoItems } = await this.analyzeResult(
+        account,
+        res.result
+      );
       console.log('txHistory', txHistory);
-      console.log('utxotype',utxoItems);
+      console.log('utxotype', utxoItems);
       return { txHistory, utxoItems };
     }
     return { txHistory: [], utxoItems: [] };
@@ -121,15 +142,21 @@ export class OpenapiService {
     chainId?: string
   ): Promise<{ CoinNames: CoinNames[] }> => {
     const CoinNames = keyringService.getCoinNames();
-    const tokenTypes = utxos.map(u => u.tokenType).filter(t => t !== undefined && t !== null && t !== '');
+    const tokenTypes = utxos
+      .map((u) => u.tokenType)
+      .filter((t) => t !== undefined && t !== null && t !== '');
     console.log('tokenTypes', tokenTypes);
     const tokenTypesStr = [...new Set(tokenTypes)].join(',');
     console.log('tokenTypesStr', tokenTypesStr);
     let updated: number = 0;
-    if (CoinNames.length > 0) updated = Math.max(0, ...CoinNames.map((c) => Number(c.updated || 0)));
+    if (CoinNames.length > 0)
+      updated = Math.max(0, ...CoinNames.map((c) => Number(c.updated || 0)));
     const { serverEndpoint, chainclass } = ServerConfiguration;
-    
-    const url = `${serverEndpoint}/omega/index.php?module=ncx&MOD_op=gettokendef&class=${chainclass}&tokentype=${tokenTypesStr}`+(chainId ? `&chainid=${chainId}` : '')+(updated ? `&updated=${updated}` : '');
+
+    const url =
+      `${serverEndpoint}/omega/index.php?module=ncx&MOD_op=gettokendef&class=${chainclass}&tokentype=${tokenTypesStr}` +
+      (chainId ? `&chainid=${chainId}` : '') +
+      (updated ? `&updated=${updated}` : '');
     console.log('url', url);
     const res = await this.httpGet(url);
     console.log('gettokendefres', res);
@@ -151,7 +178,7 @@ export class OpenapiService {
     }
 
     console.log('newConames', newConames);
-    
+
     // Save to preference store
     keyringService.addCoinName(newConames);
     const updatedConames = keyringService.getCoinNames();
@@ -275,29 +302,41 @@ export class OpenapiService {
       const { tIn, tOut } = this.decodeMsgHex(list[i].hex);
       console.log('tIn', tIn, 'tOut', tOut);
 
-      for(let j = 0; j < tIn.length; j++) {
+      for (let j = 0; j < tIn.length; j++) {
         const previousOutPointHash = tIn[j].previousOutPointHash;
         const previousOutPointIndex = tIn[j].previousOutPointIndex;
         // 从utxotype中查找并删除已消费的UTXO
-        const utxoIndex = utxotype.findIndex(utxo => 
-          utxo.txid === previousOutPointHash && utxo.index === previousOutPointIndex
+        const utxoIndex = utxotype.findIndex(
+          (utxo) =>
+            utxo.txid === previousOutPointHash &&
+            utxo.index === previousOutPointIndex
         );
         if (utxoIndex !== -1) {
-          console.log(`Removing spent UTXO: ${previousOutPointHash}:${previousOutPointIndex}`);
+          console.log(
+            `Removing spent UTXO: ${previousOutPointHash}:${previousOutPointIndex}`
+          );
           utxotype.splice(utxoIndex, 1);
         }
 
-        const utxoItemIndex = utxoItems.findIndex(item => 
-            item.txid === previousOutPointHash && item.index === previousOutPointIndex
+        const utxoItemIndex = utxoItems.findIndex(
+          (item) =>
+            item.txid === previousOutPointHash &&
+            item.index === previousOutPointIndex
         );
         if (utxoItemIndex !== -1) {
-          console.log(`Removing from utxoItems: ${previousOutPointHash}:${previousOutPointIndex}`);
+          console.log(
+            `Removing from utxoItems: ${previousOutPointHash}:${previousOutPointIndex}`
+          );
           utxoItems.splice(utxoItemIndex, 1);
         }
       }
       for (let j = 0; j < tOut.length; j++) {
         const output = tOut[j];
         if (account.addressHex == output.addressHex) {
+          console.log('tIn', tIn);
+          if (tIn.length === 0) {
+            continue;
+          }
           const previousTx = await this.getRawTransaction(
             tIn[0].previousOutPointHash
           );
@@ -331,14 +370,14 @@ export class OpenapiService {
             value: Number(output.value),
             rights: output.rights || [],
           };
-          console.log('txItemUtxo', txItemUtxo,"output",output);
+          console.log('txItemUtxo', txItemUtxo, 'output', output);
           txHistory.push(txItemHistory);
           utxoItems.push(txItemUtxo);
         }
       }
     }
     // 构建返回的交易历史数据
-    return {txHistory, utxoItems};
+    return { txHistory, utxoItems };
   };
 
   // insertutxo = async (account: Account, list: any[]) => {
@@ -349,7 +388,7 @@ export class OpenapiService {
   //     const { tIn, tOut } = this.decodeMsgHex(list[i].hex);
   //     const txid = list[i].txid;
   //     console.log('insertutxo：tIn', tIn, 'tOut', tOut);
-      
+
   //     // 先移除已存在的相同txid的UTXO
   //     const existingIndex = utxotype.findIndex(utxo => utxo.txid === txid);
   //     if (existingIndex >= 0) {
@@ -465,46 +504,64 @@ export class OpenapiService {
   };
 
   sendRawTransaction = async (txhex: any, waitconfirmation: number) => {
-    if (typeof txhex != "string")
+    if (typeof txhex != 'string')
       txhex = bytesToHex(Array.from(txhex.encode(1)));
     const res = await this.httpPost(this.getEndpoint(), 'srt', [
       txhex,
       true,
-      waitconfirmation
+      waitconfirmation,
     ]);
     return res;
-  }
+  };
 
-  transfer = async ( amount: bigint, tokenType: bigint, receivedAddress: string, password: string, senderAddress: string, crosschain: number, timeLimit: number) => {
+  transfer = async (
+    amount: bigint,
+    tokenType: bigint,
+    receivedAddress: string,
+    password: string,
+    senderAddress: string,
+    crosschain: number,
+    timeLimit: number
+  ) => {
     var adb = Array.from(Address.decodeString(receivedAddress));
-        const op = adb[0] === 0 || adb[0] === 0x6f ? 0x41 : adb[0] === 0x78 ? 0x43 : 0x42;
-        adb = adb.concat([op, 0, 0, 0]);
-        const pks = bytesToHex(adb);
-        const merge = (receivedAddress === senderAddress);
-    
-        let tx = await buildTx(tokenType, amount, pks, senderAddress, false, false, merge, crosschain);
-    
-        if(timeLimit){
-          const height = await this.gbc();
-          if(!height || height.error) tx.version = 0x11;
-          else {
-            tx.version = 0x41;
-            tx.lockTime = height.result + timeLimit;
-          }
-        }
-    
-        const r = await signTransaction(tx, 1, password);
-        // const raw = r.encode(1)
-        // // const rawTx = bytesToHex2(raw)
-        // const rawTx = bytesToHex(raw)
-        // console.log('rawTx', rawTx);
-        const hextx = await this.sendRawTransaction(r, 0);
-        // console.log('hextx', hextx);
-    
-        // hextx.expire = tx.lockTime;
-    
-        return hextx;
-  }
+    const op =
+      adb[0] === 0 || adb[0] === 0x6f ? 0x41 : adb[0] === 0x78 ? 0x43 : 0x42;
+    adb = adb.concat([op, 0, 0, 0]);
+    const pks = bytesToHex(adb);
+    const merge = receivedAddress === senderAddress;
+
+    let tx = await buildTx(
+      tokenType,
+      amount,
+      pks,
+      senderAddress,
+      false,
+      false,
+      merge,
+      crosschain
+    );
+
+    if (timeLimit) {
+      const height = await this.gbc();
+      if (!height || height.error) tx.version = 0x11;
+      else {
+        tx.version = 0x41;
+        tx.lockTime = height.result + timeLimit;
+      }
+    }
+
+    const r = await signTransaction(tx, 1, password);
+    // const raw = r.encode(1)
+    // // const rawTx = bytesToHex2(raw)
+    // const rawTx = bytesToHex(raw)
+    // console.log('rawTx', rawTx);
+    const hextx = await this.sendRawTransaction(r, 0);
+    // console.log('hextx', hextx);
+
+    // hextx.expire = tx.lockTime;
+
+    return hextx;
+  };
 
 
   computeTransactioFeesMax = async ( tokenType: number, senderAddress: string) =>{

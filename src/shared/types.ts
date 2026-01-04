@@ -1,7 +1,4 @@
-import { NetworkType } from "./constants";
-export interface AnexBalance {
-  amount: bigint;
-}
+import { NetworkType } from './constants';
 
 export interface Account {
   type: string;
@@ -46,7 +43,7 @@ export interface TxHistoryItem {
   confirmations: number;
   pkScript: string;
   myaddress: string;
-  index:number;
+  index: number;
 }
 
 export enum TxType {
@@ -81,7 +78,7 @@ export type Utxo = {
   blockHeight: number;
   blockHash: string;
   rights: string[];
-  index:number;
+  index: number;
 };
 
 export type UtxoAddressSumInfo = {
@@ -102,14 +99,10 @@ export type CoinNames = {
   iconHtml: string;
   decimalpoint: number; // default: '0'
   updated?: number;
-  currency?:number;
+  currency?: number;
 };
 
 export type transferAddressHistory = {
   address: string;
   updated?: number; // Defaults to 0 if not provided
-}
-
- 
-  
-  
+};

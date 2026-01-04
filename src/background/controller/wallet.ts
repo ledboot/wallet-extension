@@ -79,24 +79,6 @@ export class WalletController {
    * 初始化更新：获取账户最新UTXO并聚合写入loadStore
    */
   updateInit = async (start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; CoinNames: CoinNames[]; utxoItems: Utxo[] }> => {
-
-    
-    // const chainId1 = CHAIN_INFO[preferenceService.getChainType()].chainId;
-    // const chainIdStr1 = chainId1.toString();
-    // const account1 = await this.getCurrentAccount();
-    // const existingUtxos = preferenceService.getUtxos().filter(utxo => utxo.address === account1?.address);
-    // const { CoinNames: fetchedConames } = await openapiService.fetchTokentype(existingUtxos, chainIdStr1);
-    // console.log('fetchedConames', fetchedConames);
-    // const assetsLists1 = await AssetsList.assetsLists();mjhLuwhSiXJ1dGyvDVoqqruKQLAD2vERC5
-    // console.log('assetsLists1', assetsLists1);mszzWYjHEpmGx2LmdZLtud64PADqFHNhHD
-
-    // const tx = await openapiService.transfer(10000000n, 0n, 'mjhLuwhSiXJ1dGyvDVoqqruKQLAD2vERC5', '12345678', 'mtzcn3r73TypSRctdEPxF1GqhhgWxyxj64', 0, 15);
-    // console.log('tx', tx);
-
-    // const blockchains = await openapiService.fetchBlockchains();
-    // console.log('blockchains', blockchains);
-    
-
     console.log('updateInit', start, limit);
     this.resetLockTime();
     const account = await this.getCurrentAccount();
