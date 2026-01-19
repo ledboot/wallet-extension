@@ -3,7 +3,7 @@
  * 遵循 EIP-1193 标准和多链钱包设计模式
  * 
  * 使用方法：
- * 1. 引入库: <script src="https://your-domain.com/contentScriptZent.js"></script>
+ * 1. 引入库: <script src="https://gitee.com/zentrophy/wallet-extension/blob/develop/public/contentScriptZent.js"></script> 需要下载到本地
  * 2. 使用钱包: await window.zentWallet.connect()
  */
 
