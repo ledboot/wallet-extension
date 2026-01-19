@@ -193,7 +193,7 @@ function injectScript() {
   }
 }
 
-// 2. 消息转发监听器 (核心：打通网页和后台)
+// 2. 消息转发监听器 (核心：打通网页和后台) 
 window.addEventListener('message', (event) => {
   console.log('---------------消息转发监听器')
   // 安全检查：只接受当前窗口的消息
