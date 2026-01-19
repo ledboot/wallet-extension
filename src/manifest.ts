@@ -33,9 +33,16 @@ export default defineManifest({
     128: 'icon128.png',
   },
   permissions: ['activeTab', 'storage', 'unlimitedStorage'],
+  content_scripts: [
+    {
+      js: ['src/content_scripts/index.ts'],
+      matches: ['<all_urls>'],
+      run_at: 'document_start',
+    },
+  ],
   web_accessible_resources: [
     {
-      resources: ['*.js', '*.css', 'public/*', 'public/js/*.js'],
+      resources: ['*.js', '*.css', 'public/*', 'public/js/*.js', 'src/content_scripts/inpage.ts'],
       matches: ['<all_urls>'],
     },
   ],

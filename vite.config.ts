@@ -67,14 +67,22 @@ export default defineConfig({
     },
   },
   server: {
+    hmr: {
+      host: 'localhost',
+      protocol: 'ws',
+    },
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
       // 移除不安全的 CSP 设置，只保留 WebAssembly 支持
       'Content-Security-Policy': 'script-src \'self\' \'wasm-unsafe-eval\'; object-src \'none\';',
     },
     cors: {
       origin: [/chrome-extension:\/\//],
+    },
+    fs: {
+      // Allow serving files from one level up to the project root
+      allow: ['..'],
     },
   },
   optimizeDeps: {
@@ -85,8 +93,8 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       output: {
+        entryFileNames: '[name].js',
         // chunkFileNames: '[name]-[hash].js',
-        // entryFileNames: '[name].js',
         assetFileNames: (assetInfo) => {
           if (
             assetInfo.name &&
