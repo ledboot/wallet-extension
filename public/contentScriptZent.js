@@ -27,96 +27,56 @@
             this.version = '1.0.0';
             this.chainId = '0x1'; // 默认主网
         }
-
-        // === 基础连接管理 ===
         
         // 连接钱包 - 返回账户信息
         async connect() {
             return this._request('CONNECT_WALLET');
         }
 
-        // // 断开连接
-        // async disconnect() {
-        //     return this._request('DISCONNECT_WALLET');
-        // }
-
-        // // 获取连接状态
-        // isConnected() {
-        //     return this._request('IS_CONNECTED');
-        // }
-
-        // === 账户管理 ===
+        // 断开连接
+        async disconnect() {
+            return this._request('DISCONNECT_WALLET');
+        }
         
-        // 获取账户列表
-        // async getAccounts() {
-        //     return this._request('GET_ACCOUNTS');
-        // }
+        //获取账户列表
+        async getAccounts() {
+            return this._request('GET_ACCOUNTS');
+        }
 
-        // // 获取当前账户
-        // async getCurrentAccount() {
-        //     return this._request('GET_CURRENT_ACCOUNT');
-        // }
+        // 获取当前账户
+        async getCurrentAccount() {
+            return this._request('GET_CURRENT_ACCOUNT');
+        }
 
-        // // 获取账户余额
-        // async getBalance(address) {
-        //     return this._request('GET_BALANCE', { address });
-        // }
-
-        // // === 网络管理 ===
+        // 获取账户余额
+        async getBalance(address, chainId) {
+            return this._request('GET_BALANCE', { address, chainId });
+        }
         
-        // // 获取当前网络
-        // async getNetwork() {
-        //     return this._request('GET_NETWORK');
-        // }
+        // 获取当前网络
+        async getNetwork() {
+            return this._request('GET_NETWORK');
+        }
 
-        // // 切换网络
-        // async switchNetwork(chainId) {
-        //     return this._request('SWITCH_NETWORK', { chainId });
-        // }
+        // 切换网络
+        async switchNetwork(chainId) {
+            return this._request('SWITCH_NETWORK', { chainId });
+        }
 
-        // // 获取支持的链
-        // async getSupportedChains() {
-        //     return this._request('GET_SUPPORTED_CHAINS');
-        // }
+        // 签名交易
+        async signTransaction(tx) {
+            return this._request('SIGN_TRANSACTION', { tx });
+        }
 
-        // === 签名相关 ===
-        
-        // 签名消息
-        // async signMessage(message, address = null) {
-        //     return this._request('SIGN_MESSAGE', { message, address });
-        // }
+        // 发送交易
+        async sendTransaction(tx) {
+            return this._request('SEND_TRANSACTION', { tx });
+        }
 
-        // // 签名类型化数据 (EIP-712)
-        // async signTypedData(typedData, address = null) {
-        //     return this._request('SIGN_TYPED_DATA', { typedData, address });
-        // }
-
-        // // 签名交易
-        // async signTransaction(transaction) {
-        //     return this._request('SIGN_TRANSACTION', { transaction });
-        // }
-
-        // // 发送交易
-        // async sendTransaction(transaction) {
-        //     return this._request('SEND_TRANSACTION', { transaction });
-        // }
-
-        // === Bitcoin 特有功能 ===
-        
         // 获取 UTXO
         async getUtxos(address, value) {
             return this._request('GET_UTXOS', { address, value });
         }
-
-        // // 签名 PSBT
-        // async signPsbt(psbt) {
-        //     return this._request('SIGN_PSBT', { psbt });
-        // }
-
-        // // 推送 PSBT
-        // async pushPsbt(psbt) {
-        //     return this._request('PUSH_PSBT', { psbt });
-        // }
 
         // === 通用请求方法 (EIP-1193 兼容) ===
         async request(args) {
@@ -139,16 +99,6 @@
                 eventListeners.set(event, new Set());
             }
             eventListeners.get(event).add(callback);
-            
-            // 监听账户变化
-            if (event === 'accountsChanged') {
-                this._startAccountWatcher();
-            }
-            
-            // 监听网络变化
-            if (event === 'chainChanged') {
-                this._startNetworkWatcher();
-            }
         }
 
         // 移除事件监听器
@@ -206,40 +156,6 @@
                 }, 30000);
             });
         }
-
-        // 开始账户监听
-        _startAccountWatcher() {
-            if (this._accountWatcher) return;
-            
-            this._accountWatcher = setInterval(async () => {
-                try {
-                    const accounts = await this.getAccounts();
-                    if (JSON.stringify(accounts) !== JSON.stringify(this._lastAccounts)) {
-                        this._lastAccounts = accounts;
-                        this._emit('accountsChanged', accounts);
-                    }
-                } catch (error) {
-                    console.error('Account watcher error:', error);
-                }
-            }, 2000);
-        }
-
-        // 开始网络监听
-        _startNetworkWatcher() {
-            if (this._networkWatcher) return;
-            
-            this._networkWatcher = setInterval(async () => {
-                try {
-                    const network = await this.getNetwork();
-                    if (JSON.stringify(network) !== JSON.stringify(this._lastNetwork)) {
-                        this._lastNetwork = network;
-                        this._emit('chainChanged', network);
-                    }
-                } catch (error) {
-                    console.error('Network watcher error:', error);
-                }
-            }, 3000);
-        }
     }
 
     // 监听来自 content script 的响应
@@ -247,16 +163,17 @@
         if (event.source !== window) return;
         
         if (event.data.target === 'ZENT_RESPONSE' && event.data.id) {
-            const { id, data, error } = event.data;
+            const { id, data } = event.data;
+            console.log('收到响应:', { id, data });  // 添加调试日志
             
             if (messageQueue[id]) {
                 const { resolve, reject, method } = messageQueue[id];
                 delete messageQueue[id];
                 
-                if (error) {
-                    reject(new Error(error));
+                if (data && data.success) {
+                    resolve(data.result);
                 } else {
-                    resolve(data);
+                    reject(new Error(data?.error || 'Request failed'));
                 }
             }
         }

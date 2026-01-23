@@ -839,8 +839,20 @@ class KeyringService extends EventEmitter {
     this.store.updateState({ utxoSum: [...utxoSumMap.values()] })
   };
 
-  getUtxoSum = (): UtxoAddressSumInfo[] => {
-    return this.store.getState().utxoSum || [];
+  getUtxoSum = (address?: any, chainId?: any): UtxoAddressSumInfo[] => {
+    const allSums = this.store.getState().utxoSum || [];
+    
+    // If no filters provided, return all sums
+    if (!address && !chainId) {
+      return allSums;
+    }
+    
+    // Filter by address and/or chainId
+    return allSums.filter((sum: UtxoAddressSumInfo) => {
+      const addressMatch = !address || sum.address === address;
+      const chainIdMatch = !chainId || sum.chainId === chainId;
+      return addressMatch && chainIdMatch;
+    });
   };
 
   removeUtxoSum = (rmAddress: string, rmChainId: number) => {
@@ -858,9 +870,17 @@ class KeyringService extends EventEmitter {
     });
 
   };
-  getCoinNames = (): CoinNames[] => {
-    return this.store.getState().coinName || [];
+  
+  getCoinNames = (tokenType?: string): CoinNames[] => {
+    const allCoinNames = this.store.getState().coinName || [];
+    // If no tokenType provided, return all coin names
+    if (!tokenType) {
+      return allCoinNames;
+    }
+    // Filter by tokenType
+    return allCoinNames.filter((coin: CoinNames) => coin.tokenType === tokenType);
   };
+
   removeCoinName = (rmTokenType: string, rmChainId: number) => {
     const coinName = this.getCoinNames().filter(({ tokenType, chainId }) => !(tokenType === rmTokenType && chainId === rmChainId));
 

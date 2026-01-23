@@ -195,19 +195,28 @@ function injectScript() {
 
 // 2. 消息转发监听器 (核心：打通网页和后台) 
 window.addEventListener('message', (event) => {
-  console.log('---------------消息转发监听器')
+  console.log('---------------消息转发监听器', event.data)
   // 安全检查：只接受当前窗口的消息
   if (event.source !== window) return;
   
   // 这里的 'ZENT_REQUEST' 是你自己定义的暗号
   if (event.data.target === 'ZENT_REQUEST') {
-    // 转发给 Background
-    chrome.runtime.sendMessage(event.data.payload, (response) => {
+    // 转发给 Background - 使用 Promise 方式
+    chrome.runtime.sendMessage(event.data.payload).then(response => {
+      console.log('Background 响应:', response);
       // 把 Background 的回信转发回网页
       window.postMessage({
         target: 'ZENT_RESPONSE',
         id: event.data.id, // 对应请求ID
         data: response
+      }, '*');
+    }).catch(error => {
+      console.error('Runtime error:', error);
+      // 把错误转发回网页
+      window.postMessage({
+        target: 'ZENT_RESPONSE',
+        id: event.data.id,
+        data: { success: false, error: error.message }
       }, '*');
     });
   }

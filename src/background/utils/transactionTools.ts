@@ -156,7 +156,7 @@ function gatherCoins(condition: ConditionType, amount: bigint, fees: number, rig
 }
 
 
-export async function signTransaction(tx: MsgT, mode: number, password: string) {
+export async function signTransaction(tx: MsgT, mode: number, password?: string) {
 
   const allUtxos = keyringService.getUtxos();
   for (let i = 0; i < tx.tIn.length; i++) {
