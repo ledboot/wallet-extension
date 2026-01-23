@@ -107,9 +107,7 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
     console.log('--------params', params);
     
     if (method === 'CONNECT_WALLET') {
-      // Open popup for wallet connection
       chrome.action.openPopup().then(() => {
-        // Send response after popup is opened
         sendResponse({ 
           success: true, 
           result: { 
@@ -123,13 +121,11 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
           error: 'Failed to open wallet popup' 
         });
       });
-      return true; // Keep the message channel open for async response
+      return true;
     }
     
     if (method === 'DISCONNECT_WALLET') {
-      // Handle wallet disconnection
       try {
-        // Clear current session
         sendResponse({
           success: true,
           result: { disconnected: true }
@@ -145,10 +141,8 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
     
     if (method === 'GET_CURRENT_ACCOUNT') {
       (async () => {
-        try {
-          //返回所有账户
+          try {
           const accounts = await keyringService.getAccounts();
-          //返回当前帐户
           const currentAccountIndex = preferenceService.store.currentAccountIndex;
           const currentAccount = accounts[currentAccountIndex] || accounts[0];
           
@@ -169,9 +163,7 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
     if (method === 'GET_ACCOUNTS') {
       (async () => {
         try {
-          //返回所有账户
           const accounts = await keyringService.getAccounts();
-          
           sendResponse({
             success: true,
             result: accounts
@@ -187,9 +179,7 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
     }
     
     if (method === 'GET_BALANCE') {
-      // Get balance for specific address
       try {
-        // const utxos = keyringService.getUtxosByAddress(params.address);
         const utxos = keyringService.getUtxoSum(params.address, params.chainId);
         const coinName = keyringService.getCoinNames(utxos[0].tokenType);
         const balance = utxos[0].value;
@@ -197,7 +187,6 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
         const formatted = utxos[0].value / Math.pow(10, decimals);
         const symbol = coinName[0].name;
         
-        // Get current network info
         const networkType = preferenceService.getNetworkType();
         const chainType = preferenceService.getChainType();
         
@@ -209,7 +198,7 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
             decimals: decimals,
             formatted: formatted,
             symbol: symbol,
-            network: chainType.toLowerCase() // 'mainnet' or 'testnet'
+            network: chainType.toLowerCase()
           }
         });
       } catch (error) {
@@ -222,12 +211,9 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
     }
     
     if (method === 'GET_NETWORK') {
-      // Get current network
       try {
         const networkType = preferenceService.store.networkType;
         const chainType = preferenceService.store.chainType;
-        
-        // Get real RPC URL from CHAIN_INFO
         const currentChainInfo = CHAIN_INFO[chainType];
         
         sendResponse({
@@ -235,7 +221,7 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
           result: {
             id: chainType,
             name: networkType,
-            rpcUrl: currentChainInfo.endpoints[0] // Use real RPC URL from config
+            rpcUrl: currentChainInfo.endpoints[0]
           }
         });
       } catch (error) {
@@ -248,16 +234,12 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
     }
     
     if (method === 'SWITCH_NETWORK') {
-      // Switch to different network
       try {
         const targetChainId = params.chainId;
-        
-        // Find ChainType by chainId value
         const targetChainType = Object.entries(CHAIN_INFO).find(([_, chainInfo]) => 
           chainInfo.chainId === targetChainId
         )?.[0] as keyof typeof CHAIN_INFO;
         
-        // Validate chainId exists in CHAIN_INFO
         if (!targetChainType) {
           sendResponse({
             success: false,
@@ -265,17 +247,11 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
           });
           return true;
         }
-        
-        // Get network info for target chain
         const targetChainInfo = CHAIN_INFO[targetChainType];
-        
-        // Update preference service
         preferenceService.store.networkType = targetChainInfo.networkType;
         preferenceService.store.chainType = targetChainType;
         
-        // Notify keyring service about network change
         keyringService.changeNetwork();
-        
         // Broadcast network change to UI
         eventBus.emit(EVENTS.broadcastToUI, {
           method: 'networkChanged',
@@ -305,7 +281,6 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
       (async () => {
         try {
           console.log('SIGN_TRANSACTION', params);
-          // Validate required parameters
           if (!params || !params.tx) {
             sendResponse({
               success: false,
@@ -313,7 +288,6 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
             });
             return;
           }
-          // Sign the transaction
           const signedTx = await signTransaction(params.tx, 1);
           sendResponse({
             success: true,
@@ -335,10 +309,8 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
     }
     
     if (method === 'SEND_TRANSACTION') {
-      // Send transaction after signing
       (async () => {
         try {
-          // Validate required parameters
           if (!params || !params.tx) {
             sendResponse({
               success: false,
@@ -346,10 +318,7 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
             });
             return;
           }
-          
-          // Send the raw transaction
           const txHash = await openapiService.sendRawTransaction(params.tx, 0);
-          
           sendResponse({
             success: true,
             result: {
@@ -369,7 +338,6 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
     }
 
     if (method === 'GET_UTXOS') {
-      // Get UTXOs by address
       const assets = keyringService.getUtxosByAddress(params.address)
       console.log('----------assets', assets);
       sendResponse({ 
