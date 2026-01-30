@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { useWallet } from '@/ui/utils/walletContext';
 import { WalletKeyring } from '@/shared/types';
+import { useLanguage } from '@/ui/contexts/LanguageContext';
 
 interface EditKeyringNameProps {
   keyring: WalletKeyring;
@@ -13,6 +14,7 @@ export function EditKeyringName({ keyring, onClose, onSuccess }: EditKeyringName
   const [name, setName] = useState(keyring.alianName || '');
   const [loading, setLoading] = useState(false);
   const wallet = useWallet();
+  const { t } = useLanguage();
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -38,7 +40,7 @@ export function EditKeyringName({ keyring, onClose, onSuccess }: EditKeyringName
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-base-100 rounded-lg p-6 w-96 max-w-[90vw]">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">编辑钱包名称</h3>
+          <h3 className="text-lg font-semibold">{t('account.edit_name')}</h3>
           <button
             onClick={handleCancel}
             className="btn btn-ghost btn-sm h-8 w-8 p-0"
@@ -48,32 +50,32 @@ export function EditKeyringName({ keyring, onClose, onSuccess }: EditKeyringName
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">钱包名称</label>
+          <label className="block text-sm font-medium mb-2">{t('common.wallet_name')}</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="input input-bordered w-full"
-            placeholder="请输入钱包名称"
+            placeholder={t('common.enter_wallet_name')}
             maxLength={20}
             autoFocus
           />
           <div className="text-xs text-base-content/60 mt-1">
-            {name.length}/20 字符
+            {name.length}/20 {t('common.characters')}
           </div>
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">钱包类型</label>
+          <label className="block text-sm font-medium mb-2">{t('common.wallet_type')}</label>
           <div className="text-sm text-base-content/60">
             {keyring.type}
           </div>
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">账户数量</label>
+          <label className="block text-sm font-medium mb-2">{t('common.account_count')}</label>
           <div className="text-sm text-base-content/60">
-            {keyring.accounts.length} 个账户
+            {keyring.accounts.length} {t('common.accounts')}
           </div>
         </div>
 
@@ -83,7 +85,7 @@ export function EditKeyringName({ keyring, onClose, onSuccess }: EditKeyringName
             className="btn btn-outline flex-1"
             disabled={loading}
           >
-            取消
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSave}
@@ -95,7 +97,7 @@ export function EditKeyringName({ keyring, onClose, onSuccess }: EditKeyringName
             ) : (
               <>
                 <Check className="h-4 w-4 mr-1" />
-                保存
+                {t('common.save')}
               </>
             )}
           </button>

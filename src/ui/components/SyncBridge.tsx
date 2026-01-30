@@ -4,7 +4,7 @@ import { accountsStore } from '@/ui/state/accounts';
 import { settingsStore } from '@/ui/state/settings';
 import { Message } from '@/shared/utils';
 import eventBus from '@/shared/eventBus';
-import { EVENTS, ChainType, CHAIN_INFO } from '@/shared/constants';
+import { EVENTS, ChainType, NetworkType, CHAIN_INFO } from '@/shared/constants';
 import { useNavigate } from '@/ui/pages/mainRoute';
 import { globalStore } from '@/ui/state/global';
 import { useWallet } from '@/ui/utils';
@@ -74,7 +74,23 @@ export default function SyncBridge(props: PropsWithChildren) {
           // 更新前端设置状态
           if (params && typeof params === 'string') {
             const chainType = params as ChainType;
-            const networkType = CHAIN_INFO[chainType].networkType;
+            
+            // 优先从 CHAIN_INFO 获取，如果没有则从存储获取
+            let networkType: NetworkType;
+            if (CHAIN_INFO[chainType]) {
+              networkType = CHAIN_INFO[chainType].networkType;
+            } else {
+              // 从存储中获取网络配置
+              const storedChainInfo = await wallet.getStoredChainInfo();
+              const chainInfo = storedChainInfo[chainType];
+              if (chainInfo) {
+                networkType = chainInfo.networkType;
+              } else {
+                console.error('Network info not found for:', chainType);
+                return;
+              }
+            }
+            
             settingsStore.getState().updateSettings({
               networkType,
               chainType

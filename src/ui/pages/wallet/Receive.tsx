@@ -5,9 +5,11 @@ import { useCurrentAccount, useChainType } from '@/ui/state/hooks';
 import { CHAIN_INFO } from '@/shared/constants';
 import { QRCodeCanvas } from 'qrcode.react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/ui/contexts/LanguageContext';
 
 export default function Receive() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const currentAccount = useCurrentAccount();
   const chainType = useChainType();
   const [copied, setCopied] = useState(false);
@@ -24,7 +26,7 @@ export default function Receive() {
     navigator.clipboard.writeText(address);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-    toast.success('address copied');
+    toast.success(t('receive.address_copied'));
   };
 
   return (
@@ -32,7 +34,7 @@ export default function Receive() {
       <div className='w-full sticky top-0 z-20 flex h-14 items-center justify-between px-4 py-[15px]'>
         <button onClick={() => navigate('#back')} className='flex items-center space-x-1 text-sm font-medium'>
           <ChevronLeft className='h-5 w-5' />
-          <span>Back</span>
+          <span>{t('receive.back')}</span>
         </button>
         <div className='flex items-center space-x-2 text-sm'>
           <Globe className='h-4 w-4' />
@@ -49,7 +51,7 @@ export default function Receive() {
           </div>
 
           <div className='mt-6 w-full'>
-            <div className='text-xs text-muted-foreground mb-1'>Wallet Address</div>
+            <div className='text-xs text-muted-foreground mb-1'>{t('receive.wallet_address')}</div>
             <div className='flex items-center justify-between bg-wallet-card border border-border rounded-lg p-3'>
               <div className='text-sm break-all mr-3'>{address}</div>
               <button onClick={copyAddress} className='text-muted-foreground hover:text-foreground flex items-center space-x-1 text-xs'>
@@ -59,7 +61,7 @@ export default function Receive() {
           </div>
 
           <div className='mt-4 w-full'>
-            <div className='text-xs text-muted-foreground mb-1'>Network</div>
+            <div className='text-xs text-muted-foreground mb-1'>{t('receive.network')}</div>
             <div className='bg-wallet-card border border-border rounded-lg p-3 text-sm'>
               {networkLabel}
             </div>

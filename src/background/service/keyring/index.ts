@@ -9,6 +9,7 @@ import { Account, CoinNames, Utxo, UtxoAddressSumInfo, transferAddressHistory } 
 
 import DisplayKeyring from './display';
 import { SimpleKeyring } from './simpleKeyring';
+import { preferenceService } from '../index';
 
 const KEYRING_SDK_TYPES = new Map([
   [KEYRING_TYPE.SimpleKeyring, SimpleKeyring],
@@ -34,7 +35,7 @@ interface KeyringState {
   utxoSums: UtxoAddressSumInfo[];
   CoinNames: CoinNames[];
   utxos: Utxo[];
-  utxosMap: Map<string, Utxo[]>;// address_chainid: Utxo[]
+  utxoMap: Map<string, Utxo[]>;// address_chainid: Utxo[]
   utxoSumsMap: Map<string, UtxoAddressSumInfo[]>;// address_chainid_tokenType: UtxoAddressSumInfo[]
 }
 
@@ -399,6 +400,7 @@ class KeyringService extends EventEmitter {
    * @returns {Promise<void>} A Promise that resolves if the operation was successful.
    */
   removeAccount = async (address: string, type: string): Promise<any> => {
+    
     const keyring = await this.getKeyringForAccount(address, type);
 
     // Not all the keyrings support this, so we have to check
@@ -407,28 +409,72 @@ class KeyringService extends EventEmitter {
         `Keyring ${keyring.type} does_not_support_account_removal_operations`
       );
     }
+    
+    // Get account key before removing (for preference cleanup)
+    const accounts = await keyring.getAccounts();
+    
+    const accountToRemove = accounts.find(acc => acc.address === address);
+    const accountKey = accountToRemove?.key;
+  
     keyring.removeAccount(address);
     this.cachedDisplayedKeyring = null;
-
+  
+    // Clean up UTXO data for this account
+    this.removeAccountUtxoData(address);
+    
+    // Clean up preference data for this account
+    if (accountKey) {
+      // Check if the key exists in accountAlianNames
+      const hasKey = accountKey in preferenceService.store.accountAlianNames;
+      
+      if (hasKey) {
+        preferenceService.removeAccountAlianName(accountKey);}
+        else {
+        // Try to find matching keys by address pattern
+        const matchingKeys = Object.keys(preferenceService.store.accountAlianNames).filter(key => 
+          key.includes(address) || key.includes(accountToRemove?.alianName || '')
+        );
+        
+        matchingKeys.forEach(key => {
+          preferenceService.removeAccountAlianName(key);
+        });
+      }
+    }
+    
     this.emit('removedAccount', address);
     await this.persistAllKeyrings();
     this.updateMemStoreKeyrings();
     await this.fullUpdate();
+    
   };
 
   removeKeyring = async (keyringKey: string) => {
+    
     const index = this.getKeyringIndexByKey(keyringKey);
+    
     if (index === -1) {
-      throw new Error('keyring_not_found');
+      throw new Error(`keyring_not_found: ${keyringKey}`);
     }
-    const keyringIndex = this.keyrings.findIndex((k) => k.key === keyringKey);
 
-    delete this.keyrings[keyringIndex];
+    // Get the keyring reference before removing it
+    const keyringToRemove = this.keyrings[index];
+
+    // Clean up UTXO data for all accounts in this keyring FIRST
+    await this.removeKeyringUtxoData(keyringKey);
+    
+    // Clean up preference data for this keyring
+    preferenceService.removeKeyringAlianName(keyringKey);
+
+    // Now remove the keyring from array
+    const removedKeyring = this.keyrings[index];
+    this.keyrings.splice(index, 1);
     this.cachedDisplayedKeyring = null;
 
+    // Persist the changes
     await this.persistAllKeyrings();
     this.updateMemStoreKeyrings();
     await this.fullUpdate();
+    return removedKeyring;
   };
 
   /**
@@ -963,7 +1009,86 @@ class KeyringService extends EventEmitter {
 
   getUtxosAllMap = (): Utxo[] => {
       return this.store.getState().utxoMap || [];
-    };
+  };
+
+  // Remove UTXO data for specific account
+  removeAccountUtxoData = (address: string) => {
+    
+    // Remove from utxos array
+    const currentUtxos = this.getUtxos();
+    const filteredUtxos = currentUtxos.filter(utxo => utxo.address !== address);
+    this.store.updateState({ utxos: filteredUtxos });
+    
+    // Remove from utxoSum
+    const currentSums = this.getUtxoSum();
+    const filteredSums = currentSums.filter(sum => sum.address !== address);
+    this.store.updateState({ utxoSum: filteredSums });
+    
+    // Remove from utxoMap (the actual map that contains data)
+    const currentState = this.store.getState();
+    const utxoMap = currentState.utxoMap || {};
+    
+    const newUtxoMap: { [key: string]: any } = {};
+    let removedKeys = [];
+    for (const [key, value] of Object.entries(utxoMap)) {
+      if (key.startsWith(`${address}_`)) {
+        removedKeys.push(key);
+      } else {
+        newUtxoMap[key] = value;
+      }
+    }
+    
+    this.store.updateState({ utxoMap: newUtxoMap });
+    
+    // Verify the cleanup
+    const finalState = this.store.getState();
+  };
+
+  // Remove UTXO data for all accounts in a keyring
+  removeKeyringUtxoData = async (keyringKey: string) => {
+    
+    const keyring = this.keyrings.find(k => k.key === keyringKey);
+    if (!keyring) {
+      return;
+    }
+    
+    try {
+      const accounts = await keyring.getAccounts();
+      const addresses = accounts.map(account => account.address);
+      
+      // Remove UTXO data for each account
+      addresses.forEach(address => {
+        this.removeAccountUtxoData(address);
+      });
+      
+      // Clean up account aliases for all accounts in this keyring
+      let removedAccountKeys: string[] = [];
+      accounts.forEach(account => {
+        if (account.key) {
+          const hasKey = account.key in preferenceService.store.accountAlianNames;
+          if (hasKey) {
+            preferenceService.removeAccountAlianName(account.key);
+            removedAccountKeys.push(account.key);
+          } else {
+            // Try to find matching keys by different patterns
+            const matchingKeys = Object.keys(preferenceService.store.accountAlianNames).filter(key => 
+              key.includes(keyringKey) || // Keys that contain the keyring key
+              key.includes(`${keyringKey}#`) || // Keys in format "keyringKey#index"
+              key.includes(account.address) || // Keys that contain the address
+              key.includes(account.alianName || '') // Keys that contain the account name
+            );
+            matchingKeys.forEach(key => {
+              preferenceService.removeAccountAlianName(key);
+              removedAccountKeys.push(key);
+            });
+          }
+        }
+      });
+      
+    } catch (error) {
+      console.error('Debug: Error removing UTXO data for keyring:', error);
+    }
+  };
 
   updateTransferAddressesHistory = (newAddressHistory: transferAddressHistory[]) => {
     const transferAddressHistory = this.getTransferAddressHistory();
@@ -977,7 +1102,6 @@ class KeyringService extends EventEmitter {
   getTransferAddressHistory = (): transferAddressHistory[] => {
     return this.store.getState().transferAddressHistory || []
   }
-
 }
 
 export default new KeyringService();

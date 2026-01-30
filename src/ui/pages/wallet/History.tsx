@@ -11,6 +11,7 @@ import {
 
 import { Account, TxHistoryItem, TxType } from '@/shared/types';
 import { useCurrentAccount } from '@/ui/state/hooks';
+import { useLanguage } from '@/ui/contexts/LanguageContext';
 
 import { useRootStore } from '../../state';
 import { useWallet } from '../../utils/walletContext';
@@ -25,6 +26,7 @@ interface TransactionDisplayItem extends TxHistoryItem {
 
 export default function History() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const wallet = useWallet();
   const currentAccount = useCurrentAccount();
   const { networkType } = useRootStore((state) => state.settings);
@@ -36,10 +38,16 @@ export default function History() {
   const [filter, setFilter] = useState<'all' | 'send' | 'receive' | 'unknown'>(
     'all'
   );
-  
-  // const wif = wallet.getWIF(currentAccount.address); 获取私钥
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  
+  // const wif = wallet.getWIF(currentAccount.address); 获取私钥
+  const filterOptions = [
+  { key: 'all', label: t('history.all') },
+  { key: 'receive', label: t('history.receive') },
+  { key: 'send', label: t('history.send') },
+  { key: 'unknown', label: t('history.unknown') },
+];
 
   const formatTimeAgo = (timestamp: number): string => {
     const now = Date.now();
@@ -263,7 +271,7 @@ export default function History() {
         >
           <ArrowLeft className='h-4 w-4' />
         </button>
-        <h1 className='text-lg font-semibold'>交易记录</h1>
+        <h1 className='text-lg font-semibold'>{t('history.title')}</h1>
         <div className='h-4 w-4'/>
       </div>
 
@@ -271,14 +279,9 @@ export default function History() {
       <div className='p-4'>
         <div className='flex items-center space-x-2'>
           <Filter className='text-muted-foreground h-4 w-4' />
-          <span className='text-muted-foreground text-sm'>筛选:</span>
+          <span className='text-muted-foreground text-sm'>{t('history.filter')}</span>
           <div className='flex space-x-2'>
-            {[
-              { key: 'all', label: '全部' },
-              { key: 'receive', label: '接收' },
-              { key: 'send', label: '发送' },
-              { key: 'unknown', label: '未知' },
-            ].map(({ key, label }) => (
+            {filterOptions.map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setFilter(key as any)}
@@ -314,11 +317,14 @@ export default function History() {
                 />
               </svg>
             </div>
-            <h3 className='mb-2 text-lg font-medium'>暂无交易记录</h3>
+            <h3 className='mb-2 text-lg font-medium'>{t('history.no_transactions')}</h3>
             <p className='text-muted-foreground text-sm'>
               {filter === 'all'
-                ? '您的钱包还没有任何交易记录'
-                : `没有${filter === 'send' ? '发送' : filter === 'receive' ? '接收' : '交换'}类型的交易`}
+                ? t('history.no_transactions_description')
+                : t('history.no_filtered_transactions').replace('{type}', 
+                    filter === 'send' ? t('history.send') : 
+                    filter === 'receive' ? t('history.receive') : 
+                    t('history.unknown'))}
             </p>
           </div>
         ) : (
@@ -336,10 +342,10 @@ export default function History() {
                     <div className='flex items-center space-x-2 mb-0.5'>
                       <span className='text-sm font-medium text-foreground'>
                         {tx.type === 'send'
-                          ? '发送'
+                          ? t('history.send')
                           : tx.type === 'receive'
-                            ? '接收'
-                            : '未知'}
+                            ? t('history.receive')
+                            : t('history.unknown')}
                       </span>
                     </div>
                     <div className='text-xs text-muted-foreground truncate'>
@@ -379,10 +385,10 @@ export default function History() {
                   {loading ? (
                     <>
                       <RefreshCw className='mr-2 h-4 w-4 animate-spin' />
-                      加载中...
+                      {t('history.loading_more')}
                     </>
                   ) : (
-                    '加载更多'
+                    t('history.load_more')
                   )}
                 </button>
               </div>

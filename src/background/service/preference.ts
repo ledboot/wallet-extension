@@ -5,6 +5,7 @@ import {
   DEFAULT_LOCKTIME_ID,
   NetworkType,
 } from '@/shared/constants';
+import { ChainInfo } from '@/shared/types';
 
 import createPersistStore from '../utils/persisitStore';
 
@@ -26,6 +27,7 @@ export interface PreferenceStore {
   keyringAlianNames: {
     [key: string]: string;
   };
+  chainInfo: { [key: string]: ChainInfo }; // 添加动态网络配置存储
 }
 
 // const SUPPORTED_LOCALES = ['en', 'zh_CN'];
@@ -43,10 +45,10 @@ class PreferenceService {
         currentKeyringKey: '',
         currentAccountIndex: 0,
         locale: 'en',
-        // networkType: NetworkType.MAINNET,
-        // chainType: ChainType.ZENT_MAINNET,
-        networkType: NetworkType.TESTNET,
-        chainType: ChainType.ZENT_TESTNET,
+        networkType: NetworkType.MAINNET,
+        chainType: ChainType.ZENT_MAINNET,
+        // networkType: NetworkType.TESTNET,
+        // chainType: ChainType.ZENT_TESTNET,
         currentVersion: '0',
         firstOpen: false,
         enableSignData: false,
@@ -55,6 +57,7 @@ class PreferenceService {
         accountAlianNames: {},
         addressFlags: {},
         keyringAlianNames: {},
+        chainInfo: {}, // 初始化空的 chainInfo 存储
       },
     });
 
@@ -129,6 +132,20 @@ class PreferenceService {
       this.store.keyringAlianNames[keyringKey] = defaultName;
     }
     return this.store.keyringAlianNames[keyringKey];
+  };
+
+  // Remove account alias name
+  removeAccountAlianName = (accountKey: string) => {
+    const newAccountAlianNames = { ...this.store.accountAlianNames };
+    delete newAccountAlianNames[accountKey];
+    this.store.accountAlianNames = newAccountAlianNames;
+  };
+
+  // Remove keyring alias name
+  removeKeyringAlianName = (keyringKey: string) => {
+    const newKeyringAlianNames = { ...this.store.keyringAlianNames };
+    delete newKeyringAlianNames[keyringKey];
+    this.store.keyringAlianNames = newKeyringAlianNames;
   };
 
   setNetworkType = (networkType: NetworkType) => {
@@ -234,6 +251,30 @@ class PreferenceService {
   //   this.store.utxoSums = Array.from(sumsMap.values());
   //   return this.store.utxoSums;
   // };
+
+  // ChainInfo 管理方法
+  addchainInfo = (chainType: string, chainInfo: ChainInfo) => {
+    // 直接修改 store 对象以触发 Proxy 的 set 陷阱
+    this.store.chainInfo[chainType] = chainInfo;
+    
+    // 强制触发存储更新
+    const updatedChainInfo = { ...this.store.chainInfo };
+    this.store.chainInfo = updatedChainInfo;
+    
+    console.log(`Added chain ${chainType} to preference store`);
+  };
+
+  getchainInfo = (chainType: string): ChainInfo | undefined => {
+    return this.store.chainInfo[chainType];
+  };
+
+  getAllchainInfo = (): { [key: string]: ChainInfo } => {
+    return this.store.chainInfo;
+  };
+
+  removechainInfo = (chainType: string) => {
+    delete this.store.chainInfo[chainType];
+  };
 }
 
 export default new PreferenceService();

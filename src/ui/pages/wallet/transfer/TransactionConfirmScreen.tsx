@@ -8,6 +8,7 @@ import { useCurrentAccount } from '@/ui/state/hooks';
 import keyringService from '@background/service/keyring';
 import type { transferAddressHistory } from '@/shared/types';
 import { useWallet } from '@/ui/utils/walletContext';
+import { useLanguage } from '@/ui/contexts/LanguageContext';
 
 interface LocationState {
   token: any;
@@ -20,6 +21,7 @@ interface LocationState {
 export default function TransactionConfirmScreen() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
   const { 
     token, 
     recipientAddress, 
@@ -38,7 +40,7 @@ export default function TransactionConfirmScreen() {
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
-    toast.success('已复制');
+    toast.success(t('transfer.copied'));
     setTimeout(() => setCopiedField(null), 2000);
   };
 
@@ -52,7 +54,7 @@ export default function TransactionConfirmScreen() {
       await wallet.verifyPassword(password);
     } catch (error) {
       // console.error('Password verification failed:', error);
-      toast.error('密码错误，请重试');
+      toast.error(t('transfer.password_error'));
       setPassword('');
       return;
     }
@@ -74,9 +76,9 @@ export default function TransactionConfirmScreen() {
       await wallet.updateTransferAddressesHistory(recipientAddress);
       
       if (result) {
-        toast.success('交易已发送');
+        toast.success(t('transfer.transaction_sent'));
       } else {
-        toast.error('交易发送失败');
+        toast.error(t('transfer.transaction_failed'));
       }
       navigate('MainScreen');
     } catch (error) {
@@ -102,9 +104,9 @@ export default function TransactionConfirmScreen() {
           className='flex items-center space-x-1 text-sm font-medium'
         >
           <ChevronLeft className='h-5 w-5' />
-          <span>返回</span>
+          <span>{t('transfer.back')}</span>
         </button>
-        <h1 className='text-lg font-semibold'>确认交易</h1>
+        <h1 className='text-lg font-semibold'>{t('transfer.confirm_transaction')}</h1>
         <div className='w-10' />
       </div>
 
@@ -119,12 +121,12 @@ export default function TransactionConfirmScreen() {
           
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-gray-400">网络</span>
+              <span className="text-gray-400">{t('transfer.network')}</span>
               <span>{token.chainLabel}</span>
             </div>
             
             <div className="flex justify-between items-center">
-              <span className="text-gray-400">代币</span>
+              <span className="text-gray-400">{t('transfer.token_label')}</span>
               <div className="flex items-center">
                 <img 
                   src={token.iconHtml} 
@@ -143,7 +145,7 @@ export default function TransactionConfirmScreen() {
             
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-400">发送自</span>
+                <span className="text-gray-400">{t('transfer.send_from')}</span>
                 <div className="flex items-center">
                   <span className="font-mono text-sm">
                     {currentAccount?.address?.slice(0, 6)}...{currentAccount?.address?.slice(-4)}
@@ -162,7 +164,7 @@ export default function TransactionConfirmScreen() {
               </div>
               
               <div className="flex justify-between">
-                <span className="text-gray-400">发送至</span>
+                <span className="text-gray-400">{t('transfer.send_to')}</span>
                 <div className="flex items-center">
                   <span className="font-mono text-sm">
                     {recipientAddress.slice(0, 6)}...{recipientAddress.slice(-4)}
@@ -185,7 +187,7 @@ export default function TransactionConfirmScreen() {
             
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-400">网络费用</span>
+                <span className="text-gray-400">{t('transfer.network_fee')}</span>
                 <div className="text-right">
                   <div>{fee} {token.name}</div>
                   {/* <div className="text-xs text-gray-400">≈ $0.42</div> */}
@@ -193,7 +195,7 @@ export default function TransactionConfirmScreen() {
               </div>
               
               <div className="flex justify-between font-medium">
-                <span>总计</span>
+                <span>{t('transfer.total')}</span>
                 <div className="text-right">
                   <div>{totalAmount} {token.name}</div>
                 </div>
@@ -204,7 +206,7 @@ export default function TransactionConfirmScreen() {
           <div className="mt-6 p-3 bg-yellow-500/10 rounded-lg flex items-start">
             <AlertCircle className="h-5 w-5 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
             <p className="text-yellow-400 text-sm">
-              请仔细检查交易详情。交易一旦发送将无法撤销。
+              {t('transfer.warning_message')}
             </p>
           </div>
         </div>
@@ -220,7 +222,7 @@ export default function TransactionConfirmScreen() {
               : 'bg-primary text-white hover:bg-primary/90'
           }`}
         >
-          {isSending ? '处理中...' : '确认发送'}
+          {isSending ? t('transfer.processing') : t('transfer.confirm_send')}
         </button>
       </div>
 
@@ -228,15 +230,15 @@ export default function TransactionConfirmScreen() {
       {showPasswordDialog && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-wallet-card rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-white mb-4">输入密码</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">{t('transfer.enter_password')}</h3>
             <p className="text-gray-400 text-sm mb-4">
-              请输入您的钱包密码以确认交易
+              {t('transfer.password_description')}
             </p>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="钱包密码"
+              placeholder={t('transfer.wallet_password')}
               className="w-full p-3 bg-wallet-bg border border-border rounded-lg text-white mb-4 focus:outline-none focus:ring-2 focus:ring-primary"
               autoFocus
             />
@@ -246,7 +248,7 @@ export default function TransactionConfirmScreen() {
                 className="flex-1 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors"
                 disabled={isSending}
               >
-                取消
+                {t('transfer.cancel')}
               </button>
               <button
                 onClick={handleSend}
@@ -257,7 +259,7 @@ export default function TransactionConfirmScreen() {
                     : 'bg-primary text-white hover:bg-primary/90'
                 }`}
               >
-                {isSending ? '发送中...' : '确认'}
+                {isSending ? t('transfer.sending') : t('transfer.confirm')}
               </button>
             </div>
           </div>

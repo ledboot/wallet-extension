@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import '@/assets/styles/index.css';
 import MainRoute from './pages/mainRoute';
 import { WalletProvider } from './utils/walletContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import { Message } from '@/shared/utils';
 import { AppDimensions } from './components/appDimensions';
 import { Toaster } from 'sonner';
@@ -37,9 +38,11 @@ const wallet: Record<string, any> = new Proxy(
 const root = createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <WalletProvider wallet={wallet as any}>
-    <AppDimensions>
-      <Toaster position='bottom-right' duration={2000} />
-      <MainRoute/>
-    </AppDimensions>
+    <LanguageProvider>
+      <AppDimensions>
+        <Toaster position='bottom-right' duration={2000} />
+        <MainRoute/>
+      </AppDimensions>
+    </LanguageProvider>
   </WalletProvider>
 );

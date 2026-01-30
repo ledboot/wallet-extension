@@ -1,11 +1,9 @@
+// import { preferenceService } from '@background/service';
 import { ChainInfo } from '../types';
 
 export enum ChainType {
   ZENT_MAINNET = 'ZENT_MAINNET',
   ZENT_TESTNET = 'ZENT_TESTNET',
-  HOVM_MAINNET = 'HOVM_MAINNET',
-  GCT_TESTNET = 'GCT_TESTNET',
-  ZENT_LOCAL = 'ZENT_LOCAL',
 }
 
 export enum NetworkType {
@@ -60,16 +58,8 @@ export const EVENTS = {
   },
 };
 
-export const CHAIN_INFO: { [key in ChainType]: ChainInfo } = {
-  [ChainType.ZENT_MAINNET]: {
-    label: 'ZENT',
-    iconLabel: 'ZENT',
-    chainId: 0x1,
-    endpoints: ['http://omegasuite.org:9789'],
-    icon: './images/artifacts/bitcoin-mainnet.svg',
-    unit: 'ZENT',
-    networkType: NetworkType.MAINNET,
-  },
+// 动态 CHAIN_INFO 对象，支持运行时添加网络
+export const CHAIN_INFO: { [key: string]: ChainInfo } = {
   [ChainType.ZENT_TESTNET]: {
     label: 'ZENT Testnet',
     iconLabel: 'ZENT',
@@ -78,33 +68,19 @@ export const CHAIN_INFO: { [key in ChainType]: ChainInfo } = {
     icon: './images/artifacts/bitcoin-mainnet.svg',
     unit: 'ZENT',
     networkType: NetworkType.TESTNET,
+    updated: 0,
+    id: 1,
   },
-  [ChainType.HOVM_MAINNET]: {
-    label: 'HOVM Mainnet',
-    iconLabel: 'HOVM',
-    chainId: 0x2,
-    endpoints: ['http://omegasuite.org:3789'],
-    icon: './images/artifacts/bitcoin-mainnet.svg',
-    unit: 'HOVM',
-    networkType: NetworkType.MAINNET,
-  },
-  [ChainType.GCT_TESTNET]: {
-    label: 'GCT Testnet',
-    iconLabel: 'GCT',
-    chainId: 0x2,
-    endpoints: ['http://omegasuite.org:6789'],
-    icon: './images/artifacts/bitcoin-mainnet.svg',
-    unit: 'GCT',
-    networkType: NetworkType.TESTNET,
-  },
-  [ChainType.ZENT_LOCAL]: {
-    label: 'ZENT Local',
+  [ChainType.ZENT_MAINNET]: {
+    label: 'ZENT',
     iconLabel: 'ZENT',
     chainId: 0x1,
-    endpoints: ['http://localhost:7700'],
+    endpoints: ['http://omegasuite.org:9789'],
     icon: './images/artifacts/bitcoin-mainnet.svg',
     unit: 'ZENT',
-    networkType: NetworkType.TESTNET,
+    networkType: NetworkType.MAINNET,
+    updated: 0,
+    id: 6,
   },
 };
 
@@ -139,5 +115,62 @@ export const TestnetAddressPrefix = 0x6f;
 
 export const ServerConfiguration = {
   serverEndpoint: 'http://omegasuite.org',
-  chainclass: 0,
+  chainclass: 2,
+};
+
+
+export const addChainType = (name: string, value: string): void => {
+  console.log('Adding to ChainType:', name, value);
+  (ChainType as any)[name] = value;
+  console.log('ChainType after adding:', Object.keys(ChainType));
+};
+
+// 获取所有 ChainType 值（包括动态的）
+// export const getAllChainTypeValues = (): string[] => {
+//   const values = Object.values(ChainType);
+//   console.log('ChainType enum keys:', Object.keys(ChainType));
+//   console.log('ChainType enum values:', values);
+//   return values;
+// };
+
+// 从API数据添加网络
+export const addNetworkFromAPI = (apiData: any): void => {
+  try {
+    let rpcEndpoint: string;
+    const meta = JSON.parse(apiData.meta);
+    rpcEndpoint = `http://${meta.dns}:${meta.rpcport}`;
+
+    const networkConfig: ChainInfo = {
+      label: apiData.name,
+      iconLabel: apiData.name,
+      chainId: parseInt(apiData.chainid, 16),
+      endpoints: apiData.endpoints ? 
+        (Array.isArray(apiData.endpoints) ? apiData.endpoints : [apiData.endpoints] as string[]) : 
+        [rpcEndpoint],
+      icon: apiData.icon || './images/artifacts/bitcoin-mainnet.svg',
+      unit: apiData.name,
+      networkType: Number(apiData.testnet) ? NetworkType.TESTNET : NetworkType.MAINNET,
+      updated: apiData.updated || 0,
+      id: apiData.id
+    };
+
+    const networkId = `${networkConfig.label.toUpperCase().replace(/\s+/g, '_')}_${networkConfig.networkType.toUpperCase()}`;
+    console.log('Generated networkId:', networkId);
+    
+    // 动态添加到 ChainType 枚举
+    addChainType(networkId, networkId);
+    
+    // 直接添加到 CHAIN_INFO 对象中
+    CHAIN_INFO[networkId] = networkConfig;
+
+    console.log(`Added network to CHAIN_INFO and preference: ${networkId}`, networkConfig);
+  } catch (error) {
+    console.error('Error adding network from API data:', error);
+  }
+};
+
+export const addNetworksFromAPI = (apiDataList: any[]): void => {
+  apiDataList.forEach(apiData => {
+    addNetworkFromAPI(apiData);
+  });
 };

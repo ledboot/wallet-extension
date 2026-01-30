@@ -1,7 +1,7 @@
 import { ripemd160 as nobleRipemd160 } from '@noble/hashes/ripemd160';
 import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
 
-import { CHAIN_INFO, ServerConfiguration } from '@/shared/constants';
+import { CHAIN_INFO, ServerConfiguration, addNetworksFromAPI } from '@/shared/constants';
 import {
   Account,
   CoinNames,
@@ -23,6 +23,15 @@ export class OpenapiService {
   getEndpoint = () => {
     const chainType = preferenceService.getChainType();
     const chainInfo = CHAIN_INFO[chainType];
+    
+    if (!chainInfo) {
+      throw new Error(`Chain info not found for: ${chainType}`);
+    }
+    
+    if (!chainInfo.endpoints || chainInfo.endpoints.length === 0) {
+      throw new Error(`No endpoints found for chain: ${chainType}`);
+    }
+    
     return chainInfo.endpoints[0];
   };
 
@@ -189,20 +198,73 @@ export class OpenapiService {
 
   fetchBlockchains = async () => {
     const { serverEndpoint, chainclass } = ServerConfiguration;
-    const maxchainid = 0;
-    const updated = 0;
-    const url = `${serverEndpoint}/index.php?module=ncx&MOD_op=getblockchains&class=${chainclass}&id=${maxchainid}&updated=${updated}`;
+    
+    // 获取现有网络配置中的最大 id 和 updated
+    const allChainInfo = { ...CHAIN_INFO, ...preferenceService.getAllchainInfo() };
+    const chainIds = Object.values(allChainInfo)
+      .map(chain => chain.id || 0)
+      .filter(id => id > 0);
+    const updatedTimes = Object.values(allChainInfo)
+      .map(chain => chain.updated || 0)
+      .filter(time => time > 0);
+    
+    const maxchainid = chainIds.length > 0 ? Math.max(...chainIds) : 0;
+    const updated = updatedTimes.length > 0 ? Math.max(...updatedTimes) : 0;
+    
+    console.log('fetchBlockchains - maxchainid:', maxchainid, 'updated:', updated);
+    
+    const url = `${serverEndpoint}/omega/index.php?module=ncx&MOD_op=getblockchains&class=${chainclass}&id=${maxchainid}&updated=${updated}`;
     console.log('url', url);
     const res = await this.httpGet(url);
     console.log('getblockchainsres', res);
-    return res.result;
+    
+    // 处理获取到的区块链网络信息
+    if (Array.isArray(res) && res.length > 0) {
+      console.log(`Processing ${res.length} remote networks...`);
+      addNetworksFromAPI(res);
+      console.log('Dynamic networks added successfully');
+      
+      // 将 CHAIN_INFO 中的所有网络配置存储到 preferenceService
+      Object.entries(CHAIN_INFO).forEach(([chainType, chainInfo]) => {
+        preferenceService.addchainInfo(chainType, chainInfo);
+      });
+      
+      // 验证存储结果
+      const storedChainInfo = preferenceService.getAllchainInfo();
+      console.log('Verification - stored chainInfo:', storedChainInfo);
+      console.log('All network configurations persisted to preferenceService');
+      
+      // 延迟验证确保持久化成功
+      setTimeout(() => {
+        const delayedStoredChainInfo = preferenceService.getAllchainInfo();
+        console.log('Delayed verification - stored chainInfo:', delayedStoredChainInfo);
+      }, 1500);
+    }
+    
+    return res;
   };
 
   decodeMsgHex = (hex: string) => {
     const msgtx = new MsgT();
     msgtx.rawDecode(hex);
-    const btc =
-      CHAIN_INFO[preferenceService.getChainType()].chainId == 0x400002; // 假设这是比特币网络
+    
+    // 获取当前网络配置
+    const currentChainType = preferenceService.getChainType();
+    let currentChainId: number;
+    
+    // 优先从 CHAIN_INFO 获取，如果没有则从存储获取
+    if (CHAIN_INFO[currentChainType]) {
+      currentChainId = CHAIN_INFO[currentChainType].chainId;
+    } else {
+      const storedChainInfo = preferenceService.getchainInfo(currentChainType);
+      if (storedChainInfo) {
+        currentChainId = storedChainInfo.chainId;
+      } else {
+        throw new Error(`Chain info not found for: ${currentChainType}`);
+      }
+    }
+    
+    const btc = currentChainId == 0x400002; // 假设这是比特币网络
     const txOUtLen = msgtx?.tOut.length || 0;
     const tOut: any[] = [];
     const tIn: any[] = [];

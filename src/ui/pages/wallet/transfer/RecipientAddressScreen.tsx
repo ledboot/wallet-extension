@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { transferAddressHistory } from '@/shared/types';
 import { useWallet } from '@/ui/utils/walletContext';
+import { useLanguage } from '@/ui/contexts/LanguageContext';
 
 interface LocationState {
   token: any;
@@ -15,6 +16,7 @@ export default function RecipientAddressScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const currentAccount = useCurrentAccount();
+  const { t } = useLanguage();
   const { token } = (location.state || {}) as LocationState;
   
   const [recipientAddress, setRecipientAddress] = useState('');
@@ -53,7 +55,7 @@ export default function RecipientAddressScreen() {
       setRecipientAddress(text.trim());
       validateAddress(text.trim());
     } catch (err) {
-      toast.error('Failed to read from clipboard');
+      toast.error(t('transfer.clipboard_error'));
     }
   };
 
@@ -97,9 +99,9 @@ export default function RecipientAddressScreen() {
           className='flex items-center space-x-1 text-sm font-medium'
         >
           <ChevronLeft className='h-5 w-5' />
-          <span>返回</span>
+          <span>{t('transfer.back')}</span>
         </button>
-        <h1 className='text-lg font-semibold'>发送 {token.name}</h1>
+        <h1 className='text-lg font-semibold'>{t('transfer.send_token').replace('{token}', token.name)}</h1>
         <div className='w-10' />
       </div>
 
@@ -110,26 +112,26 @@ export default function RecipientAddressScreen() {
               type="text"
               value={recipientAddress}
               onChange={handleAddressChange}
-              placeholder={`输入${token.name}收款地址`}
+              placeholder={t('transfer.enter_address').replace('{token}', token.name)}
               className="w-full p-4 pr-12 bg-wallet-card border border-border rounded-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
             <button
               onClick={handlePaste}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary hover:text-primary/80"
-              title="粘贴地址"
+              title={t('transfer.paste_address')}
             >
               <Copy className="h-5 w-5" />
             </button>
           </div>
           
           {!isValidAddress && recipientAddress && (
-            <p className="mt-2 text-sm text-red-500">无效的地址</p>
+            <p className="mt-2 text-sm text-red-500">{t('transfer.invalid_address')}</p>
           )}
         </div>
 
         {recentAddresses.length > 0 && (
           <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-400 mb-3">最近使用</h3>
+            <h3 className="text-sm font-medium text-gray-400 mb-3">{t('transfer.recent_used')}</h3>
             <div className="space-y-2">
               {recentAddresses.map((item, index) => (
                 <div
@@ -162,7 +164,7 @@ export default function RecipientAddressScreen() {
               : 'bg-gray-600 text-gray-400 cursor-not-allowed'
           }`}
         >
-          继续
+          {t('transfer.continue')}
         </button>
       </div>
     </div>

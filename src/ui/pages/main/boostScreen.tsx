@@ -2,12 +2,14 @@ import { useEffect } from 'react';
 
 import { getUiType } from '@/ui/utils';
 import { useWallet } from '@/ui/utils/walletContext';
+import { useLanguage } from '@/ui/contexts/LanguageContext';
 
 import { useNavigate } from '../mainRoute';
 
 export default function BoostScreen() {
   const navigate = useNavigate();
   const wallet = useWallet();
+  const { t } = useLanguage();
   const loadView = async () => {
     const uiType = getUiType();
     console.log('uiType', uiType);
@@ -60,5 +62,5 @@ export default function BoostScreen() {
     init();
   },[]);
 
-  return <div>boosting...</div>;
+  return <div>{t('boost.boosting')}</div>;
 }

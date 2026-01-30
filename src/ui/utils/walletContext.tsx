@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 
-import { Account, WalletKeyring, Utxo, UtxoAddressSumInfo, CoinNames, transferAddressHistory } from '@/shared/types';
+import { Account, WalletKeyring, Utxo, UtxoAddressSumInfo, CoinNames, transferAddressHistory, ChainInfo } from '@/shared/types';
 import { ChainType,NetworkType } from '@/shared/constants';
 
 export interface WalletController {
@@ -22,7 +22,8 @@ export interface WalletController {
   getIsFirstOpen(): Promise<boolean>;
   updateIsFirstOpen(): Promise<void>;
 
-  removeKeyring(keyring: WalletKeyring): Promise<WalletKeyring>;
+  removeKeyring(keyringKey: string): Promise<WalletKeyring>;
+  removeAccount(address: string, type: string): Promise<void>;
 
   getCurrentAccount(): Promise<Account>;
   getAccounts(): Promise<Account[]>;
@@ -55,6 +56,7 @@ export interface WalletController {
   updateTransferAddressesHistory(newAddress: string): Promise<void>;
   getTransferFees(tokenType: number, senderAddress: string, isAll: boolean, amount?: string, receivedAddress?: string): Promise<number>;
   transfer(amount: string, tokenType: string, receivedAddress: string, password: string, senderAddress: string, crosschain: number, timeLimit: number): Promise<any>;
+  getStoredChainInfo(): Promise<{ [key: string]: ChainInfo }>;
 
 }
 

@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { formatAmount } from '@/ui/utils';
 import { useWallet } from '@/ui/utils/walletContext';
 import { useCurrentAccount } from '@/ui/state/hooks';
+import { useLanguage } from '@/ui/contexts/LanguageContext';
 interface LocationState {
   token: any;
   recipientAddress: string;
@@ -13,6 +14,7 @@ interface LocationState {
 export default function AmountInputScreen() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
   const { token, recipientAddress } = (location.state || {}) as LocationState;
   const wallet = useWallet();
   const currentAccount = useCurrentAccount();
@@ -42,7 +44,7 @@ export default function AmountInputScreen() {
         setFee((feeSats / 1e8).toFixed(8)); // Keep 8 decimal places
       } catch (error) {
         console.error('获取交易费失败:', error);
-        setFeeError('获取交易费失败');
+        setFeeError(t('transfer.fee_fetch_failed'));
         setFee('0.0001'); // Fallback to default fee
       } finally {
         setIsLoadingFee(false);
@@ -92,7 +94,7 @@ export default function AmountInputScreen() {
 
     }catch (error) {
       console.error('获取最大可转金额失败:', error);
-      setFeeError('获取最大可转金额失败');
+      setFeeError(t('transfer.max_amount_failed'));
     } finally {
       setIsLoadingFee(false);
     }
@@ -129,9 +131,9 @@ export default function AmountInputScreen() {
           className='flex items-center space-x-1 text-sm font-medium'
         >
           <ChevronLeft className='h-5 w-5' />
-          <span>返回</span>
+          <span>{t('transfer.back')}</span>
         </button>
-        <h1 className='text-lg font-semibold'>发送 {token.name}</h1>
+        <h1 className='text-lg font-semibold'>{t('transfer.send_token').replace('{token}', token.name)}</h1>
         <div className='w-10' />
       </div>
 
@@ -139,9 +141,9 @@ export default function AmountInputScreen() {
         <div className="mb-6">
           <div className="relative">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-gray-400">金额</span>
+              <span className="text-sm text-gray-400">{t('transfer.amount')}</span>
               <div className="text-sm text-gray-400">
-                可用: {formatAmount(token.value)} {token.name}
+                {t('transfer.available').replace('{balance}', formatAmount(token.value)).replace('{token}', token.name)}
               </div>
             </div>
             
@@ -158,7 +160,7 @@ export default function AmountInputScreen() {
                 onClick={handleMax}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-primary/10 text-primary text-sm font-medium px-3 py-1 rounded-md hover:bg-primary/20 transition-colors"
               >
-                最大
+                {t('transfer.max')}
               </button>
             </div>
             
@@ -168,10 +170,10 @@ export default function AmountInputScreen() {
 
           <div className="mt-6 bg-wallet-card rounded-xl p-4 border border-border">
             <div className="flex justify-between py-2">
-              <span className="text-gray-400">网络费用</span>
+              <span className="text-gray-400">{t('transfer.network_fee')}</span>
               <div className="text-right">
                 {isLoadingFee ? (
-                  <span className="animate-pulse">计算中...</span>
+                  <span className="animate-pulse">{t('transfer.calculating')}</span>
                 ) : feeError ? (
                   <span className="text-red-500">{feeError}</span>
                 ) : (
@@ -181,7 +183,7 @@ export default function AmountInputScreen() {
             </div>
             <div className="h-px bg-border my-2"></div>
             <div className="flex justify-between py-2">
-              <span className="text-gray-400">总计</span>
+              <span className="text-gray-400">{t('transfer.total')}</span>
               <div className="text-right">
                 <div>{totalAmount} {token.name}</div>
               </div>
@@ -200,7 +202,7 @@ export default function AmountInputScreen() {
               : 'bg-gray-600 text-gray-400 cursor-not-allowed'
           }`}
         >
-          继续
+          {t('transfer.continue')}
         </button>
       </div>
     </div>

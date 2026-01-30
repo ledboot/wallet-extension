@@ -1,4 +1,4 @@
-import { EVENTS, CHAIN_INFO } from '@/shared/constants';
+import { EVENTS, CHAIN_INFO, ChainType } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
 import PortMessage from '@/shared/utils/message/portMessage';
 
@@ -216,6 +216,14 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
         const chainType = preferenceService.store.chainType;
         const currentChainInfo = CHAIN_INFO[chainType];
         
+        if (!currentChainInfo) {
+          throw new Error(`Chain info not found for: ${chainType}`);
+        }
+        
+        if (!currentChainInfo.endpoints || currentChainInfo.endpoints.length === 0) {
+          throw new Error(`No endpoints found for chain: ${chainType}`);
+        }
+        
         sendResponse({
           success: true,
           result: {
@@ -236,9 +244,17 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
     if (method === 'SWITCH_NETWORK') {
       try {
         const targetChainId = params.chainId;
-        const targetChainType = Object.entries(CHAIN_INFO).find(([_, chainInfo]) => 
+        
+        // 优先从存储中查找网络，然后从常量中查找
+        let targetChainType = Object.entries(preferenceService.getAllchainInfo()).find(([_, chainInfo]) => 
           chainInfo.chainId === targetChainId
-        )?.[0] as keyof typeof CHAIN_INFO;
+        )?.[0] as string;
+        
+        if (!targetChainType) {
+          targetChainType = Object.entries(CHAIN_INFO).find(([_, chainInfo]) => 
+            chainInfo.chainId === targetChainId
+          )?.[0] as string;
+        }
         
         if (!targetChainType) {
           sendResponse({
@@ -247,9 +263,23 @@ chrome.runtime.onMessage.addListener( (message, sender, sendResponse) => {
           });
           return true;
         }
-        const targetChainInfo = CHAIN_INFO[targetChainType];
+        
+        // 优先从存储中获取网络配置
+        let targetChainInfo = preferenceService.getchainInfo(targetChainType);
+        if (!targetChainInfo) {
+          targetChainInfo = CHAIN_INFO[targetChainType];
+        }
+        
+        if (!targetChainInfo) {
+          throw new Error(`Chain info not found for: ${targetChainType}`);
+        }
+        
+        if (!targetChainInfo.endpoints || targetChainInfo.endpoints.length === 0) {
+          throw new Error(`No endpoints found for chain: ${targetChainType}`);
+        }
+        
         preferenceService.store.networkType = targetChainInfo.networkType;
-        preferenceService.store.chainType = targetChainType;
+        preferenceService.store.chainType = targetChainType as ChainType;
         
         keyringService.changeNetwork();
         // Broadcast network change to UI

@@ -5,10 +5,12 @@ import { CHAIN_INFO } from '@/shared/constants';
 import { useEffect, useState } from 'react';
 import { formatAmount } from '@/ui/utils';
 import { useWallet } from '@/ui/utils/walletContext';
+import { useLanguage } from '@/ui/contexts/LanguageContext';
 import type { UtxoAddressSumInfo, CoinNames } from '@/shared/types';
 
 export default function TokenSelectionScreen() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const currentAccount = useCurrentAccount();
   const chainType = useChainType();
   const [tokens, setTokens] = useState<any[]>([]);
@@ -44,9 +46,9 @@ export default function TokenSelectionScreen() {
           className='flex items-center space-x-1 text-sm font-medium'
         >
           <ChevronLeft className='h-5 w-5' />
-          <span>返回</span>
+          <span>{t('transfer.back')}</span>
         </button>
-        <h1 className='text-lg font-semibold'>选择代币</h1>
+        <h1 className='text-lg font-semibold'>{t('transfer.select_token')}</h1>
         <div className='w-10' />
       </div>
 
@@ -60,8 +62,8 @@ export default function TokenSelectionScreen() {
             <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
               <Wallet className="w-8 h-8 text-gray-400" />
             </div>
-            <div className="text-gray-400 text-lg font-medium mb-2">没有找到代币</div>
-            <div className="text-gray-500 text-sm">您当前没有可用的代币</div>
+            <div className="text-gray-400 text-lg font-medium mb-2">{t('transfer.no_tokens_found')}</div>
+            <div className="text-gray-500 text-sm">{t('transfer.no_tokens_description')}</div>
           </div>
         ) : (
           <div className="px-4 py-2">

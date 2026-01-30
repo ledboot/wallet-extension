@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import type { CoinNames, UtxoAddressSumInfo } from '@/shared/types';
 import AssetsList from '@background/service/assetslist';
 import { Wallet } from 'lucide-react';
-
+import eventBus from '@/shared/eventBus';
 import preferenceService from '@/background/service/preference';
 import { CHAIN_INFO } from '@/shared/constants';
 import { useWallet } from '@/ui/utils/walletContext';
+import { useLanguage } from '@/ui/contexts/LanguageContext';
 
 // interface Asset {
 //   id: string;
@@ -89,6 +90,7 @@ type AssetItem = UtxoAddressSumInfo &
   };
 
 export function AssetList() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'crypto' | 'nft'>('crypto');
 
   const [assets, setAssets] = useState<AssetItem[]>([]);
@@ -107,7 +109,7 @@ export function AssetList() {
         setChainName(chainName);
       } catch (err) {
         console.error('Failed to fetch assets:', err);
-        setError('获取资产列表失败，请重试');
+        setError(t('assets.fetch_assets_failed'));
       } finally {
         setLoading(false);
       }
@@ -117,6 +119,21 @@ export function AssetList() {
 
     // 设置定时器
     const intervalId = setInterval(fetchAssets, 3000);
+    
+    // 监听外部刷新事件
+    const handleRefreshEvent = () => {
+      console.log('AssetList: Received refresh event');
+      fetchAssets();
+    };
+    eventBus.addEventListener('refreshAssets', handleRefreshEvent);
+    
+    // 监听来自后台的刷新事件
+    const handleBackgroundRefreshEvent = () => {
+      console.log('AssetList: Received background refresh event');
+      fetchAssets();
+    };
+    eventBus.addEventListener('ui:refreshAssets', handleBackgroundRefreshEvent);
+    
     // 添加可见性变化监听
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -129,12 +146,14 @@ export function AssetList() {
     // 清理函数
     return () => {
       clearInterval(intervalId);
+      eventBus.removeEventListener('refreshAssets', handleRefreshEvent);
+      eventBus.removeEventListener('ui:refreshAssets', handleBackgroundRefreshEvent);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [wallet]);
 
   if (loading) {
-    return <div className='p-4 text-center'>加载中...</div>;
+    return <div className='p-4 text-center'>{t('assets.loading')}</div>;
   }
 
   if (error) {
@@ -149,13 +168,13 @@ export function AssetList() {
             className={`tab ${activeTab === 'crypto' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('crypto')}
           >
-            Crypto
+            {t('assets.crypto')}
           </a>
           <a
             className={`tab ${activeTab === 'nft' ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab('nft')}
+            // onClick={() => setActiveTab('nft')}
           >
-            NFT
+            {t('assets.nft')}
           </a>
         </div>
       </div>
@@ -170,10 +189,10 @@ export function AssetList() {
                     <Wallet className='h-8 w-8 text-gray-400' />
                   </div>
                   <div className='mb-2 text-lg font-medium text-gray-400'>
-                    没有找到代币
+                    {t('assets.no_tokens_found')}
                   </div>
                   <div className='text-sm text-gray-500'>
-                    您当前没有可用的代币
+                    {t('assets.no_tokens_description')}
                   </div>
                 </div>
               ) : (
@@ -188,7 +207,7 @@ export function AssetList() {
                           <div className='flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-base-200'>
                             <img
                               src={asset.iconHtml}
-                              alt={asset.name || '代币图标'}
+                              alt={asset.name || t('assets.token_icon')}
                               className='h-full w-full object-cover'
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;

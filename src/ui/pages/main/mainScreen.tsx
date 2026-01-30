@@ -5,14 +5,17 @@ import { useEffect } from 'react';
 import { useWallet } from '@/ui/utils/walletContext';
 import { useWalletRequest } from '@/ui/utils/hooks';
 import { toast } from 'sonner';
+import { useLanguage } from '@/ui/contexts/LanguageContext';
+import eventBus from '@/shared/eventBus';
 
 export default function MainScreen() {
   const wallet = useWallet();
+  const { t } = useLanguage();
   const [runUpdate, loading] = useWalletRequest(
     (start: number, limit: number) => wallet.updateInit(start, limit),
     {
-      onSuccess: () => toast.success('刷新完成'),
-      onError: (e: any) => toast.error(e?.message || '刷新失败'),
+      onSuccess: () => toast.success(t('assets.refresh_success')),
+      onError: (e: any) => toast.error(e?.message || t('assets.refresh_failed')),
     }
   );
 
@@ -45,6 +48,9 @@ export default function MainScreen() {
       : 0) || 0;
     
     runUpdate(latest, 2048);
+    
+    // 发送刷新事件给 AssetList 组件
+    eventBus.emit('refreshAssets');
   };
 
   // return (

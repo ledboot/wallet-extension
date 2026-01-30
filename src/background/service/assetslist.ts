@@ -16,7 +16,22 @@ export class AssetsList {
   // 静态方法：调用方无需实例化
   static async aggregate(address: string): Promise<UtxoAddressSumInfo[]> {
     
-    const currentChainId = CHAIN_INFO[preferenceService.getChainType()].chainId;
+    // 获取当前网络配置
+    const currentChainType = preferenceService.getChainType();
+    let currentChainId: number;
+    
+    // 优先从 CHAIN_INFO 获取，如果没有则从存储获取
+    if (CHAIN_INFO[currentChainType]) {
+      currentChainId = CHAIN_INFO[currentChainType].chainId;
+    } else {
+      const storedChainInfo = preferenceService.getchainInfo(currentChainType);
+      if (storedChainInfo) {
+        currentChainId = storedChainInfo.chainId;
+      } else {
+        throw new Error(`Chain info not found for: ${currentChainType}`);
+      }
+    }
+    
     const allUtxos = keyringService.getUtxos();
     
     // Filter UTXOs to only include those from current addresses

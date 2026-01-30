@@ -67,6 +67,8 @@ export type ChainInfo = {
   icon: string;
   unit: string;
   networkType: NetworkType;
+  updated: number;
+  id: number;
 };
 
 export type Utxo = {

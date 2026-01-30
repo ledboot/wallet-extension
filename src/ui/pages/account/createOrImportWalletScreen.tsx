@@ -4,9 +4,11 @@ import { toast } from 'sonner';
 
 import { KEYRING_TYPE } from '@/shared/constants';
 import { useWallet } from '@/ui/utils';
+import { useLanguage } from '@/ui/contexts/LanguageContext';
 
 export default function CreateOrImportWalletScreen() {
   const location = useLocation();
+  const { t } = useLanguage();
   const { newWallet, importWallet } = (location.state || {}) as {
     newWallet: boolean;
     importWallet: boolean;
@@ -19,14 +21,15 @@ export default function CreateOrImportWalletScreen() {
 
   const handleCreateWallet = async () => {
     if (!isBackup) {
-      toast.error('Please check the backup box');
+      toast.error(t('account.confirm_backup'));
       return;
     }
     try {
       await wallet.importPrivateKey(wif);
+      toast.success(t('account.wallet_created_success'));
     } catch (error: any) {
       // 显示具体的错误信息
-      const errorMessage = error?.message || 'Failed to create wallet';
+      const errorMessage = t('account.wallet_create_failed').replace('{error}', error?.message || t('common.error'));
       toast.error(errorMessage);
       console.error('Failed to create wallet', error);
       return;
@@ -37,10 +40,10 @@ export default function CreateOrImportWalletScreen() {
   const handleImportWallet = async () => {
     try {
       await wallet.importPrivateKey(wif);
-      toast.success('Wallet imported successfully');
+      toast.success(t('account.wallet_imported_success'));
     } catch (error: any) {
       // 显示具体的错误信息
-      const errorMessage = error?.message || 'Failed to import wallet';
+      const errorMessage = t('account.wallet_import_failed').replace('{error}', error?.message || t('common.error'));
       toast.error(errorMessage);
       console.error('Failed to import wallet', error);
       return;
@@ -63,21 +66,21 @@ export default function CreateOrImportWalletScreen() {
   return (
     <div className='flex h-screen flex-col items-center justify-center p-4'>
       <div className='mb-4 text-xl font-bold'>
-        {newWallet ? 'Create Wallet' : 'Import Wallet'}
+        {newWallet ? t('account.create_wallet_title') : t('account.import_wallet_title')}
       </div>
       {newWallet && (
         <div className='flex w-full flex-col gap-2'>
-          <span className='text-sm text-gray-500'>Wallet Address</span>
+          <span className='text-sm text-gray-500'>{t('account.wallet_address')}</span>
           <input
             type='text'
-            placeholder='Wallet Address'
+            placeholder={t('account.wallet_address')}
             value={address}
             className='input w-full rounded-md'
             disabled={true}
           />
-          <span className='text-sm text-gray-500'>WIF</span>
+          <span className='text-sm text-gray-500'>{t('account.private_key')}</span>
           <textarea
-            placeholder='WIF'
+            placeholder={t('account.private_key')}
             value={wif}
             className='input h-20 w-full resize-none rounded-md'
             disabled={true}
@@ -90,24 +93,24 @@ export default function CreateOrImportWalletScreen() {
               checked={isBackup}
               onChange={(e) => setIsBackup(e.target.checked)}
             />
-            <label className='label'>I backup my private key</label>
+            <label className='label'>{t('account.backup_private_key')}</label>
           </div>
           <button className='btn rounded-md' onClick={handleCreateWallet}>
-            Confirm
+            {t('common.confirm')}
           </button>
         </div>
       )}
       {importWallet && (
         <div className='flex w-full flex-col gap-2'>
           <textarea
-            placeholder='Enter a private key'
+            placeholder={t('account.enter_private_key')}
             className='input h-20 w-full resize-none rounded-md'
             value={wif}
             onChange={(e) => setWIF(e.target.value)}
             style={{ whiteSpace: 'pre-line' }}
           />
           <button className='btn rounded-md' onClick={handleImportWallet}>
-            Confirm
+            {t('common.confirm')}
           </button>
         </div>
       )}

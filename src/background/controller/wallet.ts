@@ -5,10 +5,10 @@ import {
   KEYRING_TYPE,
   KEYRING_TYPES,
   ChainType,
-  CHAIN_INFO
+  CHAIN_INFO,
 } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
-import { Account, WalletKeyring } from '@/shared/types';
+import { Account, WalletKeyring, ChainInfo } from '@/shared/types';
 
 import keyringService from '../service/keyring';
 import { DisplayedKeyring } from '../service/keyring/index';
@@ -71,14 +71,35 @@ export class WalletController {
         preferenceService.setCurrentAccountIndex(0);
       }
     }
+    
+    // 钱包解锁后立即获取区块链网络
+    try {
+      const blockchains = await openapiService.fetchBlockchains();
+      console.log('---------blockchains', blockchains);
+    } catch (error) {
+      console.error('Failed to fetch blockchains on unlock:', error);
+    }
+    
     eventBus.emit(EVENTS.broadcastToUI, { method: 'unlock', params: {} });
   };
   // UtxoCoin = () =>keyringService.UtxoCoin();
-  
+
   /**
    * 初始化更新：获取账户最新UTXO并聚合写入loadStore
    */
   updateInit = async (start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; CoinNames: CoinNames[]; utxoItems: Utxo[] }> => {
+    // 获取远程网络并自动添加到动态网络管理器
+    // const blockchains = await openapiService.fetchBlockchains();
+    // console.log('---------blockchains', blockchains);
+    
+    // // 获取所有可用网络（静态 + 动态）
+    // const allNetworks = dynamicNetworkManager.getAllNetworks();
+    // console.log('---------all available networks:', Object.keys(allNetworks));
+    
+    // // 获取动态网络统计
+    // const dynamicNetworks = dynamicNetworkManager.getDynamicNetworks();
+    // console.log('---------dynamic networks count:', dynamicNetworks.length);
+    
     console.log('updateInit', start, limit);
     this.resetLockTime();
     const account = await this.getCurrentAccount();
@@ -96,16 +117,18 @@ export class WalletController {
       
       if (shouldUpdate) {
         keyringService.updateUtxos(utxoItems);
-        keyringService.addUtxosMap(account.address, CHAIN_INFO[preferenceService.getChainType()].chainId, utxoItems);
-        const utxosMap = keyringService.getUtxosMap(account.address, CHAIN_INFO[preferenceService.getChainType()].chainId);
-        console.log('---utxosMap',utxosMap)
+        const currentChainInfo = this.getCurrentChainInfo();
+        keyringService.addUtxosMap(account.address, currentChainInfo.chainId, utxoItems);
+        const utxoMap = keyringService.getUtxosMap(account.address, currentChainInfo.chainId);
+        console.log('---utxoMap',utxoMap)
         console.log('UTXOs saved to preference store');
       } else {
         console.log('Skipping UTXO update: New UTXOs are from an older block');
       }
     }
 
-    const chainId = CHAIN_INFO[preferenceService.getChainType()].chainId;
+    const currentChainInfo = this.getCurrentChainInfo();
+    const chainId = currentChainInfo.chainId;
     const chainIdStr = chainId.toString();
     let CoinNames: CoinNames[] = [];
     if (utxoItems.length > 0) {
@@ -131,7 +154,11 @@ export class WalletController {
     const filteredAssets = assetsLists.assets.filter(asset => 
         asset.address === account?.address
     );
-    const chainName = CHAIN_INFO[preferenceService.getChainType()].iconLabel;
+    
+    // 使用辅助函数获取当前网络配置
+    const currentChainInfo = this.getCurrentChainInfo();
+    const chainName = currentChainInfo.iconLabel;
+    
     return {assetsData: filteredAssets, chainName};
   };
 
@@ -193,8 +220,17 @@ export class WalletController {
     const keyrings = await this.getKeyrings();
     const nextKeyring = keyrings[keyrings.length - 1];
     if (nextKeyring) {
-      this.changeKeyring(nextKeyring.key,0);
+      await this.changeKeyring(nextKeyring.key);
     }
+  };
+
+  /**
+   * 移除账户
+   * @param address 账户地址
+   * @param type 账户类型
+   */
+  removeAccount = async (address: string, type: string) => {
+    await keyringService.removeAccount(address, type);
   };
 
   getKeyrings = async (): Promise<WalletKeyring[]> => {
@@ -276,6 +312,25 @@ export class WalletController {
   };
 
   /**
+   * 获取当前网络配置（支持动态网络）
+   */
+  private getCurrentChainInfo = (): ChainInfo => {
+    const currentChainType = preferenceService.getChainType();
+    
+    // 优先从 CHAIN_INFO 获取，如果没有则从存储获取
+    if (CHAIN_INFO[currentChainType]) {
+      return CHAIN_INFO[currentChainType];
+    } else {
+      const storedChainInfo = preferenceService.getchainInfo(currentChainType);
+      if (storedChainInfo) {
+        return storedChainInfo;
+      } else {
+        throw new Error(`Chain info not found for: ${currentChainType}`);
+      }
+    }
+  };
+
+  /**
    * 获取网络类型
    */
   getNetworkType = () => {
@@ -283,7 +338,16 @@ export class WalletController {
   };
 
   changeNetwork = async (chainType: ChainType) => {
-    const chainInfo = CHAIN_INFO[chainType]
+    // 优先从存储中获取网络配置，如果没有则从常量中获取
+    let chainInfo = preferenceService.getchainInfo(chainType);
+    if (!chainInfo) {
+      chainInfo = CHAIN_INFO[chainType];
+    }
+    
+    if (!chainInfo) {
+      throw new Error(`Chain info not found for: ${chainType}`);
+    }
+    
     preferenceService.setNetworkType(chainInfo.networkType)
     preferenceService.setChainType(chainType)
     keyringService.changeNetwork();
@@ -511,11 +575,23 @@ export class WalletController {
     }
     return fees;
   }
+  /**
+   * 获取存储的网络配置
+   */
+  getStoredChainInfo = async (): Promise<{ [key: string]: ChainInfo }> => {
+    return preferenceService.getAllchainInfo();
+  };
+
   transfer = async ( amount: string, tokenType: string, receivedAddress: string, password: string, senderAddress: string, crosschain: number, timeLimit: number) => {
     const res = await openapiService.transfer(BigInt(Number(amount) * 1e8), BigInt(Number(tokenType)), receivedAddress, password, senderAddress, crosschain, timeLimit)
     let result = null;
     if (res && res.result) {
       result = res.result;
+      // 转账成功后发送刷新事件
+      eventBus.emit(EVENTS.broadcastToUI, {
+        method: 'refreshAssets',
+        params: null
+      });
     }
     console.log('transfer res:', res);
     return result;

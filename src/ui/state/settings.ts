@@ -26,6 +26,8 @@ const initialState = {
   locale: 'en',
   networkType: NetworkType.MAINNET,
   chainType: ChainType.ZENT_MAINNET,
+  // networkType: NetworkType.TESTNET,
+  // chainType: ChainType.ZENT_TESTNET,
   walletConfig: {
     version: '',
     endpoint: '',
