@@ -115,6 +115,15 @@ devDependencies:
   '@types/chrome':
     specifier: ^0.0.268
     version: 0.0.268
+  '@types/crypto-js':
+    specifier: ^4.2.2
+    version: 4.2.2
+  '@types/ecurve':
+    specifier: ^1.0.3
+    version: 1.0.3
+  '@types/jsbn':
+    specifier: ^1.2.33
+    version: 1.2.33
   '@types/lodash-es':
     specifier: ^4.17.12
     version: 4.17.12
@@ -1870,6 +1879,10 @@ packages:
       '@babel/types': 7.27.3
     dev: true
 
+  /@types/bigi@1.4.5:
+    resolution: {integrity: sha512-fb5MUzazrD2GRnwlStm91HVu3cZbvolX9kJruqpUBdc24eHBWrLLfyt8XN1/C5JpI0stP/MbaFQp+cJh5WOFfw==}
+    dev: true
+
   /@types/bitcore-lib@0.15.6:
     resolution: {integrity: sha512-CtKDBgSBubPXZ0wFeCiUCSdzH+cuy6nFya3FboOqf44evi+OmkQPqEg3ASMpmPDYE8vkcxV302Iu8lZqCjYieg==}
     dependencies:
@@ -1889,6 +1902,17 @@ packages:
       '@types/node': 24.1.0
     dev: true
 
+  /@types/crypto-js@4.2.2:
+    resolution: {integrity: sha512-sDOLlVbHhXpAUAL0YHDUUwDZf3iN4Bwi4W6a0W0b+QcAezUbRtH4FVb+9J4h+XFPW7l/gQ9F8qC7P+Ec4k8QVQ==}
+    dev: true
+
+  /@types/ecurve@1.0.3:
+    resolution: {integrity: sha512-u4vAyBNeKKyPbrXEOaJ83XOHp5korRsNUR1zmN8Uc99+QTb3Dwg3h7agf9fBIRdPagEG9rkphC8hCk2qSi3/Gg==}
+    dependencies:
+      '@types/bigi': 1.4.5
+      '@types/node': 24.1.0
+    dev: true
+
   /@types/estree@1.0.8:
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
@@ -1904,6 +1928,10 @@ packages:
 
   /@types/har-format@1.2.15:
     resolution: {integrity: sha512-RpQH4rXLuvTXKR0zqHq3go0RVXYv/YVqv4TnPH95VbwUxZdQlK1EtcMvQvMpDngHbt13Csh9Z4qT9AbkiQH5BA==}
+    dev: true
+
+  /@types/jsbn@1.2.33:
+    resolution: {integrity: sha512-ZlLkHfu8xqqVFSbCe1FSPtAMUs7LKxk7TPskMb+sI5IbuzqyVqIEt9SVaQfFD2vrFcQunqKAmEBOuBEkoNLw4g==}
     dev: true
 
   /@types/json-schema@7.0.15:

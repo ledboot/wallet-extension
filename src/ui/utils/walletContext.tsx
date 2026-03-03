@@ -1,7 +1,15 @@
 import { createContext, useContext } from 'react';
 
-import { Account, WalletKeyring, Utxo, UtxoAddressSumInfo, CoinNames, transferAddressHistory, ChainInfo } from '@/shared/types';
-import { ChainType,NetworkType } from '@/shared/constants';
+import { ChainType, NetworkType } from '@/shared/constants';
+import {
+  Account,
+  ChainInfo,
+  CoinNames,
+  transferAddressHistory,
+  Utxo,
+  UtxoAddressSumInfo,
+  WalletKeyring,
+} from '@/shared/types';
 
 export interface WalletController {
   boot(password: string): Promise<void>;
@@ -35,29 +43,57 @@ export interface WalletController {
 
   getCurrentKeyring(): Promise<WalletKeyring>;
   getKeyrings(): Promise<WalletKeyring[]>;
-  
+
   changeKeyring(keyringKey: string, accountIndex?: number): Promise<void>;
 
   // createKeyringWithPrivateKey(privateKey: string, compressed: boolean, alianName?: string): Promise<void>;
   importPrivateKey(wif: string): Promise<void>;
-  
-  getAddressHistory(account: Account, start: number, limit: number): Promise<any>;
-  updateInit(start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; CoinNames: CoinNames[]; utxoItems: Utxo[]}>;
+
+  getAddressHistory(
+    account: Account,
+    start: number,
+    limit: number
+  ): Promise<any>;
+  updateInit(
+    start: number,
+    limit: number
+  ): Promise<{
+    sums: UtxoAddressSumInfo[];
+    CoinNames: CoinNames[];
+    utxoItems: Utxo[];
+  }>;
 
   getUtxoSum(): Promise<UtxoAddressSumInfo[]>;
 
   updateAccountAlianName(accountKey: string, newName: string): Promise<void>;
   updateKeyringAlianName(keyringKey: string, newName: string): Promise<void>;
   generatePrePrivateKey(keyringType: string): Promise<any>;
-  
+
   getWIF(address: string): Promise<string>;
-  assetsListsPage(): Promise<{assetsData: Array<UtxoAddressSumInfo & Partial<CoinNames>>, chainName: string}>;
+  assetsListsPage(): Promise<{
+    assetsData: Array<UtxoAddressSumInfo & Partial<CoinNames>>;
+    chainName: string;
+  }>;
   getTransferAddressHistory(): Promise<transferAddressHistory[]>;
   updateTransferAddressesHistory(newAddress: string): Promise<void>;
-  getTransferFees(tokenType: number, senderAddress: string, isAll: boolean, amount?: string, receivedAddress?: string): Promise<number>;
-  transfer(amount: string, tokenType: string, receivedAddress: string, password: string, senderAddress: string, crosschain: number, timeLimit: number): Promise<any>;
+  getTransferFees(
+    tokenType: number,
+    senderAddress: string,
+    isAll: boolean,
+    amount?: string,
+    receivedAddress?: string
+  ): Promise<number>;
+  transfer(
+    amount: string,
+    tokenType: string,
+    receivedAddress: string,
+    password: string,
+    senderAddress: string,
+    crosschain: number,
+    timeLimit: number
+  ): Promise<any>;
   getStoredChainInfo(): Promise<{ [key: string]: ChainInfo }>;
-
+  addchainInfo(chainType: string, chainInfo: ChainInfo): Promise<void>;
 }
 
 const WalletContext = createContext<WalletController | null>(null);

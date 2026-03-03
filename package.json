@@ -56,6 +56,8 @@
     "@types/bitcore-lib": "^0.15.6",
     "@types/chrome": "^0.0.268",
     "@types/crypto-js": "^4.2.2",
+    "@types/ecurve": "^1.0.3",
+    "@types/jsbn": "^1.2.33",
     "@types/lodash-es": "^4.17.12",
     "@types/node": "^24.1.0",
     "@types/react": "^19.1.6",

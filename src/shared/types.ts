@@ -69,6 +69,7 @@ export type ChainInfo = {
   networkType: NetworkType;
   updated: number;
   id: number;
+  explorerUrl?: string;
 };
 
 export type Utxo = {

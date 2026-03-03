@@ -9,7 +9,7 @@ export const translations = {
       address_copied: '地址已复制',
       language_changed: '语言已切换到',
     },
-    
+
     // Account
     account: {
       wallet: '钱包',
@@ -23,8 +23,10 @@ export const translations = {
       confirm_delete_account: '确定要删除这个账户吗？',
       wallet_deleted: '钱包已删除',
       account_deleted: '账户已删除',
-      confirm_delete_account_specific: '确定要删除账户 "{name}" 吗？此操作不可恢复。',
-      confirm_delete_keyring_specific: '确定要删除钱包 "{name}" 吗？此操作将删除钱包中的所有账户，且不可恢复。',
+      confirm_delete_account_specific:
+        '确定要删除账户 "{name}" 吗？此操作不可恢复。',
+      confirm_delete_keyring_specific:
+        '确定要删除钱包 "{name}" 吗？此操作将删除钱包中的所有账户，且不可恢复。',
       delete_account_success: '账户删除成功',
       delete_wallet_success: '钱包删除成功',
       delete_account_failed: '删除账户失败: {error}',
@@ -43,7 +45,7 @@ export const translations = {
       wallet_create_failed: '钱包创建失败: {error}',
       wallet_import_failed: '钱包导入失败: {error}',
     },
-    
+
     // Common
     common: {
       confirm: '确认',
@@ -64,7 +66,7 @@ export const translations = {
       account_count: '账户数量',
       accounts: '个账户',
     },
-    
+
     // Language names
     lang: {
       chinese: '中文',
@@ -72,12 +74,12 @@ export const translations = {
       japanese: '日本語',
       korean: '한국어',
     },
-    
+
     // Welcome
     welcome: {
-      title: '欢迎使用 ANEX 扩展',
+      title: '欢迎使用Zent钱包',
     },
-    
+
     // Password
     password: {
       create_password: '创建密码',
@@ -94,7 +96,7 @@ export const translations = {
       unlock_button: '解锁',
       unlock_failed: '解锁失败: {error}',
     },
-    
+
     // Assets
     assets: {
       send: '发送',
@@ -110,17 +112,60 @@ export const translations = {
       refresh_failed: '刷新失败',
       fetch_assets_failed: '获取资产列表失败，请重试',
     },
-    
+
     // Boost
     boost: {
       boosting: '启动中...',
     },
-    
+
     // Network
     network: {
       select_network: '选择网络',
+      add_custom_network: '添加自定义网络',
+      network_name: '网络名称',
+      rpc_url: 'RPC URL',
+      chain_id: '链 ID',
+      symbol: '符号',
+      block_explorer_url_optional: '区块链浏览器 (可选)',
+      is_test_network: '是否为测试网络',
+      add_network_warning:
+        '未知的网络服务提供商可能会暴露区块链状态并追踪您的网络活动。仅在您完全信任该网络时才添加。',
     },
-    
+
+    // Settings
+    settings: {
+      preferences: '偏好设置',
+      currency: '货币',
+      language: '语言',
+      appearance: '外观',
+      color_preferences: '颜色偏好',
+      default_wallet: '默认钱包',
+      custom_network: '自定义网络',
+      count_nfts: '在总余额中计入 NFT',
+      hide_risky: '在历史记录中隐藏高风险和低价值的交易',
+      hide_low_value: '隐藏低价值资产',
+      set_value_threshold: '设置价值阈值',
+      select_language: '选择语言',
+      settings: '设置',
+      wallet_security: '钱包安全',
+      backups: '备份',
+      password: '密码',
+      wallet_lock: '钱包锁定',
+      security_audit: '安全审计',
+      security_scan: '安全扫描',
+      basic: '基础',
+      wallet_management: '钱包管理',
+      address_book: '地址簿',
+      advanced: '高级',
+      clear_cache: '清除缓存',
+      download_logs: '下载日志',
+      more: '更多',
+      terms_of_service: '服务条款',
+      privacy_notice: '隐私政策',
+      get_help: '获取帮助',
+      community: '社区',
+    },
+
     // Transfer
     transfer: {
       select_token: '选择代币',
@@ -161,7 +206,7 @@ export const translations = {
       max_amount_failed: '获取最大可转金额失败',
       copied: '已复制',
     },
-    
+
     // Receive
     receive: {
       back: '返回',
@@ -169,7 +214,7 @@ export const translations = {
       network: '网络',
       address_copied: '地址已复制',
     },
-    
+
     // History
     history: {
       title: '交易记录',
@@ -185,7 +230,7 @@ export const translations = {
       load_more: '加载更多',
     },
   },
-  
+
   en: {
     // Header
     header: {
@@ -196,7 +241,7 @@ export const translations = {
       address_copied: 'Address copied',
       language_changed: 'Language switched to',
     },
-    
+
     // Account
     account: {
       wallet: 'Wallet',
@@ -210,8 +255,10 @@ export const translations = {
       confirm_delete_account: 'Are you sure you want to delete this account?',
       wallet_deleted: 'Wallet deleted',
       account_deleted: 'Account deleted',
-      confirm_delete_account_specific: 'Are you sure you want to delete account "{name}"? This action cannot be undone.',
-      confirm_delete_keyring_specific: 'Are you sure you want to delete wallet "{name}"? This will delete all accounts in this wallet and cannot be undone.',
+      confirm_delete_account_specific:
+        'Are you sure you want to delete account "{name}"? This action cannot be undone.',
+      confirm_delete_keyring_specific:
+        'Are you sure you want to delete wallet "{name}"? This will delete all accounts in this wallet and cannot be undone.',
       delete_account_success: 'Account deleted successfully',
       delete_wallet_success: 'Wallet deleted successfully',
       delete_account_failed: 'Failed to delete account: {error}',
@@ -230,7 +277,7 @@ export const translations = {
       wallet_create_failed: 'Failed to create wallet: {error}',
       wallet_import_failed: 'Failed to import wallet: {error}',
     },
-    
+
     // Common
     common: {
       confirm: 'Confirm',
@@ -251,7 +298,7 @@ export const translations = {
       account_count: 'Account Count',
       accounts: 'accounts',
     },
-    
+
     // Language names
     lang: {
       chinese: '中文',
@@ -259,12 +306,12 @@ export const translations = {
       japanese: '日本語',
       korean: '한국어',
     },
-    
+
     // Welcome
     welcome: {
-      title: 'Welcome to the ANEX extension',
+      title: 'Welcome to the ZENT extension',
     },
-    
+
     // Password
     password: {
       create_password: 'Create Password',
@@ -273,7 +320,8 @@ export const translations = {
       password_placeholder: 'Password',
       confirm_password_placeholder: 'Confirm Password',
       continue: 'Continue',
-      password_requirements: 'Must be more than 8 characters, including number, lowercase letter, uppercase letter',
+      password_requirements:
+        'Must be more than 8 characters, including number, lowercase letter, uppercase letter',
       password_min_length: 'Password must be at least 8 characters',
       password_mismatch: 'Passwords do not match',
       unlock_title: 'Unlock Wallet',
@@ -281,7 +329,7 @@ export const translations = {
       unlock_button: 'Unlock',
       unlock_failed: 'Unlock failed: {error}',
     },
-    
+
     // Assets
     assets: {
       send: 'Send',
@@ -297,17 +345,60 @@ export const translations = {
       refresh_failed: 'Refresh failed',
       fetch_assets_failed: 'Failed to fetch asset list, please try again',
     },
-    
+
     // Boost
     boost: {
       boosting: 'Boosting...',
     },
-    
+
     // Network
     network: {
       select_network: 'Select Network',
+      add_custom_network: 'Add custom network',
+      network_name: 'Network name',
+      rpc_url: 'RPC URL',
+      chain_id: 'Chain ID',
+      symbol: 'Symbol',
+      block_explorer_url_optional: 'Blockchain Explorer (optional)',
+      is_test_network: 'Is test network',
+      add_network_warning:
+        'Unknown internet service providers may expose the blockchain state and track your network activities. Add a network only if you fully trust it.',
     },
-    
+
+    // Settings
+    settings: {
+      preferences: 'Preferences',
+      currency: 'Currency',
+      language: 'Language',
+      appearance: 'Appearance',
+      color_preferences: 'Color preferences',
+      default_wallet: 'Default wallet',
+      custom_network: 'Custom network',
+      count_nfts: 'Count NFTs in total balance',
+      hide_risky: 'Hide risky and low-value transactions in History',
+      hide_low_value: 'Hide low-value assets',
+      set_value_threshold: 'Set value threshold',
+      select_language: 'Select Language',
+      settings: 'Settings',
+      wallet_security: 'Wallet security',
+      backups: 'Backups',
+      password: 'Password',
+      wallet_lock: 'Wallet lock',
+      security_audit: 'Security audit',
+      security_scan: 'Security scan',
+      basic: 'Basic',
+      wallet_management: 'Wallet management',
+      address_book: 'Address book',
+      advanced: 'Advanced',
+      clear_cache: 'Clear cache',
+      download_logs: 'Download logs',
+      more: 'More',
+      terms_of_service: 'Terms of Service',
+      privacy_notice: 'Privacy Notice',
+      get_help: 'Get help',
+      community: 'Community',
+    },
+
     // Transfer
     transfer: {
       select_token: 'Select Token',
@@ -333,9 +424,11 @@ export const translations = {
       token_label: 'Token',
       confirm_send: 'Confirm Send',
       processing: 'Processing...',
-      warning_message: 'Please carefully check the transaction details. Once sent, it cannot be undone.',
+      warning_message:
+        'Please carefully check the transaction details. Once sent, it cannot be undone.',
       enter_password: 'Enter Password',
-      password_description: 'Please enter your wallet password to confirm the transaction',
+      password_description:
+        'Please enter your wallet password to confirm the transaction',
       wallet_password: 'Wallet Password',
       cancel: 'Cancel',
       confirm: 'Confirm',
@@ -348,7 +441,7 @@ export const translations = {
       max_amount_failed: 'Failed to fetch maximum transferable amount',
       copied: 'Copied',
     },
-    
+
     // Receive
     receive: {
       back: 'Back',
@@ -356,7 +449,7 @@ export const translations = {
       network: 'Network',
       address_copied: 'Address copied',
     },
-    
+
     // History
     history: {
       title: 'Transaction History',
@@ -372,7 +465,7 @@ export const translations = {
       load_more: 'Load More',
     },
   },
-  
+
   ja: {
     // Header
     header: {
@@ -383,7 +476,7 @@ export const translations = {
       address_copied: 'アドレスがコピーされました',
       language_changed: '言語が切り替わりました',
     },
-    
+
     // Account
     account: {
       wallet: 'ウォレット',
@@ -397,8 +490,10 @@ export const translations = {
       confirm_delete_account: 'このアカウントを削除してもよろしいですか？',
       wallet_deleted: 'ウォレットが削除されました',
       account_deleted: 'アカウントが削除されました',
-      confirm_delete_account_specific: 'アカウント "{name}" を削除してもよろしいですか？この操作は元に戻せません。',
-      confirm_delete_keyring_specific: 'ウォレット "{name}" を削除してもよろしいですか？これによりウォレット内のすべてのアカウントが削除され、元に戻せません。',
+      confirm_delete_account_specific:
+        'アカウント "{name}" を削除してもよろしいですか？この操作は元に戻せません。',
+      confirm_delete_keyring_specific:
+        'ウォレット "{name}" を削除してもよろしいですか？これによりウォレット内のすべてのアカウントが削除され、元に戻せません。',
       delete_account_success: 'アカウントが正常に削除されました',
       delete_wallet_success: 'ウォレットが正常に削除されました',
       delete_account_failed: 'アカウントの削除に失敗しました: {error}',
@@ -417,7 +512,7 @@ export const translations = {
       wallet_create_failed: 'ウォレットの作成に失敗しました: {error}',
       wallet_import_failed: 'ウォレットのインポートに失敗しました: {error}',
     },
-    
+
     // Common
     common: {
       confirm: '確認',
@@ -438,7 +533,7 @@ export const translations = {
       account_count: 'アカウント数',
       accounts: 'アカウント',
     },
-    
+
     // Language names
     lang: {
       chinese: '中文',
@@ -446,12 +541,12 @@ export const translations = {
       japanese: '日本語',
       korean: '한국어',
     },
-    
+
     // Welcome
     welcome: {
-      title: 'ANEX拡張機能へようこそ',
+      title: 'ZENT拡張機能へようこそ',
     },
-    
+
     // Password
     password: {
       create_password: 'パスワードを作成',
@@ -460,7 +555,8 @@ export const translations = {
       password_placeholder: 'パスワード',
       confirm_password_placeholder: 'パスワードを確認',
       continue: '続行',
-      password_requirements: '8文字以上で、数字、小文字、大文字を含む必要があります',
+      password_requirements:
+        '8文字以上で、数字、小文字、大文字を含む必要があります',
       password_min_length: 'パスワードは最低8文字必要です',
       password_mismatch: 'パスワードが一致しません',
       unlock_title: 'ウォレットをロック解除',
@@ -468,7 +564,7 @@ export const translations = {
       unlock_button: 'ロック解除',
       unlock_failed: 'ロック解除に失敗しました: {error}',
     },
-    
+
     // Assets
     assets: {
       send: '送信',
@@ -482,19 +578,63 @@ export const translations = {
       token_icon: 'トークンアイコン',
       refresh_success: '更新完了',
       refresh_failed: '更新失敗',
-      fetch_assets_failed: 'アセットリストの取得に失敗しました。もう一度お試しください',
+      fetch_assets_failed:
+        'アセットリストの取得に失敗しました。もう一度お試しください',
     },
-    
+
     // Boost
     boost: {
       boosting: '起動中...',
     },
-    
+
     // Network
     network: {
       select_network: 'ネットワークを選択',
+      add_custom_network: 'カスタムネットワークを追加',
+      network_name: 'ネットワーク名',
+      rpc_url: 'RPC URL',
+      chain_id: 'チェーンID',
+      symbol: 'シンボル',
+      block_explorer_url_optional: 'ブロックチェーンエクスプローラー (任意)',
+      is_test_network: 'テストネットワーク',
+      add_network_warning:
+        '未知のインターネットサービスプロバイダはブロックチェーンの状態を公開し、ネットワーク活動を追跡する可能性があります。完全に信頼できるネットワークのみを追加してください。',
     },
-    
+
+    // Settings
+    settings: {
+      preferences: '環境設定',
+      currency: '通貨',
+      language: '言語',
+      appearance: '外観',
+      color_preferences: 'カラー設定',
+      default_wallet: 'デフォルトウォレット',
+      custom_network: 'カスタムネットワーク',
+      count_nfts: 'NFTを総残高に含める',
+      hide_risky: '履歴で高リスクおよび低価値の取引を非表示にする',
+      hide_low_value: '低価値の資産を非表示にする',
+      set_value_threshold: '価値のしきい値を設定',
+      select_language: '言語を選択',
+      settings: '設定',
+      wallet_security: 'ウォレットのセキュリティ',
+      backups: 'バックアップ',
+      password: 'パスワード',
+      wallet_lock: 'ウォレットのロック',
+      security_audit: 'セキュリティ監査',
+      security_scan: 'セキュリティスキャン',
+      basic: '基本設定',
+      wallet_management: 'ウォレット管理',
+      address_book: 'アドレス帳',
+      advanced: '詳細設定',
+      clear_cache: 'キャッシュを消去',
+      download_logs: 'ログをダウンロード',
+      more: 'その他',
+      terms_of_service: '利用規約',
+      privacy_notice: 'プライバシーポリシー',
+      get_help: 'ヘルプ',
+      community: 'コミュニティ',
+    },
+
     // Transfer
     transfer: {
       select_token: 'トークンを選択',
@@ -520,9 +660,11 @@ export const translations = {
       token_label: 'トークン',
       confirm_send: '送信を確認',
       processing: '処理中...',
-      warning_message: '取引詳細を慎重に確認してください。一度送信すると取り消せません。',
+      warning_message:
+        '取引詳細を慎重に確認してください。一度送信すると取り消せません。',
       enter_password: 'パスワードを入力',
-      password_description: '取引を確認するためウォレットのパスワードを入力してください',
+      password_description:
+        '取引を確認するためウォレットのパスワードを入力してください',
       wallet_password: 'ウォレットのパスワード',
       cancel: 'キャンセル',
       confirm: '確認',
@@ -535,7 +677,7 @@ export const translations = {
       max_amount_failed: '最大送信可能金額の取得に失敗しました',
       copied: 'コピーしました',
     },
-    
+
     // Receive
     receive: {
       back: '戻る',
@@ -543,7 +685,7 @@ export const translations = {
       network: 'ネットワーク',
       address_copied: 'アドレスがコピーされました',
     },
-    
+
     // History
     history: {
       title: '取引履歴',
@@ -559,7 +701,7 @@ export const translations = {
       load_more: 'もっと読み込む',
     },
   },
-  
+
   ko: {
     // Header
     header: {
@@ -570,7 +712,7 @@ export const translations = {
       address_copied: '주소가 복사되었습니다',
       language_changed: '언어가 변경되었습니다',
     },
-    
+
     // Account
     account: {
       wallet: '지갑',
@@ -584,8 +726,10 @@ export const translations = {
       confirm_delete_account: '이 계정을 삭제하시겠습니까?',
       wallet_deleted: '지갑이 삭제되었습니다',
       account_deleted: '계정이 삭제되었습니다',
-      confirm_delete_account_specific: '계정 "{name}"을(를) 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
-      confirm_delete_keyring_specific: '지갑 "{name}"을(를) 삭제하시겠습니까? 이렇게 하면 지갑의 모든 계정이 삭제되며 되돌릴 수 없습니다.',
+      confirm_delete_account_specific:
+        '계정 "{name}"을(를) 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+      confirm_delete_keyring_specific:
+        '지갑 "{name}"을(를) 삭제하시겠습니까? 이렇게 하면 지갑의 모든 계정이 삭제되며 되돌릴 수 없습니다.',
       delete_account_success: '계정이 성공적으로 삭제되었습니다',
       delete_wallet_success: '지갑이 성공적으로 삭제되었습니다',
       delete_account_failed: '계정 삭제 실패: {error}',
@@ -604,7 +748,7 @@ export const translations = {
       wallet_create_failed: '지갑 생성 실패: {error}',
       wallet_import_failed: '지갑 가져오기 실패: {error}',
     },
-    
+
     // Common
     common: {
       confirm: '확인',
@@ -625,7 +769,7 @@ export const translations = {
       account_count: '계정 수',
       accounts: '개 계정',
     },
-    
+
     // Language names
     lang: {
       chinese: '中文',
@@ -633,12 +777,12 @@ export const translations = {
       japanese: '日本語',
       korean: '한국어',
     },
-    
+
     // Welcome
     welcome: {
-      title: 'ANEX 확장 프로그램에 오신 것을 환영합니다',
+      title: 'ZENT 확장 프로그램에 오신 것을 환영합니다',
     },
-    
+
     // Password
     password: {
       create_password: '비밀번호 생성',
@@ -655,7 +799,7 @@ export const translations = {
       unlock_button: '잠금 해제',
       unlock_failed: '잠금 해제 실패: {error}',
     },
-    
+
     // Assets
     assets: {
       send: '보내기',
@@ -669,19 +813,63 @@ export const translations = {
       token_icon: '토큰 아이콘',
       refresh_success: '새로고침 완료',
       refresh_failed: '새로고침 실패',
-      fetch_assets_failed: '자산 목록을 가져오는 데 실패했습니다. 다시 시도하세요',
+      fetch_assets_failed:
+        '자산 목록을 가져오는 데 실패했습니다. 다시 시도하세요',
     },
-    
+
     // Boost
     boost: {
       boosting: '부팅 중...',
     },
-    
+
     // Network
     network: {
       select_network: '네트워크 선택',
+      add_custom_network: '사용자 지정 네트워크 추가',
+      network_name: '네트워크 이름',
+      rpc_url: 'RPC URL',
+      chain_id: '체인 ID',
+      symbol: '심볼',
+      block_explorer_url_optional: '블록체인 탐색기 (선택 사항)',
+      is_test_network: '테스트 네트워크',
+      add_network_warning:
+        '알 수 없는 인터넷 서비스 제공업체는 블록체인 상태를 노출하고 네트워크 활동을 추적할 수 있습니다. 완전히 신뢰하는 네트워크만 추가하세요.',
     },
-    
+
+    // Settings
+    settings: {
+      preferences: '환경설정',
+      currency: '통화',
+      language: '언어',
+      appearance: '모양',
+      color_preferences: '색상 설정',
+      default_wallet: '기본 지갑',
+      custom_network: '사용자 지정 네트워크',
+      count_nfts: '총 잔액에 NFT 포함',
+      hide_risky: '기록에서 위험하고 가치가 낮은 거래 숨기기',
+      hide_low_value: '가치가 낮은 자산 숨기기',
+      set_value_threshold: '가치 임계값 설정',
+      select_language: '언어 선택',
+      settings: '설정',
+      wallet_security: '지갑 보안',
+      backups: '백업',
+      password: '비밀번호',
+      wallet_lock: '지갑 잠금',
+      security_audit: '보안 감사',
+      security_scan: '보안 스캔',
+      basic: '기본 설정',
+      wallet_management: '지갑 관리',
+      address_book: '주소록',
+      advanced: '고급 설정',
+      clear_cache: '캐시 지우기',
+      download_logs: '로그 다운로드',
+      more: '기타',
+      terms_of_service: '이용 약관',
+      privacy_notice: '개인정보 처리방침',
+      get_help: '도움말 보기',
+      community: '커뮤니티',
+    },
+
     // Transfer
     transfer: {
       select_token: '토큰 선택',
@@ -707,7 +895,8 @@ export const translations = {
       token_label: '토큰',
       confirm_send: '전송 확인',
       processing: '처리 중...',
-      warning_message: '거래 세부 정보를 신중히 확인하세요. 한번 전송되면 취소할 수 없습니다.',
+      warning_message:
+        '거래 세부 정보를 신중히 확인하세요. 한번 전송되면 취소할 수 없습니다.',
       enter_password: '비밀번호 입력',
       password_description: '거래를 확인하려면 지갑 비밀번호를 입력하세요',
       wallet_password: '지갑 비밀번호',
@@ -722,7 +911,7 @@ export const translations = {
       max_amount_failed: '최대 전송 가능 금액 가져오기 실패',
       copied: '복사됨',
     },
-    
+
     // Receive
     receive: {
       back: '뒤로',
@@ -730,7 +919,7 @@ export const translations = {
       network: '네트워크',
       address_copied: '주소가 복사되었습니다',
     },
-    
+
     // History
     history: {
       title: '거래 기록',

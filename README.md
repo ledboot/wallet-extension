@@ -1,4 +1,4 @@
-# ANEX Wallet Extension
+# ZENT Wallet Extension
 
 ## Install
 

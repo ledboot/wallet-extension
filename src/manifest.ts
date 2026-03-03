@@ -39,10 +39,17 @@ export default defineManifest({
       matches: ['<all_urls>'],
       run_at: 'document_start',
     },
+    {
+      js: ['src/content_scripts/inpage.ts'],
+      matches: ['<all_urls>'],
+      run_at: 'document_start',
+      // @ts-expect-error world is valid in MV3 Chrome ≥ 111 but missing from crxjs types
+      world: 'MAIN',
+    },
   ],
   web_accessible_resources: [
     {
-      resources: ['*.js', '*.css', 'public/*', 'public/js/*.js', 'src/content_scripts/inpage.ts'],
+      resources: ['*.js', '*.css', 'public/*', 'public/js/*.js'],
       matches: ['<all_urls>'],
     },
   ],

@@ -1,6 +1,7 @@
 import { compareVersions } from 'compare-versions';
 
 import {
+  CHAIN_INFO,
   ChainType,
   DEFAULT_LOCKTIME_ID,
   NetworkType,
@@ -57,7 +58,7 @@ class PreferenceService {
         accountAlianNames: {},
         addressFlags: {},
         keyringAlianNames: {},
-        chainInfo: {}, // 初始化空的 chainInfo 存储
+        chainInfo: { ...CHAIN_INFO }, // 初始化内置网络
       },
     });
 
@@ -65,6 +66,24 @@ class PreferenceService {
       this.store.autoLockTimeId = DEFAULT_LOCKTIME_ID;
     }
 
+    // 确保已有数据的 chainInfo 包含所有的 built-in CHAIN_INFO
+    if (!this.store.chainInfo) {
+      this.store.chainInfo = { ...CHAIN_INFO };
+    } else {
+      let needsUpdate = false;
+      for (const [key, info] of Object.entries(CHAIN_INFO)) {
+        if (
+          !this.store.chainInfo[key] ||
+          this.store.chainInfo[key].updated < info.updated
+        ) {
+          this.store.chainInfo[key] = info;
+          needsUpdate = true;
+        }
+      }
+      if (needsUpdate) {
+        this.store.chainInfo = { ...this.store.chainInfo };
+      }
+    }
   };
 
   getIsFirstOpen = () => {
@@ -180,100 +199,33 @@ class PreferenceService {
     this.store.chainType = chainTyp;
   };
 
-  // CoinNames management
-  // setConames = (CoinNames: CoinNames[]) => {
-  //   this.store.CoinNames = CoinNames;
-  // };
-
-  // getConames = () => {
-  //   return this.store.CoinNames || [];
-  // };
-
-  // // UTXOs management
-  // setUtxos = (utxos: Utxo[]) => {
-  //   this.store.utxos = utxos;
-  // };
-
-  // getUtxos = (): Utxo[] => {
-  //   return this.store.utxos || [];
-  // };
-
-  // updateUtxos = (newUtxos: Utxo[]) => {
-  //   // Create a map of existing UTXOs for quick lookup
-  //   const utxoMap = new Map(
-  //     this.store.utxos.map(utxo => [`${utxo.txid}:${utxo.index}`, utxo])
-  //   );
-
-  //   // Add or update UTXOs
-  //   newUtxos.forEach(utxo => {
-  //     utxoMap.set(`${utxo.txid}:${utxo.index}`, utxo);
-  //   });
-
-  //   // Convert back to array and update the store
-  //   this.store.utxos = Array.from(utxoMap.values());
-  //   return this.store.utxos;
-  // };
-
-  // updateConames = (newConames: CoinNames[]) => {
-  //   const existingConames = this.getConames();
-  //   const conamesMap = new Map(
-  //     existingConames.map(coname => [coname.tokenType, coname])
-  //   );
-
-  //   // Update or add new CoinNames
-  //   newConames.forEach(coname => {
-  //     conamesMap.set(coname.tokenType, coname);
-  //   });
-
-  //   this.store.CoinNames = Array.from(conamesMap.values());
-  //   return this.store.CoinNames;
-  // };
-
-  // setUtxoSums = (utxoSums: UtxoAddressSumInfo[]) => {
-  //   this.store.utxoSums = utxoSums;
-  // };
-
-  // getUtxoSums = (): UtxoAddressSumInfo[] => {
-  //   return this.store.utxoSums || [];
-  // };
-
-  // updateUtxoSums = (newSums: UtxoAddressSumInfo[]): UtxoAddressSumInfo[] => {
-  //   const existingSums = this.getUtxoSums();
-  //   const sumsMap = new Map(
-  //     existingSums.map(sum => [`${sum.address}|${sum.tokenType}`, sum])
-  //   );
-
-  // Update or add new sums
-  //   newSums.forEach(sum => {
-  //     sumsMap.set(`${sum.address}|${sum.tokenType}`, sum);
-  //   });
-
-  //   this.store.utxoSums = Array.from(sumsMap.values());
-  //   return this.store.utxoSums;
-  // };
-
   // ChainInfo 管理方法
   addchainInfo = (chainType: string, chainInfo: ChainInfo) => {
-    // 直接修改 store 对象以触发 Proxy 的 set 陷阱
+    if (!this.store.chainInfo) {
+      this.store.chainInfo = {};
+    }
+    // 直接修改 store 对象以触发 Proxy 的 set
     this.store.chainInfo[chainType] = chainInfo;
-    
+
     // 强制触发存储更新
     const updatedChainInfo = { ...this.store.chainInfo };
     this.store.chainInfo = updatedChainInfo;
-    
+
     console.log(`Added chain ${chainType} to preference store`);
   };
 
   getchainInfo = (chainType: string): ChainInfo | undefined => {
-    return this.store.chainInfo[chainType];
+    return this.store.chainInfo ? this.store.chainInfo[chainType] : undefined;
   };
 
   getAllchainInfo = (): { [key: string]: ChainInfo } => {
-    return this.store.chainInfo;
+    return this.store.chainInfo || {};
   };
 
   removechainInfo = (chainType: string) => {
-    delete this.store.chainInfo[chainType];
+    if (this.store.chainInfo) {
+      delete this.store.chainInfo[chainType];
+    }
   };
 }
 

@@ -1,25 +1,35 @@
-import { HashRouter, Route, Routes, useNavigate as useNavigateOrigin } from 'react-router';
-import SyncBridge from '@/ui/components/SyncBridge';
-import BoostScreen from './main/boostScreen';
-import WelcomeScreen from './main/welcomeScreen';
-import MainScreen from './main/mainScreen';
 import { useCallback, useRef } from 'react';
-import UnlockScreen from './account/unlockScreen';
-import CreatePasswordScreen from './account/createPasswordScreen';
-import CreateOrImportWalletScreen from './account/createOrImportWalletScreen';
-import AccountSelection from './account/AccountSelection';
-import History from './wallet/History';
-import NetworkSelection from './network/NetworkSelection';
-import Receive from './wallet/Receive';
+import {
+  HashRouter,
+  Route,
+  Routes,
+  useNavigate as useNavigateOrigin,
+} from 'react-router';
 
+import SyncBridge from '@/ui/components/SyncBridge';
+
+import AccountSelection from './account/AccountSelection';
+import CreateOrImportWalletScreen from './account/createOrImportWalletScreen';
+import CreatePasswordScreen from './account/createPasswordScreen';
+import UnlockScreen from './account/unlockScreen';
+import BoostScreen from './main/boostScreen';
+import MainScreen from './main/mainScreen';
+import WelcomeScreen from './main/welcomeScreen';
+import AddCustomNetwork from './network/AddCustomNetwork';
+import NetworkSelection from './network/NetworkSelection';
+import LanguageScreen from './settings/LanguageScreen';
+import PreferencesScreen from './settings/PreferencesScreen';
+import SettingsScreen from './settings/SettingsScreen';
+import History from './wallet/History';
+import Receive from './wallet/Receive';
+import AmountInputScreen from './wallet/transfer/AmountInputScreen';
+import RecipientAddressScreen from './wallet/transfer/RecipientAddressScreen';
 // Import transfer screens
 import TokenSelectionScreen from './wallet/transfer/TokenSelectionScreen';
-import RecipientAddressScreen from './wallet/transfer/RecipientAddressScreen';
-import AmountInputScreen from './wallet/transfer/AmountInputScreen';
 import TransactionConfirmScreen from './wallet/transfer/TransactionConfirmScreen';
 
 const routes = {
- BoostScreen: {
+  BoostScreen: {
     path: '/',
     element: <BoostScreen />,
   },
@@ -31,18 +41,26 @@ const routes = {
     path: '/main',
     element: <MainScreen />,
   },
-//   SettingsTabScreen: {
-//     path: '/settings',
-//     element: <SettingsTabScreen />,
-//   },
+  SettingsScreen: {
+    path: '/settings',
+    element: <SettingsScreen />,
+  },
+  PreferencesScreen: {
+    path: '/settings/preferences',
+    element: <PreferencesScreen />,
+  },
+  LanguageScreen: {
+    path: '/settings/language',
+    element: <LanguageScreen />,
+  },
   CreateOrImportWalletScreen: {
     path: '/account/create-or-import-wallet',
     element: <CreateOrImportWalletScreen />,
   },
-//   CreateAccountScreen: {
-//     path: '/account/create',
-//     element: <CreateAccountScreen />,
-//   },
+  //   CreateAccountScreen: {
+  //     path: '/account/create',
+  //     element: <CreateAccountScreen />,
+  //   },
   CreatePasswordScreen: {
     path: '/account/create-password',
     element: <CreatePasswordScreen />,
@@ -79,6 +97,10 @@ const routes = {
   NetworkSelection: {
     path: '/network/selection',
     element: <NetworkSelection />,
+  },
+  AddCustomNetwork: {
+    path: '/network/add-custom-network',
+    element: <AddCustomNetwork />,
   },
   ReceiveScreen: {
     path: '/wallet/receive',
@@ -122,7 +144,7 @@ export function useNavigate() {
 
       navigate(
         {
-          pathname: route.path
+          pathname: route.path,
         },
         { replace: false, state }
       );
@@ -139,11 +161,7 @@ export default function MainRoute() {
       <SyncBridge>
         <Routes>
           {Object.entries(routes).map(([key, value]) => (
-            <Route
-              key={key}
-              path={value.path}
-              element={value.element}
-            />
+            <Route key={key} path={value.path} element={value.element} />
           ))}
         </Routes>
       </SyncBridge>

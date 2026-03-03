@@ -118,7 +118,6 @@ export const ServerConfiguration = {
   chainclass: 2,
 };
 
-
 export const addChainType = (name: string, value: string): void => {
   console.log('Adding to ChainType:', name, value);
   (ChainType as any)[name] = value;
@@ -132,45 +131,3 @@ export const addChainType = (name: string, value: string): void => {
 //   console.log('ChainType enum values:', values);
 //   return values;
 // };
-
-// 从API数据添加网络
-export const addNetworkFromAPI = (apiData: any): void => {
-  try {
-    let rpcEndpoint: string;
-    const meta = JSON.parse(apiData.meta);
-    rpcEndpoint = `http://${meta.dns}:${meta.rpcport}`;
-
-    const networkConfig: ChainInfo = {
-      label: apiData.name,
-      iconLabel: apiData.name,
-      chainId: parseInt(apiData.chainid, 16),
-      endpoints: apiData.endpoints ? 
-        (Array.isArray(apiData.endpoints) ? apiData.endpoints : [apiData.endpoints] as string[]) : 
-        [rpcEndpoint],
-      icon: apiData.icon || './images/artifacts/bitcoin-mainnet.svg',
-      unit: apiData.name,
-      networkType: Number(apiData.testnet) ? NetworkType.TESTNET : NetworkType.MAINNET,
-      updated: apiData.updated || 0,
-      id: apiData.id
-    };
-
-    const networkId = `${networkConfig.label.toUpperCase().replace(/\s+/g, '_')}_${networkConfig.networkType.toUpperCase()}`;
-    console.log('Generated networkId:', networkId);
-    
-    // 动态添加到 ChainType 枚举
-    addChainType(networkId, networkId);
-    
-    // 直接添加到 CHAIN_INFO 对象中
-    CHAIN_INFO[networkId] = networkConfig;
-
-    console.log(`Added network to CHAIN_INFO and preference: ${networkId}`, networkConfig);
-  } catch (error) {
-    console.error('Error adding network from API data:', error);
-  }
-};
-
-export const addNetworksFromAPI = (apiDataList: any[]): void => {
-  apiDataList.forEach(apiData => {
-    addNetworkFromAPI(apiData);
-  });
-};

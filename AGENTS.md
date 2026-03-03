@@ -1,8 +1,8 @@
-# ANEX Wallet Extension
+# ZENT Wallet Extension
 
 ## Project Overview
 
-ANEX Wallet is a secure, user-friendly browser extension for managing cryptocurrency assets. It provides a seamless interface for sending, receiving, and monitoring blockchain transactions while keeping private keys secure in the browser's secure storage.
+ZENT Wallet is a secure, user-friendly browser extension for managing cryptocurrency assets. It provides a seamless interface for sending, receiving, and monitoring blockchain transactions while keeping private keys secure in the browser's secure storage.
 
 ## Technical Stack
 

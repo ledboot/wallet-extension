@@ -1,22 +1,28 @@
+import type {
+  CoinNames,
+  transferAddressHistory,
+  Utxo,
+  UtxoAddressSumInfo,
+} from '@/shared/types';
+
+import AssetsList from '@/background/service/assetslist';
+import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
 import {
   AUTO_LOCK_TIMES,
+  CHAIN_INFO,
+  ChainType,
   DEFAULT_LOCKTIME_ID,
   EVENTS,
   KEYRING_TYPE,
   KEYRING_TYPES,
-  ChainType,
-  CHAIN_INFO,
 } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
-import { Account, WalletKeyring, ChainInfo } from '@/shared/types';
+import { Account, ChainInfo, WalletKeyring } from '@/shared/types';
 
+import { openapiService } from '../service';
 import keyringService from '../service/keyring';
 import { DisplayedKeyring } from '../service/keyring/index';
 import preferenceService from '../service/preference';
-import { openapiService } from '../service';
-import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
-import AssetsList from '@/background/service/assetslist';
-import type { Utxo, UtxoAddressSumInfo, CoinNames, transferAddressHistory } from '@/shared/types';
 
 export class WalletController {
   timer: any = null;
@@ -28,7 +34,6 @@ export class WalletController {
    * @param password 密码
    */
   boot = (password: string) => keyringService.boot(password);
-  
 
   /**
    * 检查钱包是否已启动
@@ -64,14 +69,14 @@ export class WalletController {
     // 心跳模式：初始化心跳时间并启动监控
     this._initHeartbeat();
     // 更新当前keyring和account
-    if (!preferenceService.getCurrentKeyringKey()){
+    if (!preferenceService.getCurrentKeyringKey()) {
       const displayedKeyring = await keyringService.getAllDisplayedKeyrings();
       if (displayedKeyring.length > 0) {
         preferenceService.setCurrentKeyringKey(displayedKeyring[0].key);
         preferenceService.setCurrentAccountIndex(0);
       }
     }
-    
+
     // 钱包解锁后立即获取区块链网络
     try {
       const blockchains = await openapiService.fetchBlockchains();
@@ -79,7 +84,7 @@ export class WalletController {
     } catch (error) {
       console.error('Failed to fetch blockchains on unlock:', error);
     }
-    
+
     eventBus.emit(EVENTS.broadcastToUI, { method: 'unlock', params: {} });
   };
   // UtxoCoin = () =>keyringService.UtxoCoin();
@@ -87,40 +92,57 @@ export class WalletController {
   /**
    * 初始化更新：获取账户最新UTXO并聚合写入loadStore
    */
-  updateInit = async (start: number, limit: number): Promise<{ sums: UtxoAddressSumInfo[]; CoinNames: CoinNames[]; utxoItems: Utxo[] }> => {
+  updateInit = async (
+    start: number,
+    limit: number
+  ): Promise<{
+    sums: UtxoAddressSumInfo[];
+    CoinNames: CoinNames[];
+    utxoItems: Utxo[];
+  }> => {
     // 获取远程网络并自动添加到动态网络管理器
     // const blockchains = await openapiService.fetchBlockchains();
     // console.log('---------blockchains', blockchains);
-    
+
     // // 获取所有可用网络（静态 + 动态）
     // const allNetworks = dynamicNetworkManager.getAllNetworks();
     // console.log('---------all available networks:', Object.keys(allNetworks));
-    
+
     // // 获取动态网络统计
     // const dynamicNetworks = dynamicNetworkManager.getDynamicNetworks();
     // console.log('---------dynamic networks count:', dynamicNetworks.length);
-    
+
     console.log('updateInit', start, limit);
     this.resetLockTime();
     const account = await this.getCurrentAccount();
     console.log('account', account);
-    if (!account) return { sums: [], CoinNames: [], utxoItems: []};
+    if (!account) return { sums: [], CoinNames: [], utxoItems: [] };
 
     const utxoItems = await openapiService.update(account, start, limit);
 
     // Save UTXOs to preference store with block height check
     if (utxoItems.length > 0) {
-      const existingUtxos = keyringService.getUtxos().filter(utxo => utxo.address === account.address);
+      const existingUtxos = keyringService
+        .getUtxos()
+        .filter((utxo) => utxo.address === account.address);
       // const existingUtxos = preferenceService.getUtxos();
-      const shouldUpdate = existingUtxos.length === 0 ||
-                         utxoItems[0].blockHeight >= existingUtxos[0].blockHeight;
-      
+      const shouldUpdate =
+        existingUtxos.length === 0 ||
+        utxoItems[0].blockHeight >= existingUtxos[0].blockHeight;
+
       if (shouldUpdate) {
         keyringService.updateUtxos(utxoItems);
         const currentChainInfo = this.getCurrentChainInfo();
-        keyringService.addUtxosMap(account.address, currentChainInfo.chainId, utxoItems);
-        const utxoMap = keyringService.getUtxosMap(account.address, currentChainInfo.chainId);
-        console.log('---utxoMap',utxoMap)
+        keyringService.addUtxosMap(
+          account.address,
+          currentChainInfo.chainId,
+          utxoItems
+        );
+        const utxoMap = keyringService.getUtxosMap(
+          account.address,
+          currentChainInfo.chainId
+        );
+        console.log('---utxoMap', utxoMap);
         console.log('UTXOs saved to preference store');
       } else {
         console.log('Skipping UTXO update: New UTXOs are from an older block');
@@ -132,7 +154,10 @@ export class WalletController {
     const chainIdStr = chainId.toString();
     let CoinNames: CoinNames[] = [];
     if (utxoItems.length > 0) {
-      const { CoinNames: fetchedConames } = await openapiService.fetchTokentype(utxoItems, chainIdStr);
+      const { CoinNames: fetchedConames } = await openapiService.fetchTokentype(
+        utxoItems,
+        chainIdStr
+      );
       console.log('wallet CoinNames:', fetchedConames);
       CoinNames = fetchedConames;
       console.log('update utxo', utxoItems);
@@ -141,7 +166,7 @@ export class WalletController {
 
     // const assetsLists = await AssetsList.assetsLists();
     // console.log('assetsLists', assetsLists);
-    
+
     console.log('sums', sums);
     return { sums, CoinNames, utxoItems };
   };
@@ -151,15 +176,15 @@ export class WalletController {
     console.log('assetsLists', assetsLists);
     const account = await this.getCurrentAccount();
     // 过滤出当前账户的资产
-    const filteredAssets = assetsLists.assets.filter(asset => 
-        asset.address === account?.address
+    const filteredAssets = assetsLists.assets.filter(
+      (asset) => asset.address === account?.address
     );
-    
+
     // 使用辅助函数获取当前网络配置
     const currentChainInfo = this.getCurrentChainInfo();
     const chainName = currentChainInfo.iconLabel;
-    
-    return {assetsData: filteredAssets, chainName};
+
+    return { assetsData: filteredAssets, chainName };
   };
 
   /**
@@ -255,7 +280,8 @@ export class WalletController {
   getCurrentAccount = async () => {
     const currentKeyring = await this.getCurrentKeyring();
     if (!currentKeyring) return null;
-    const account = currentKeyring.accounts[preferenceService.getCurrentAccountIndex()];
+    const account =
+      currentKeyring.accounts[preferenceService.getCurrentAccountIndex()];
     return account;
   };
 
@@ -269,7 +295,7 @@ export class WalletController {
     initName = true
   ) => {
     const type = displayedKeyring.type;
-    
+
     // 账户 alianName 从 PreferenceService 获取，如果没有则使用来自 SimpleKeyring 的默认值
     const accounts = displayedKeyring.accounts.map((account, j) => {
       const accountKey = displayedKeyring.key + '#' + j;
@@ -277,7 +303,7 @@ export class WalletController {
         accountKey,
         account.alianName // 使用来自 SimpleKeyring 的默认值
       );
-      
+
       return {
         type,
         pubkey: account.pubkey,
@@ -295,7 +321,7 @@ export class WalletController {
       displayedKeyring.key,
       initName ? `${KEYRING_TYPES[type].alianName} #${index + 1}` : ''
     );
-    
+
     return {
       index,
       key: displayedKeyring.key,
@@ -305,10 +331,12 @@ export class WalletController {
     };
   };
 
-
   getAccounts = async () => {
     const keyrings = await this.getKeyrings();
-    return keyrings.reduce<Account[]>((pre, cur) => pre.concat(cur.accounts), []);
+    return keyrings.reduce<Account[]>(
+      (pre, cur) => pre.concat(cur.accounts),
+      []
+    );
   };
 
   /**
@@ -316,7 +344,7 @@ export class WalletController {
    */
   private getCurrentChainInfo = (): ChainInfo => {
     const currentChainType = preferenceService.getChainType();
-    
+
     // 优先从 CHAIN_INFO 获取，如果没有则从存储获取
     if (CHAIN_INFO[currentChainType]) {
       return CHAIN_INFO[currentChainType];
@@ -343,13 +371,13 @@ export class WalletController {
     if (!chainInfo) {
       chainInfo = CHAIN_INFO[chainType];
     }
-    
+
     if (!chainInfo) {
       throw new Error(`Chain info not found for: ${chainType}`);
     }
-    
-    preferenceService.setNetworkType(chainInfo.networkType)
-    preferenceService.setChainType(chainType)
+
+    preferenceService.setNetworkType(chainInfo.networkType);
+    preferenceService.setChainType(chainType);
     keyringService.changeNetwork();
     eventBus.emit(EVENTS.broadcastToUI, {
       method: 'networkChanged',
@@ -363,14 +391,18 @@ export class WalletController {
   getCurrentKeyring = async () => {
     this.resetLockTime();
     const currentKeyringKey = preferenceService.getCurrentKeyringKey();
-    if (!currentKeyringKey){
-      return null
+    if (!currentKeyringKey) {
+      return null;
     }
-    const displayedKeyring = await keyringService.getDisplayedKeyringByKey(currentKeyringKey);
+    const displayedKeyring =
+      await keyringService.getDisplayedKeyringByKey(currentKeyringKey);
     if (!displayedKeyring) {
       return null;
     }
-    return this.displayedKeyringToWalletKeyring(displayedKeyring, displayedKeyring.index);
+    return this.displayedKeyringToWalletKeyring(
+      displayedKeyring,
+      displayedKeyring.index
+    );
   };
 
   /**
@@ -378,7 +410,7 @@ export class WalletController {
    * @param keyring 密钥环
    * @param accountIndex 账户索引
    */
-  changeKeyring = async (keyringKey: string,accountIndex = 0) => {
+  changeKeyring = async (keyringKey: string, accountIndex = 0) => {
     await keyringService.changeKeyring(keyringKey);
     preferenceService.setCurrentKeyringKey(keyringKey);
     preferenceService.setCurrentAccountIndex(accountIndex);
@@ -386,10 +418,9 @@ export class WalletController {
     // 发送更新事件
     eventBus.emit(EVENTS.broadcastToUI, {
       method: 'updateKeyrings',
-      params: {}
+      params: {},
     });
   };
-
 
   /** UI 心跳：更新心跳时间 */
   heartbeat = () => {
@@ -447,7 +478,6 @@ export class WalletController {
     }, 1000);
 
     this.resetLockTime();
-
   }
 
   // createKeyringWithPrivateKey = async (
@@ -478,7 +508,10 @@ export class WalletController {
 
   importPrivateKey = async (wif: string) => {
     const { privateKeyHex, compressed } = decodeWalletImportFormat(wif);
-    const originKeyring = await keyringService.importPrivateKey(privateKeyHex, compressed);
+    const originKeyring = await keyringService.importPrivateKey(
+      privateKeyHex,
+      compressed
+    );
 
     const displayedKeyring = await keyringService.displayForKeyring(
       originKeyring,
@@ -490,26 +523,31 @@ export class WalletController {
       keyringService.keyrings.length - 1
     );
 
-    this.changeKeyring(keyring.key,0);
+    this.changeKeyring(keyring.key, 0);
     // 活动发生，刷新心跳时间
     this._touchHeartbeat();
     eventBus.emit(EVENTS.broadcastToUI, {
       method: 'updateKeyrings',
-      params: {}
+      params: {},
     });
   };
-  
-  generatePrePrivateKey = async (keyringType: string) =>{
-    const keyring = await keyringService.createTmpKeyring(
-      keyringType,
-      []
-    );
-    return keyring.generatePrePrivateKey();
-  }
 
-  getAddressHistory = async (account: Account, start: number, limit: number) => {
+  generatePrePrivateKey = async (keyringType: string) => {
+    const keyring = await keyringService.createTmpKeyring(keyringType, []);
+    return keyring.generatePrePrivateKey();
+  };
+
+  getAddressHistory = async (
+    account: Account,
+    start: number,
+    limit: number
+  ) => {
     this.resetLockTime();
-    const { txHistory } = await openapiService.getAddressHistory(account, start, limit);
+    const { txHistory } = await openapiService.getAddressHistory(
+      account,
+      start,
+      limit
+    );
     console.log('getAddressHistory', txHistory);
     return txHistory;
   };
@@ -532,7 +570,7 @@ export class WalletController {
     // 触发 UI 更新
     eventBus.emit(EVENTS.broadcastToUI, {
       method: 'updateKeyrings',
-      params: {}
+      params: {},
     });
   };
 
@@ -546,35 +584,52 @@ export class WalletController {
     // 触发 UI 更新
     eventBus.emit(EVENTS.broadcastToUI, {
       method: 'updateKeyrings',
-      params: {}
+      params: {},
     });
   };
 
-  getTransferAddressHistory = async () : Promise<transferAddressHistory[]>=> {
+  getTransferAddressHistory = async (): Promise<transferAddressHistory[]> => {
     const addresses = keyringService.getTransferAddressHistory();
     return addresses;
-  }
-  
+  };
+
   updateTransferAddressesHistory = async (newAddress: string) => {
-    const addresses = newAddress.includes(',') 
-      ? newAddress.split(',').map(addr => addr.trim()).filter(addr => addr.length > 0)
+    const addresses = newAddress.includes(',')
+      ? newAddress
+          .split(',')
+          .map((addr) => addr.trim())
+          .filter((addr) => addr.length > 0)
       : [newAddress];
-    const historyList: transferAddressHistory[] = addresses.map(address => ({
+    const historyList: transferAddressHistory[] = addresses.map((address) => ({
       address,
-      updated: Date.now()
+      updated: Date.now(),
     }));
     keyringService.updateTransferAddressesHistory(historyList);
-  }
+  };
 
-  getTransferFees = async (tokenType: number, senderAddress: string, isAll: boolean, amount?: string, receivedAddress?: string) => {
+  getTransferFees = async (
+    tokenType: number,
+    senderAddress: string,
+    isAll: boolean,
+    amount?: string,
+    receivedAddress?: string
+  ) => {
     let fees = 0;
     if (isAll) {
-      fees = await openapiService.computeTransactioFeesMax(tokenType, senderAddress);
+      fees = await openapiService.computeTransactioFeesMax(
+        tokenType,
+        senderAddress
+      );
     } else {
-      fees = await openapiService.computeTransactioFees(tokenType, senderAddress, Number(amount), receivedAddress || '');
+      fees = await openapiService.computeTransactioFees(
+        tokenType,
+        senderAddress,
+        Number(amount),
+        receivedAddress || ''
+      );
     }
     return fees;
-  }
+  };
   /**
    * 获取存储的网络配置
    */
@@ -582,21 +637,43 @@ export class WalletController {
     return preferenceService.getAllchainInfo();
   };
 
-  transfer = async ( amount: string, tokenType: string, receivedAddress: string, password: string, senderAddress: string, crosschain: number, timeLimit: number) => {
-    const res = await openapiService.transfer(BigInt(Number(amount) * 1e8), BigInt(Number(tokenType)), receivedAddress, password, senderAddress, crosschain, timeLimit)
+  /**
+   * 添加自定义网络
+   */
+  addchainInfo = async (chainType: string, chainInfo: ChainInfo) => {
+    preferenceService.addchainInfo(chainType, chainInfo);
+  };
+
+  transfer = async (
+    amount: string,
+    tokenType: string,
+    receivedAddress: string,
+    password: string,
+    senderAddress: string,
+    crosschain: number,
+    timeLimit: number
+  ) => {
+    const res = await openapiService.transfer(
+      BigInt(Number(amount) * 1e8),
+      BigInt(Number(tokenType)),
+      receivedAddress,
+      password,
+      senderAddress,
+      crosschain,
+      timeLimit
+    );
     let result = null;
     if (res && res.result) {
       result = res.result;
       // 转账成功后发送刷新事件
       eventBus.emit(EVENTS.broadcastToUI, {
         method: 'refreshAssets',
-        params: null
+        params: null,
       });
     }
     console.log('transfer res:', res);
     return result;
-  }
+  };
 }
-
 
 export default new WalletController();
