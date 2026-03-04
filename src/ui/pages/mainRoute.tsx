@@ -8,6 +8,7 @@ import {
 
 import SyncBridge from '@/ui/components/SyncBridge';
 
+import AccountDetailScreen from './account/AccountDetailScreen';
 import AccountSelection from './account/AccountSelection';
 import CreateOrImportWalletScreen from './account/createOrImportWalletScreen';
 import CreatePasswordScreen from './account/createPasswordScreen';
@@ -72,6 +73,10 @@ const routes = {
   AccountSelection: {
     path: '/account/selection',
     element: <AccountSelection />,
+  },
+  AccountDetailScreen: {
+    path: '/account/detail',
+    element: <AccountDetailScreen />,
   },
   // Transfer flow routes
   TokenSelectionScreen: {

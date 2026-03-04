@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, ChevronDown, Copy, Globe, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { PixelAvatar } from '@/ui/components/PixelAvatar';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useNavigate } from '@/ui/pages/mainRoute';
 import { useCurrentAccount } from '@/ui/state/hooks';
@@ -41,9 +42,11 @@ export function WalletHeader({
   return (
     <div className='sticky top-0 z-20 flex h-14 w-full items-center justify-between px-4 py-[15px]'>
       <div className='flex items-center space-x-3'>
-        <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary'>
-          <span className='text-primary-foreground text-sm font-bold'>N</span>
-        </div>
+        <PixelAvatar
+          seed={currentAccount?.address || currentAccount?.key || 'default'}
+          size={32}
+          borderRadius={8}
+        />
         <div>
           <button
             onClick={() =>

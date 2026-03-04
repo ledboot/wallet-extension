@@ -44,6 +44,8 @@ export const translations = {
       wallet_imported_success: '钱包导入成功',
       wallet_create_failed: '钱包创建失败: {error}',
       wallet_import_failed: '钱包导入失败: {error}',
+      about_account: '关于账户',
+      private_key_not_available: '私钥导出功能即将推出',
     },
 
     // Common
@@ -276,6 +278,8 @@ export const translations = {
       wallet_imported_success: 'Wallet imported successfully',
       wallet_create_failed: 'Failed to create wallet: {error}',
       wallet_import_failed: 'Failed to import wallet: {error}',
+      about_account: 'About account',
+      private_key_not_available: 'Private key export coming soon',
     },
 
     // Common
@@ -511,6 +515,8 @@ export const translations = {
       wallet_imported_success: 'ウォレットが正常にインポートされました',
       wallet_create_failed: 'ウォレットの作成に失敗しました: {error}',
       wallet_import_failed: 'ウォレットのインポートに失敗しました: {error}',
+      about_account: 'アカウントについて',
+      private_key_not_available: '秘密鍵エクスポートは近日公開',
     },
 
     // Common
@@ -747,6 +753,8 @@ export const translations = {
       wallet_imported_success: '지갑이 성공적으로 가져왔습니다',
       wallet_create_failed: '지갑 생성 실패: {error}',
       wallet_import_failed: '지갑 가져오기 실패: {error}',
+      about_account: '계정 정보',
+      private_key_not_available: '개인 키 내보내기 기능 준비 중',
     },
 
     // Common

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Account, WalletKeyring } from '@shared/types';
-import { Check, Edit3, Trash2, X } from 'lucide-react';
+import { Check, Edit3, MoreHorizontal, Trash2, X } from 'lucide-react';
 import { useLocation } from 'react-router';
 
 import { EditAccountName } from '@/ui/components/EditAccountName';
 import { EditKeyringName } from '@/ui/components/EditKeyringName';
+import { PixelAvatar } from '@/ui/components/PixelAvatar';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useNavigate } from '@/ui/pages/mainRoute';
 import { useCurrentKeyring, useKeyringsList } from '@/ui/state/hooks';
@@ -60,6 +61,19 @@ const AccountSelection = () => {
   const handleEditAccount = (account: Account, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingAccount(account);
+  };
+
+  const handleViewAccountDetail = (
+    account: Account,
+    keyring: WalletKeyring,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
+    navigate('AccountDetailScreen', {
+      account,
+      keyringKey: keyring.key,
+      keyringLength: keyring.accounts.length,
+    });
   };
 
   const handleEditKeyring = (keyring: WalletKeyring, e: React.MouseEvent) => {
@@ -182,13 +196,11 @@ const AccountSelection = () => {
                 >
                   <div className='flex items-center justify-between'>
                     <div className='flex items-center space-x-3'>
-                      <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary'>
-                        <span className='text-sm font-bold text-primary-content'>
-                          {account.alianName?.charAt(
-                            account.alianName?.length - 1
-                          )}
-                        </span>
-                      </div>
+                      <PixelAvatar
+                        seed={account.address || account.key || 'default'}
+                        size={32}
+                        borderRadius={8}
+                      />
                       <div>
                         <div className='text-sm font-medium'>
                           {account.alianName}
@@ -207,6 +219,15 @@ const AccountSelection = () => {
                             title={t('account.edit_name')}
                           >
                             <Edit3 className='h-3 w-3' />
+                          </div>
+                          <div
+                            onClick={(e) =>
+                              handleViewAccountDetail(account, kr, e)
+                            }
+                            className='btn btn-ghost btn-xs h-6 w-6 cursor-pointer p-0'
+                            title={t('account.about_account')}
+                          >
+                            <MoreHorizontal className='h-3 w-3' />
                           </div>
                           {kr.accounts.length > 1 && (
                             <div
