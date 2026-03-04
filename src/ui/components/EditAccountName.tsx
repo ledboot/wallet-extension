@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { X, Check } from 'lucide-react';
-import { useWallet } from '@/ui/utils/walletContext';
+import { Check, X } from 'lucide-react';
+
 import { Account } from '@/shared/types';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
+import { useWallet } from '@/ui/utils/walletContext';
 
 interface EditAccountNameProps {
   account: Account;
@@ -10,7 +11,11 @@ interface EditAccountNameProps {
   onSuccess?: () => void;
 }
 
-export function EditAccountName({ account, onClose, onSuccess }: EditAccountNameProps) {
+export function EditAccountName({
+  account,
+  onClose,
+  onSuccess,
+}: EditAccountNameProps) {
   const [name, setName] = useState(account.alianName || '');
   const [loading, setLoading] = useState(false);
   const wallet = useWallet();
@@ -18,7 +23,7 @@ export function EditAccountName({ account, onClose, onSuccess }: EditAccountName
 
   const handleSave = async () => {
     if (!name.trim()) return;
-    
+
     setLoading(true);
     try {
       await wallet.updateAccountAlianName(account.key, name.trim());
@@ -37,61 +42,59 @@ export function EditAccountName({ account, onClose, onSuccess }: EditAccountName
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-base-100 rounded-lg p-6 w-96 max-w-[90vw]">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">{t('account.edit_name')}</h3>
-          <button
-            onClick={handleCancel}
-            className="btn btn-ghost btn-sm h-8 w-8 p-0"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+    <div className='fixed inset-0 z-[100] flex items-center justify-center bg-black/50'>
+      <div className='w-[343px] max-w-[90vw] rounded-2xl bg-white p-6'>
+        <h3 className='mb-6 text-center text-[20px] font-bold text-black'>
+          {t('common.account_name')}
+        </h3>
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">{t('common.account_name')}</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="input input-bordered w-full"
-            placeholder={t('common.enter_account_name')}
-            maxLength={20}
-            autoFocus
-          />
-          <div className="text-xs text-base-content/60 mt-1">
-            {name.length}/20 {t('common.characters')}
+        <div className='mb-6'>
+          <div className='mb-1 flex items-center rounded-xl bg-[#F5F5F5] p-3'>
+            <input
+              type='text'
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className='flex-1 bg-transparent text-sm text-black outline-none placeholder:text-[#999999]'
+              placeholder={t('common.enter_account_name')}
+              maxLength={25}
+              autoFocus
+            />
+            {name && (
+              <button
+                onClick={() => setName('')}
+                className='ml-2 flex-shrink-0 rounded-full bg-[#999999] p-0.5 text-white'
+              >
+                <X className='h-3 w-3' />
+              </button>
+            )}
+          </div>
+          <div className='text-right text-sm text-[#999999]'>
+            {name.length}/25
           </div>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">{t('common.account_address')}</label>
-          <div className="text-sm text-base-content/60 font-mono">
-            {`${account.address.slice(0, 6)}...${account.address.slice(-4)}`}
-          </div>
-        </div>
-
-        <div className="flex gap-3">
+        <div className='flex gap-3'>
           <button
             onClick={handleCancel}
-            className="btn btn-outline flex-1"
+            className='flex flex-1 items-center justify-center rounded-[24px] bg-[#F5F5F5] px-4 py-3 text-base font-semibold text-black transition-colors hover:bg-[#EBEBEB]'
             disabled={loading}
           >
             {t('common.cancel')}
           </button>
           <button
             onClick={handleSave}
-            className="btn btn-primary flex-1"
-            disabled={loading || !name.trim()}
+            disabled={loading || !name.trim() || name === account.alianName}
+            className={`flex flex-1 items-center justify-center rounded-[24px] px-4 py-3 text-base font-semibold transition-colors
+              ${
+                !name.trim() || loading || name === account.alianName
+                  ? 'bg-[#F5F5F5] text-[#CCCCCC]'
+                  : 'bg-primary text-white hover:bg-primary/90'
+              }`}
           >
             {loading ? (
-              <span className="loading loading-spinner loading-sm"></span>
+              <span className='loading loading-spinner loading-sm'></span>
             ) : (
-              <>
-                <Check className="h-4 w-4 mr-1" />
-                {t('common.save')}
-              </>
+              t('common.confirm')
             )}
           </button>
         </div>

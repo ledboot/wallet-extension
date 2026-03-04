@@ -1,12 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  Check,
-  ChevronDown,
-  Copy,
-  Globe,
-  RefreshCw,
-  Settings,
-} from 'lucide-react';
+import { Check, ChevronDown, Copy, Globe, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useLanguage } from '@/ui/contexts/LanguageContext';
@@ -61,39 +54,21 @@ export function WalletHeader({
             <span>{currentAccount?.alianName || ''}</span>
             <ChevronDown className='text-muted-foreground h-4 w-4' />
           </button>
-          <button
-            onClick={copyAddress}
-            className='text-muted-foreground flex items-center space-x-1 text-xs hover:text-foreground'
-          >
-            <span>{shortAddress}</span>
-            {copied ? (
-              <Check className='h-3 w-3 text-success' />
-            ) : (
-              <Copy className='h-3 w-3' />
-            )}
-          </button>
+          <div className='text-muted-foreground text-xs'>{shortAddress}</div>
         </div>
-        <button
-          className={`rounded-full p-1.5 ${
-            isRefreshing
-              ? 'cursor-not-allowed text-gray-400'
-              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-          } transition-colors`}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (onRefresh && !isRefreshing) {
-              onRefresh();
-            }
-          }}
-          disabled={isRefreshing}
-          title={t('header.refresh')}
-        >
-          <RefreshCw
-            className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
-          />
-        </button>
       </div>
       <div className='flex items-center space-x-2'>
+        <div
+          className='flex h-7 w-7 cursor-pointer items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700'
+          onClick={copyAddress}
+          title='Copy Address'
+        >
+          {copied ? (
+            <Check className='h-4 w-4 text-success' />
+          ) : (
+            <Copy className='h-4 w-4' />
+          )}
+        </div>
         <div title='Settings' onClick={() => navigate('SettingsScreen')}>
           <Settings className='h-7 w-7 cursor-pointer rounded p-1 hover:bg-gray-100 dark:hover:bg-gray-700' />
         </div>

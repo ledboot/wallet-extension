@@ -28,6 +28,8 @@ export class WalletController {
   timer: any = null;
   private lastHeartbeatTs: number | null = null;
   private heartbeatInterval: any = null;
+  private utxoPollingInterval: any = null;
+  private isPollingUtxos: boolean = false;
 
   /**
    * 启动钱包
@@ -86,6 +88,7 @@ export class WalletController {
     }
 
     eventBus.emit(EVENTS.broadcastToUI, { method: 'unlock', params: {} });
+    this._startUtxoPolling();
   };
   // UtxoCoin = () =>keyringService.UtxoCoin();
 
@@ -94,7 +97,8 @@ export class WalletController {
    */
   updateInit = async (
     start: number,
-    limit: number
+    limit: number,
+    isBackgroundPolling = false
   ): Promise<{
     sums: UtxoAddressSumInfo[];
     CoinNames: CoinNames[];
@@ -113,7 +117,7 @@ export class WalletController {
     // console.log('---------dynamic networks count:', dynamicNetworks.length);
 
     console.log('updateInit', start, limit);
-    this.resetLockTime();
+    if (!isBackgroundPolling) this.resetLockTime();
     const account = await this.getCurrentAccount();
     console.log('account', account);
     if (!account) return { sums: [], CoinNames: [], utxoItems: [] };
@@ -131,6 +135,9 @@ export class WalletController {
         utxoItems[0].blockHeight >= existingUtxos[0].blockHeight;
 
       if (shouldUpdate) {
+        const changed =
+          JSON.stringify(existingUtxos) !== JSON.stringify(utxoItems);
+
         keyringService.updateUtxos(utxoItems);
         const currentChainInfo = this.getCurrentChainInfo();
         keyringService.addUtxosMap(
@@ -144,6 +151,13 @@ export class WalletController {
         );
         console.log('---utxoMap', utxoMap);
         console.log('UTXOs saved to preference store');
+
+        if (changed) {
+          eventBus.emit(EVENTS.broadcastToUI, {
+            method: 'ui:refreshAssets',
+            params: null,
+          });
+        }
       } else {
         console.log('Skipping UTXO update: New UTXOs are from an older block');
       }
@@ -204,6 +218,7 @@ export class WalletController {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = null;
     }
+    this._stopUtxoPolling();
   }
 
   /**
@@ -446,6 +461,41 @@ export class WalletController {
         this.lockWallet();
       }
     }, timeConfig.time);
+  }
+
+  private _startUtxoPolling() {
+    if (this.utxoPollingInterval) {
+      clearInterval(this.utxoPollingInterval);
+    }
+    this.utxoPollingInterval = setInterval(async () => {
+      const isUnlocked = await this.isUnlocked();
+      if (!isUnlocked || this.isPollingUtxos) return;
+
+      this.isPollingUtxos = true;
+      try {
+        const account = await this.getCurrentAccount();
+        if (!account) return;
+
+        const sums = await this.getUtxoSum();
+        const latest =
+          (Array.isArray(sums)
+            ? sums.find((s) => s.address === account.address)?.blockHeight
+            : 0) || 0;
+
+        await this.updateInit(latest, 2048, true);
+      } catch (e) {
+        console.error('UTXO polling error:', e);
+      } finally {
+        this.isPollingUtxos = false;
+      }
+    }, 15000); // 15秒轮询
+  }
+
+  private _stopUtxoPolling() {
+    if (this.utxoPollingInterval) {
+      clearInterval(this.utxoPollingInterval);
+      this.utxoPollingInterval = null;
+    }
   }
 
   private _initHeartbeat() {

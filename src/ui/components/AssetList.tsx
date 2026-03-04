@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import type { CoinNames, UtxoAddressSumInfo } from '@/shared/types';
 import AssetsList from '@background/service/assetslist';
 import { Wallet } from 'lucide-react';
-import eventBus from '@/shared/eventBus';
+
 import preferenceService from '@/background/service/preference';
 import { CHAIN_INFO } from '@/shared/constants';
-import { useWallet } from '@/ui/utils/walletContext';
+import eventBus from '@/shared/eventBus';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
+import { useWallet } from '@/ui/utils/walletContext';
 
 // interface Asset {
 //   id: string;
@@ -117,23 +118,21 @@ export function AssetList() {
 
     fetchAssets();
 
-    // 设置定时器
-    const intervalId = setInterval(fetchAssets, 3000);
-    
+    // 定时轮询被移除，由背景服务发送 ui:refreshAssets 替代
     // 监听外部刷新事件
     const handleRefreshEvent = () => {
       console.log('AssetList: Received refresh event');
       fetchAssets();
     };
     eventBus.addEventListener('refreshAssets', handleRefreshEvent);
-    
+
     // 监听来自后台的刷新事件
     const handleBackgroundRefreshEvent = () => {
       console.log('AssetList: Received background refresh event');
       fetchAssets();
     };
     eventBus.addEventListener('ui:refreshAssets', handleBackgroundRefreshEvent);
-    
+
     // 添加可见性变化监听
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -145,9 +144,11 @@ export function AssetList() {
 
     // 清理函数
     return () => {
-      clearInterval(intervalId);
       eventBus.removeEventListener('refreshAssets', handleRefreshEvent);
-      eventBus.removeEventListener('ui:refreshAssets', handleBackgroundRefreshEvent);
+      eventBus.removeEventListener(
+        'ui:refreshAssets',
+        handleBackgroundRefreshEvent
+      );
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [wallet]);
