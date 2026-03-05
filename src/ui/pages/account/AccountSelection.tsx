@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { Account, WalletKeyring } from '@shared/types';
 import { Check, Edit3, MoreHorizontal, Trash2, X } from 'lucide-react';
 import { useLocation } from 'react-router';
+import { toast } from 'sonner';
 
+import { ConfirmModal } from '@/ui/components/ConfirmModal';
 import { EditAccountName } from '@/ui/components/EditAccountName';
 import { EditKeyringName } from '@/ui/components/EditKeyringName';
 import { PixelAvatar } from '@/ui/components/PixelAvatar';
@@ -26,6 +28,14 @@ const AccountSelection = () => {
     null
   );
   const [isEditingMode, setIsEditingMode] = useState(false);
+
+  type DeleteCtx =
+    | { type: 'account'; account: Account }
+    | { type: 'keyring'; keyring: WalletKeyring };
+
+  const [deleteModalState, setDeleteModalState] = useState<DeleteCtx | null>(
+    null
+  );
   const keyringsList = useKeyringsList();
   const currentKeyring = useCurrentKeyring();
   useEffect(() => {
@@ -81,64 +91,53 @@ const AccountSelection = () => {
     setEditingKeyring(keyring);
   };
 
-  const handleDeleteAccount = async (
+  const handleDeleteAccount = (
     account: Account,
     keyring: WalletKeyring,
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-
-    const confirmMessage = t('account.confirm_delete_account_specific').replace(
-      '{name}',
-      account.alianName || 'Unknown Account'
-    );
-    if (!confirm(confirmMessage)) {
-      return;
-    }
-
-    try {
-      await wallet.removeAccount(account.address, account.type);
-      alert(t('account.delete_account_success'));
-      // Refresh keyrings data
-      await wallet.updateInit(0, 10);
-    } catch (error: any) {
-      console.error('Failed to delete account:', error);
-      const errorMessage = t('account.delete_account_failed').replace(
-        '{error}',
-        error.message || t('common.error')
-      );
-      alert(errorMessage);
-    }
+    setDeleteModalState({ type: 'account', account });
   };
 
-  const handleDeleteKeyring = async (
-    keyring: WalletKeyring,
-    e: React.MouseEvent
-  ) => {
+  const handleDeleteKeyring = (keyring: WalletKeyring, e: React.MouseEvent) => {
     e.stopPropagation();
+    setDeleteModalState({ type: 'keyring', keyring });
+  };
 
-    const walletName = keyring.alianName || `Keyring ${keyring.index + 1}`;
-    const confirmMessage = t('account.confirm_delete_keyring_specific').replace(
-      '{name}',
-      walletName
-    );
-    if (!confirm(confirmMessage)) {
-      return;
-    }
+  const confirmDelete = async () => {
+    if (!deleteModalState) return;
 
-    try {
-      await wallet.removeKeyring(keyring.key);
-      alert(t('account.delete_wallet_success'));
-      // Refresh keyrings data
-      await wallet.updateInit(0, 10);
-    } catch (error: any) {
-      console.error('Failed to delete keyring:', error);
-      const errorMessage = t('account.delete_wallet_failed').replace(
-        '{error}',
-        error.message || t('common.error')
-      );
-      alert(errorMessage);
+    if (deleteModalState.type === 'account') {
+      const { account } = deleteModalState;
+      try {
+        await wallet.removeAccount(account.address, account.type);
+        toast.success(t('account.delete_account_success'));
+      } catch (error: any) {
+        console.error('Failed to delete account:', error);
+        toast.error(
+          t('account.delete_account_failed').replace(
+            '{error}',
+            error.message || t('common.error')
+          )
+        );
+      }
+    } else if (deleteModalState.type === 'keyring') {
+      const { keyring } = deleteModalState;
+      try {
+        await wallet.removeKeyring(keyring.key);
+        toast.success(t('account.delete_wallet_success'));
+      } catch (error: any) {
+        console.error('Failed to delete keyring:', error);
+        toast.error(
+          t('account.delete_wallet_failed').replace(
+            '{error}',
+            error.message || t('common.error')
+          )
+        );
+      }
     }
+    setDeleteModalState(null);
   };
 
   return (
@@ -297,6 +296,32 @@ const AccountSelection = () => {
           }}
         />
       )}
+
+      {/* Delete confirm modal */}
+      <ConfirmModal
+        isOpen={!!deleteModalState}
+        message={
+          deleteModalState?.type === 'account'
+            ? t('account.confirm_delete_account_specific').replace(
+                '{name}',
+                deleteModalState.account.alianName || 'Unknown Account'
+              )
+            : deleteModalState?.type === 'keyring'
+              ? t('account.confirm_delete_keyring_specific').replace(
+                  '{name}',
+                  deleteModalState.keyring.alianName ||
+                    `Keyring ${deleteModalState.keyring.index + 1}`
+                )
+              : ''
+        }
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteModalState(null)}
+        confirmText={
+          deleteModalState?.type === 'account'
+            ? t('account.delete_account')
+            : t('account.delete_wallet')
+        }
+      />
     </div>
   );
 };

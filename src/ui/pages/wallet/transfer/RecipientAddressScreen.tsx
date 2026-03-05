@@ -1,12 +1,13 @@
-import { ChevronLeft, Copy, Clock, Check } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import type { transferAddressHistory } from '@/shared/types';
+import { Check, ChevronLeft, Clock, Copy, X } from 'lucide-react';
 import { useLocation } from 'react-router';
+import { toast } from 'sonner';
+
+import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useNavigate } from '@/ui/pages/mainRoute';
 import { useCurrentAccount } from '@/ui/state/hooks';
-import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
-import type { transferAddressHistory } from '@/shared/types';
 import { useWallet } from '@/ui/utils/walletContext';
-import { useLanguage } from '@/ui/contexts/LanguageContext';
 
 interface LocationState {
   token: any;
@@ -18,9 +19,11 @@ export default function RecipientAddressScreen() {
   const currentAccount = useCurrentAccount();
   const { t } = useLanguage();
   const { token } = (location.state || {}) as LocationState;
-  
+
   const [recipientAddress, setRecipientAddress] = useState('');
-  const [recentAddresses, setRecentAddresses] = useState<transferAddressHistory[]>([]);
+  const [recentAddresses, setRecentAddresses] = useState<
+    transferAddressHistory[]
+  >([]);
   const [isValidAddress, setIsValidAddress] = useState(false);
   const wallet = useWallet();
 
@@ -74,8 +77,8 @@ export default function RecipientAddressScreen() {
 
   const handleContinue = () => {
     if (!isValidAddress) return;
-    
-    navigate('AmountInputScreen', { 
+
+    navigate('AmountInputScreen', {
       token,
       recipientAddress,
     });
@@ -92,60 +95,83 @@ export default function RecipientAddressScreen() {
   }
 
   return (
-    <div className="h-screen flex flex-col">
-      <div className='w-full sticky top-0 z-20 flex h-14 items-center justify-between px-4 py-[15px] bg-wallet-bg'>
-        <button 
-          onClick={() => navigate('#back')} 
-          className='flex items-center space-x-1 text-sm font-medium'
+    <div className='flex h-full w-full flex-col bg-white'>
+      <div className='absolute left-0 top-0 z-10 flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-4'>
+        <button
+          onClick={() => navigate('#back')}
+          className='-ml-2 flex items-center justify-center rounded-full p-2 transition-colors hover:bg-gray-100'
         >
-          <ChevronLeft className='h-5 w-5' />
-          <span>{t('transfer.back')}</span>
+          <ChevronLeft className='h-5 w-5 text-gray-800' />
         </button>
-        <h1 className='text-lg font-semibold'>{t('transfer.send_token').replace('{token}', token.name)}</h1>
-        <div className='w-10' />
+        <h1 className='absolute left-1/2 -translate-x-1/2 transform text-lg font-semibold text-gray-900'>
+          {t('transfer.send_token').replace('{token}', token.name)}
+        </h1>
+        <button
+          onClick={() => navigate('MainScreen')}
+          className='-mr-2 flex items-center justify-center rounded-full p-2 transition-colors hover:bg-gray-100'
+        >
+          <X className='h-5 w-5 text-gray-800' />
+        </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-wallet-bg px-4 py-6">
-        <div className="mb-6">
-          <div className="relative">
+      <div className='hide-scrollbar flex-1 overflow-y-auto bg-white px-4 pb-6 pt-20'>
+        <div className='mb-6'>
+          <div className='relative'>
             <input
-              type="text"
+              type='text'
               value={recipientAddress}
               onChange={handleAddressChange}
-              placeholder={t('transfer.enter_address').replace('{token}', token.name)}
-              className="w-full p-4 pr-12 bg-wallet-card border border-border rounded-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder={t('transfer.enter_address').replace(
+                '{token}',
+                token.name
+              )}
+              className='w-full rounded-2xl bg-gray-50 p-4 pr-12 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary'
             />
             <button
               onClick={handlePaste}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary hover:text-primary/80"
+              className='absolute right-4 top-1/2 -translate-y-1/2 transform text-gray-400 hover:text-gray-600'
               title={t('transfer.paste_address')}
             >
-              <Copy className="h-5 w-5" />
+              <Copy className='h-5 w-5' />
             </button>
           </div>
-          
+
           {!isValidAddress && recipientAddress && (
-            <p className="mt-2 text-sm text-red-500">{t('transfer.invalid_address')}</p>
+            <p className='mt-2 text-sm text-red-500'>
+              {t('transfer.invalid_address')}
+            </p>
           )}
         </div>
 
         {recentAddresses.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-400 mb-3">{t('transfer.recent_used')}</h3>
-            <div className="space-y-2">
+          <div className='mb-6'>
+            <h3 className='mb-3 text-sm font-semibold text-gray-900'>
+              {t('transfer.recent_used')}
+            </h3>
+            <div className='space-y-3'>
               {recentAddresses.map((item, index) => (
                 <div
                   key={index}
                   onClick={() => selectRecentAddress(item.address)}
-                  className="flex items-center justify-between p-3 bg-wallet-card rounded-lg border border-border active:bg-wallet-card/80 transition-colors"
+                  className='flex cursor-pointer items-center justify-between rounded-2xl bg-gray-50 p-4 transition-colors hover:bg-gray-100 active:bg-gray-200'
                 >
                   <div>
-                    <div className="font-medium ">{item.address ? item.address.substring(0, 6) + '...' + item.address.substring(item.address.length - 4) : ''}</div>
-                    <div className="text-xs text-gray-400 font-mono truncate w-48">{item.address}</div>
+                    <div className='text-sm font-semibold text-gray-900'>
+                      {item.address
+                        ? item.address.substring(0, 6) +
+                          '...' +
+                          item.address.substring(item.address.length - 4)
+                        : ''}
+                    </div>
+                    <div className='mt-0.5 w-48 truncate font-mono text-xs text-gray-500'>
+                      {item.address}
+                    </div>
                   </div>
-                  <div className="flex items-center text-xs text-gray-400">
-                    <Clock className="h-3.5 w-3.5 mr-1" />
-                    {item.updated ? new Date(item.updated).toLocaleDateString() : ''}
+                  <div className='flex items-center text-xs text-gray-400'>
+                    <Clock className='mr-1 h-3.5 w-3.5' />
+                    {item.updated
+                      ? new Date(item.updated).toLocaleDateString()
+                      : ''}
                   </div>
                 </div>
               ))}
@@ -154,14 +180,14 @@ export default function RecipientAddressScreen() {
         )}
       </div>
 
-      <div className="p-4 border-border bg-wallet-bg">
+      <div className='bg-white px-4 py-6'>
         <button
           onClick={handleContinue}
           disabled={!isValidAddress}
-          className={`w-full py-3 rounded-xl font-medium ${
-            isValidAddress 
-              ? 'bg-primary text-white hover:bg-primary/90' 
-              : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+          className={`w-full rounded-full py-3.5 font-medium transition-colors ${
+            isValidAddress
+              ? 'bg-gray-900 text-white hover:bg-gray-800'
+              : 'cursor-not-allowed bg-gray-100 text-gray-400'
           }`}
         >
           {t('transfer.continue')}

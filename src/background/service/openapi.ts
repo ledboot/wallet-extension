@@ -108,7 +108,6 @@ export class OpenapiService {
           headers,
         })
       );
-      console.log('getres', res);
       return await this.getRespData<T>(res);
     } catch (e) {
       console.error('httpGet 报错:', e);
@@ -130,25 +129,17 @@ export class OpenapiService {
       true,
     ]);
     if (res.result && Array.isArray(res.result)) {
-      console.log('res.result', res.result);
       const { txHistory, utxoItems } = await this.analyzeResult(
         account,
         res.result
       );
-      console.log('txHistory', txHistory);
-      console.log('utxotype', utxoItems);
       return { txHistory, utxoItems };
     }
     return { txHistory: [], utxoItems: [] };
   };
 
   update = async (account: Account, start: number, limit: number) => {
-    console.log('update', account, start, limit);
     const { utxoItems } = await this.getAddressHistory(account, start, limit);
-    console.log('utxoItems_update', utxoItems);
-    // const utxos = await this.insertutxo(account, analyzed);
-    // console.log('utxos', utxos);
-    // return utxos;
     return utxoItems;
   };
 
@@ -160,9 +151,7 @@ export class OpenapiService {
     const tokenTypes = utxos
       .map((u) => u.tokenType)
       .filter((t) => t !== undefined && t !== null && t !== '');
-    console.log('tokenTypes', tokenTypes);
     const tokenTypesStr = [...new Set(tokenTypes)].join(',');
-    console.log('tokenTypesStr', tokenTypesStr);
     let updated: number = 0;
     if (CoinNames.length > 0)
       updated = Math.max(0, ...CoinNames.map((c) => Number(c.updated || 0)));
@@ -172,9 +161,7 @@ export class OpenapiService {
       `${serverEndpoint}/omega/index.php?module=ncx&MOD_op=gettokendef&class=${chainclass}&tokentype=${tokenTypesStr}` +
       (chainId ? `&chainid=${chainId}` : '') +
       (updated ? `&updated=${updated}` : '');
-    console.log('url', url);
     const res = await this.httpGet(url);
-    console.log('gettokendefres', res);
     if (!res.result) return { CoinNames: [] };
 
     const newConames: CoinNames[] = [];
@@ -228,9 +215,7 @@ export class OpenapiService {
     );
 
     const url = `${serverEndpoint}/omega/index.php?module=ncx&MOD_op=getblockchains&class=${chainclass}&id=${maxchainid}&updated=${updated}`;
-    console.log('url', url);
     const res = await this.httpGet(url);
-    console.log('getblockchainsres', res);
 
     // 处理获取到的区块链网络信息
     if (Array.isArray(res) && res.length > 0) {
@@ -361,7 +346,6 @@ export class OpenapiService {
     // 处理交易输出（UTXO添加）
     for (let i = list.length - 1; i >= 0; i--) {
       const { tIn, tOut } = this.decodeMsgHex(list[i].hex);
-      console.log('tIn', tIn, 'tOut', tOut);
 
       for (let j = 0; j < tIn.length; j++) {
         const previousOutPointHash = tIn[j].previousOutPointHash;
@@ -394,7 +378,6 @@ export class OpenapiService {
       for (let j = 0; j < tOut.length; j++) {
         const output = tOut[j];
         if (account.addressHex == output.addressHex) {
-          console.log('tIn', tIn);
           let sender = '';
           if (tIn.length > 0) {
             const previousTx = await this.getRawTransaction(
@@ -429,7 +412,6 @@ export class OpenapiService {
             value: Number(output.value),
             rights: output.rights || [],
           };
-          console.log('txItemUtxo', txItemUtxo, 'output', output);
           txHistory.push(txItemHistory);
           utxoItems.push(txItemUtxo);
         }
@@ -439,43 +421,6 @@ export class OpenapiService {
     return { txHistory, utxoItems };
   };
 
-  // insertutxo = async (account: Account, list: any[]) => {
-  //   // 初始化变量
-  //   const utxotype: Utxo[] = [];
-  //   // 处理交易输出（UTXO添加）
-  //   for (let i = 0; i < list.length; i++) {
-  //     const { tIn, tOut } = this.decodeMsgHex(list[i].hex);
-  //     const txid = list[i].txid;
-  //     console.log('insertutxo：tIn', tIn, 'tOut', tOut);
-
-  //     // 先移除已存在的相同txid的UTXO
-  //     const existingIndex = utxotype.findIndex(utxo => utxo.txid === txid);
-  //     if (existingIndex >= 0) {
-  //       utxotype.splice(existingIndex, 1);
-  //     }
-
-  //     for (let j = 0; j < tOut.length; j++) {
-  //       const output = tOut[j];
-  //       if (account.addressHex == output.addressHex) {
-  //         const txItem: Utxo = {
-  //           txid: txid,
-  //           address: output.address,
-  //           scriptPubKey: output.pkScript,
-  //           chainId: list[i].chainId,
-  //           blockHeight: list[i].height,
-  //           blockHash: list[i].blockhash,
-  //           tokenType: output.tokenType.toString(),
-  //           value: output.value.toString(),
-  //           rights: output.rights || [],
-  //         };
-  //         utxotype.push(txItem);
-  //       }
-  //     }
-  //   }
-
-  //   console.log('utxotype', utxotype);
-  //   return utxotype;
-  // };
 
   private isOurAddress(
     addrhex: string,
@@ -610,14 +555,8 @@ export class OpenapiService {
     }
 
     const r = await signTransaction(tx, 1, password);
-    // const raw = r.encode(1)
-    // // const rawTx = bytesToHex2(raw)
-    // const rawTx = bytesToHex(raw)
-    // console.log('rawTx', rawTx);
-    const hextx = await this.sendRawTransaction(r, 0);
-    // console.log('hextx', hextx);
 
-    // hextx.expire = tx.lockTime;
+    const hextx = await this.sendRawTransaction(r, 0);
 
     return hextx;
   };

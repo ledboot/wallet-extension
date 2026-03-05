@@ -1,116 +1,164 @@
 import { PropsWithChildren, useEffect } from 'react';
-import { keyringsStore } from '@/ui/state/keyrings';
-import { accountsStore } from '@/ui/state/accounts';
-import { settingsStore } from '@/ui/state/settings';
-import { Message } from '@/shared/utils';
+
+import { CHAIN_INFO, ChainType, EVENTS, NetworkType } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
-import { EVENTS, ChainType, NetworkType, CHAIN_INFO } from '@/shared/constants';
+import { Message } from '@/shared/utils';
 import { useNavigate } from '@/ui/pages/mainRoute';
+import { accountsStore } from '@/ui/state/accounts';
 import { globalStore } from '@/ui/state/global';
+import { keyringsStore } from '@/ui/state/keyrings';
+import { settingsStore } from '@/ui/state/settings';
 import { useWallet } from '@/ui/utils';
+
 const { PortMessage } = Message;
 
 export default function SyncBridge(props: PropsWithChildren) {
   const navigate = useNavigate();
   const wallet = useWallet();
-  
+
   useEffect(() => {
-    
-    // 监听 PortMessage 的广播事件并转发到 eventBus
+    // ── PortMessage 连接 ─────────────────────────────────────────
     const portMessageChannel = new PortMessage();
     portMessageChannel.connect('popup');
-    
+
     const broadcastHandler = (data: any) => {
       if (data?.type === 'broadcast') {
-        console.log('SyncBridge received broadcast:', data);
         eventBus.emit(EVENTS.broadcastToUI, {
           method: data.method,
-          params: data.params
+          params: data.params,
         });
       }
     };
-    
     portMessageChannel.listen(broadcastHandler);
 
-    // 定时发送心跳（仅在 popup 打开时保持）
+    // 定时心跳（维持 popup 与 background 的连接）
     const heartbeatInterval = setInterval(() => {
       try {
         portMessageChannel.request({
           type: 'controller',
           method: 'heartbeat',
-          args: []
+          args: [],
         });
-      } catch (e) {
+      } catch {
         // ignore
       }
-    }, 15 * 1000);
+    }, 15_000);
 
-    // 统一接收并按 method 分发处理
+    // ── 辅助函数（定义在 useEffect 内部，捕获最新的 wallet 引用）──
+
+    /**
+     * 同步资产到 keyringsStore。
+     * background 广播 refreshAssets 时调用，或初始化时主动调用。
+     */
+    const refreshAssets = async () => {
+      keyringsStore.getState().setAssetsLoading(true);
+      try {
+        const { assetsData, chainName } = await wallet.assetsListsPage();
+        if (assetsData.length > 0) {
+          const { address, chainId } = assetsData[0];
+          keyringsStore
+            .getState()
+            .setCurrentAssets(address, chainId, assetsData, chainName);
+        }
+        keyringsStore.getState().setAssetsLoading(false);
+      } catch (e) {
+        console.error('Failed to refresh assets:', e);
+        keyringsStore.getState().setAssetsLoading(false);
+      }
+    };
+
+    /**
+     * 同步 keyrings / currentKeyring / currentAccount 到 keyringsStore & accountsStore。
+     * background 广播 updateKeyrings 时调用，或初始化时主动调用。
+     */
+    const syncKeyrings = async () => {
+      const keyrings = await wallet.getKeyrings();
+      if (keyrings && keyrings.length > 0) {
+        keyringsStore.getState().setKeyrings(keyrings);
+
+        const currentKeyring = await wallet.getCurrentKeyring();
+        if (currentKeyring) {
+          keyringsStore.getState().setCurrent(currentKeyring);
+        }
+
+        const currentAccount = await wallet.getCurrentAccount();
+        if (currentAccount) {
+          accountsStore.getState().setCurrent(currentAccount);
+        }
+      }
+    };
+
+    // ── 广播事件分发 ─────────────────────────────────────────────
     const onBroadcastToUI = async (payload: any) => {
-      if (!payload || !payload.method) return;
-
+      if (!payload?.method) return;
       const { method, params } = payload;
 
       switch (method) {
         case 'lock': {
-          console.log('received broadcast lock');
           globalStore.getState().update({ isUnlocked: false });
+          keyringsStore.getState().clearAssets();
           navigate('UnlockScreen');
           break;
         }
         case 'unlock': {
           globalStore.getState().update({ isUnlocked: true });
+          // 刚解锁：同步 keyrings + assets
+          await syncKeyrings();
+          await refreshAssets();
           break;
         }
-        case 'initVault':{
+        case 'initVault': {
           navigate('WelcomeScreen');
           break;
         }
         case 'updateKeyrings': {
-          updateKeyrings()
+          syncKeyrings();
           break;
         }
         case 'networkChanged': {
-          // 更新前端设置状态
           if (params && typeof params === 'string') {
             const chainType = params as ChainType;
-            
-            // 优先从 CHAIN_INFO 获取，如果没有则从存储获取
             let networkType: NetworkType;
             if (CHAIN_INFO[chainType]) {
               networkType = CHAIN_INFO[chainType].networkType;
             } else {
-              // 从存储中获取网络配置
               const storedChainInfo = await wallet.getStoredChainInfo();
               const chainInfo = storedChainInfo[chainType];
-              if (chainInfo) {
-                networkType = chainInfo.networkType;
-              } else {
+              if (!chainInfo) {
                 console.error('Network info not found for:', chainType);
                 return;
               }
+              networkType = chainInfo.networkType;
             }
-            
-            settingsStore.getState().updateSettings({
-              networkType,
-              chainType
-            });
-            updateKeyrings()
+            settingsStore.getState().updateSettings({ networkType, chainType });
+            await syncKeyrings();
+            await refreshAssets();
           }
           break;
         }
-        // 可以在此添加更多广播事件处理
-        // case 'keyringsChanged': { ... break; }
-        // case 'accountsUpdated': { ... break; }
+        case 'refreshAssets': {
+          // background 轮询到区块变化后广播，更新 keyringsStore
+          refreshAssets();
+          break;
+        }
         default: {
-          // 透传到以 method 为粒度的 UI 事件，供其他模块按需订阅
           eventBus.emit(`ui:${method}`, params);
           break;
         }
       }
     };
     eventBus.addEventListener(EVENTS.broadcastToUI, onBroadcastToUI);
-    
+
+    // ── 初始化同步 ───────────────────────────────────────────────
+    // 解决 popup 重开时钱包已解锁但不触发任何事件，导致 UI state 为空的问题。
+    // 策略：mount 后立即检查锁定状态，已解锁则主动拉取 background 当前数据。
+    wallet.isUnlocked().then((unlocked) => {
+      if (unlocked) {
+        syncKeyrings();
+        refreshAssets();
+      }
+    });
+
     return () => {
       portMessageChannel.dispose();
       eventBus.removeEventListener(EVENTS.broadcastToUI, onBroadcastToUI);
@@ -118,24 +166,5 @@ export default function SyncBridge(props: PropsWithChildren) {
     };
   }, [navigate, wallet]);
 
-  const updateKeyrings = async () => {
-    const keyrings = await wallet.getKeyrings();
-    if (keyrings && keyrings.length > 0) {
-      keyringsStore.getState().setKeyrings(keyrings);
-      
-      const currentKeyring = await wallet.getCurrentKeyring();
-      if (currentKeyring) {
-        keyringsStore.getState().setCurrent(currentKeyring);
-      }
-
-      const currentAccount = await wallet.getCurrentAccount();
-      if (currentAccount) {
-        accountsStore.getState().setCurrent(currentAccount);
-      }
-    }
-  }
-  
   return props.children as any;
 }
-
-

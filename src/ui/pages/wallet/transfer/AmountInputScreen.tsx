@@ -1,11 +1,13 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useLocation } from 'react-router';
+
+import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useNavigate } from '@/ui/pages/mainRoute';
-import { useState, useEffect, useMemo } from 'react';
+import { useCurrentAccount } from '@/ui/state/hooks';
 import { formatAmount } from '@/ui/utils';
 import { useWallet } from '@/ui/utils/walletContext';
-import { useCurrentAccount } from '@/ui/state/hooks';
-import { useLanguage } from '@/ui/contexts/LanguageContext';
+
 interface LocationState {
   token: any;
   recipientAddress: string;
@@ -32,15 +34,21 @@ export default function AmountInputScreen() {
         setFee('0');
         return;
       }
-      if(isMax) return
-      
+      if (isMax) return;
+
       if (!currentAccount?.address) return;
-      
+
       setIsLoadingFee(true);
       setFeeError(null);
       try {
         const tokenType = parseInt(token.tokenType, 10) || 0;
-        const feeSats = await wallet.getTransferFees(tokenType, currentAccount.address, false, amount, recipientAddress);
+        const feeSats = await wallet.getTransferFees(
+          tokenType,
+          currentAccount.address,
+          false,
+          amount,
+          recipientAddress
+        );
         setFee((feeSats / 1e8).toFixed(8)); // Keep 8 decimal places
       } catch (error) {
         console.error('获取交易费失败:', error);
@@ -50,14 +58,21 @@ export default function AmountInputScreen() {
         setIsLoadingFee(false);
       }
     };
-    
+
     // Add debounce to prevent too many API calls
     const timer = setTimeout(() => {
       fetchFee();
     }, 300); // 300ms debounce
-    
+
     return () => clearTimeout(timer);
-  }, [amount, currentAccount?.address, token.tokenType, wallet, isMax, recipientAddress]);
+  }, [
+    amount,
+    currentAccount?.address,
+    token.tokenType,
+    wallet,
+    isMax,
+    recipientAddress,
+  ]);
 
   // Calculate total amount including fee
   const totalAmount = useMemo(() => {
@@ -84,15 +99,18 @@ export default function AmountInputScreen() {
       setFeeError(null);
 
       const tokenType = parseInt(token.tokenType, 10) || 0;
-      const feeSats = await wallet.getTransferFees(tokenType, currentAccount.address, true);
-      setFee((feeSats/ 1e8).toFixed(8));
+      const feeSats = await wallet.getTransferFees(
+        tokenType,
+        currentAccount.address,
+        true
+      );
+      setFee((feeSats / 1e8).toFixed(8));
       // 计算扣除手续费后的余额
-      const balance = parseFloat(formatAmount(token.value)) - (feeSats/ 1e8);
+      const balance = parseFloat(formatAmount(token.value)) - feeSats / 1e8;
       // 设置金额为扣除手续费后的余额，确保不小于0
       setAmount(Math.max(0, balance).toString());
       setIsMax(true);
-
-    }catch (error) {
+    } catch (error) {
       console.error('获取最大可转金额失败:', error);
       setFeeError(t('transfer.max_amount_failed'));
     } finally {
@@ -102,7 +120,7 @@ export default function AmountInputScreen() {
 
   const handleContinue = () => {
     if (!isValid) return;
-    
+
     navigate('TransactionConfirmScreen', {
       token,
       recipientAddress,
@@ -124,82 +142,99 @@ export default function AmountInputScreen() {
   }
 
   return (
-    <div className="h-screen flex flex-col">
-      <div className='w-full sticky top-0 z-20 flex h-14 items-center justify-between px-4 py-[15px] bg-wallet-bg'>
-        <button 
-          onClick={() => navigate('#back')} 
-          className='flex items-center space-x-1 text-sm font-medium'
+    <div className='flex h-full w-full flex-col bg-white'>
+      <div className='absolute left-0 top-0 z-10 flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-4'>
+        <button
+          onClick={() => navigate('#back')}
+          className='-ml-2 flex items-center justify-center rounded-full p-2 transition-colors hover:bg-gray-100'
         >
-          <ChevronLeft className='h-5 w-5' />
-          <span>{t('transfer.back')}</span>
+          <ChevronLeft className='h-5 w-5 text-gray-800' />
         </button>
-        <h1 className='text-lg font-semibold'>{t('transfer.send_token').replace('{token}', token.name)}</h1>
-        <div className='w-10' />
+        <h1 className='absolute left-1/2 -translate-x-1/2 transform text-lg font-semibold text-gray-900'>
+          {t('transfer.send_token').replace('{token}', token.name)}
+        </h1>
+        <button
+          onClick={() => navigate('MainScreen')}
+          className='-mr-2 flex items-center justify-center rounded-full p-2 transition-colors hover:bg-gray-100'
+        >
+          <X className='h-5 w-5 text-gray-800' />
+        </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-wallet-bg px-4 py-6">
-        <div className="mb-6">
-          <div className="relative">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-gray-400">{t('transfer.amount')}</span>
-              <div className="text-sm text-gray-400">
-                {t('transfer.available').replace('{balance}', formatAmount(token.value)).replace('{token}', token.name)}
+      <div className='hide-scrollbar flex-1 overflow-y-auto bg-white px-4 pb-6 pt-20'>
+        <div className='mb-6'>
+          <div className='relative'>
+            <div className='mb-2 flex items-center justify-between'>
+              <span className='text-sm font-semibold text-gray-900'>
+                {t('transfer.amount')}
+              </span>
+              <div className='text-sm font-medium text-gray-500'>
+                {t('transfer.available')
+                  .replace('{balance}', formatAmount(token.value))
+                  .replace('{token}', token.name)}
               </div>
             </div>
-            
-            <div className="relative">
+
+            <div className='relative'>
               <input
-                type="text"
+                type='text'
                 value={amount}
                 onChange={handleAmountChange}
-                placeholder="0.0"
-                inputMode="decimal"
-                className="w-full p-4 pr-24 bg-wallet-card border border-border rounded-xl text-3xl font-medium placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder='0.0'
+                inputMode='decimal'
+                className='w-full rounded-2xl bg-gray-50 p-6 pr-24 text-3xl font-medium text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary'
               />
               <button
                 onClick={handleMax}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-primary/10 text-primary text-sm font-medium px-3 py-1 rounded-md hover:bg-primary/20 transition-colors"
+                className='absolute right-4 top-1/2 -translate-y-1/2 transform rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800'
               >
                 {t('transfer.max')}
               </button>
             </div>
-            
-            <div className="flex items-center justify-between mt-2 px-1">
-            </div>
           </div>
 
-          <div className="mt-6 bg-wallet-card rounded-xl p-4 border border-border">
-            <div className="flex justify-between py-2">
-              <span className="text-gray-400">{t('transfer.network_fee')}</span>
-              <div className="text-right">
+          <div className='mt-6 rounded-2xl bg-gray-50 p-5'>
+            <div className='flex justify-between py-2'>
+              <span className='text-sm font-medium text-gray-500'>
+                {t('transfer.network_fee')}
+              </span>
+              <div className='text-right text-sm font-semibold text-gray-900'>
                 {isLoadingFee ? (
-                  <span className="animate-pulse">{t('transfer.calculating')}</span>
+                  <span className='animate-pulse'>
+                    {t('transfer.calculating')}
+                  </span>
                 ) : feeError ? (
-                  <span className="text-red-500">{feeError}</span>
+                  <span className='text-red-500'>{feeError}</span>
                 ) : (
-                  <div>≈ {fee} {token.name}</div>
+                  <div>
+                    ≈ {fee} {token.name}
+                  </div>
                 )}
               </div>
             </div>
-            <div className="h-px bg-border my-2"></div>
-            <div className="flex justify-between py-2">
-              <span className="text-gray-400">{t('transfer.total')}</span>
-              <div className="text-right">
-                <div>{totalAmount} {token.name}</div>
+            <div className='my-3 h-px bg-gray-200'></div>
+            <div className='flex justify-between py-2'>
+              <span className='text-sm font-medium text-gray-500'>
+                {t('transfer.total')}
+              </span>
+              <div className='text-right text-sm font-semibold text-gray-900'>
+                <div>
+                  {totalAmount} {token.name}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="p-4 border-border bg-wallet-bg">
+      <div className='bg-white px-4 py-6'>
         <button
           onClick={handleContinue}
           disabled={!isValid}
-          className={`w-full py-3 rounded-xl font-medium ${
-            isValid 
-              ? 'bg-primary text-white hover:bg-primary/90' 
-              : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+          className={`w-full rounded-full py-3.5 font-medium transition-colors ${
+            isValid
+              ? 'bg-gray-900 text-white hover:bg-gray-800'
+              : 'cursor-not-allowed bg-gray-100 text-gray-400'
           }`}
         >
           {t('transfer.continue')}

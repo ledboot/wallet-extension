@@ -70,6 +70,8 @@ export type ChainInfo = {
   updated: number;
   id: number;
   explorerUrl?: string;
+  /** true 表示由用户手动添加的自定义网络，false/undefined 为内置或 API 下发的 RPC 网络 */
+  isCustom?: boolean;
 };
 
 export type Utxo = {

@@ -1,33 +1,43 @@
-import { History, Download, Send } from 'lucide-react';
-import { useNavigate } from '../pages/mainRoute';
+import { Download, History, Send } from 'lucide-react';
+
 import { useLanguage } from '@/ui/contexts/LanguageContext';
+
+import { useNavigate } from '../pages/mainRoute';
 
 export function WalletActions() {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
   return (
-    <div className='grid w-full grid-cols-4 gap-3'>
-      <button 
-      onClick={() => navigate('TokenSelectionScreen')}
-      className='bg-wallet-card border-border hover:border-primary/50 btn btn-outline flex h-16 flex-col space-y-1 transition-all'>
-        <Send className='h-5 w-5' />
-        <span className='text-xs'>{t('assets.send')}</span>
-      </button>
-
-      <button 
-        onClick={() => navigate('ReceiveScreen')}
-        className='bg-wallet-card border-border hover:border-primary/50 btn btn-outline flex h-16 flex-col space-y-1 transition-all'>
-        <Download className='h-5 w-5' />
-        <span className='text-xs'>{t('assets.receive')}</span>
-      </button>
-
-      <button 
-        onClick={() => navigate('HistoryScreen')}
-        className='bg-wallet-card border-border hover:border-primary/50 btn btn-outline flex h-16 flex-col space-y-1 transition-all'
+    <div className='grid w-full grid-cols-3 gap-3'>
+      <button
+        onClick={() => navigate('TokenSelectionScreen')}
+        className='flex flex-col items-center justify-center space-y-2 rounded-2xl bg-gray-50 py-4 transition-colors hover:bg-gray-100 active:bg-gray-200'
       >
-        <History className='h-5 w-5' />
-        <span className='text-xs'>{t('assets.history')}</span>
+        <Send className='h-6 w-6 text-gray-900' />
+        <span className='text-xs font-medium text-gray-900'>
+          {t('assets.send')}
+        </span>
+      </button>
+
+      <button
+        onClick={() => navigate('ReceiveScreen')}
+        className='flex flex-col items-center justify-center space-y-2 rounded-2xl bg-gray-50 py-4 transition-colors hover:bg-gray-100 active:bg-gray-200'
+      >
+        <Download className='h-6 w-6 text-gray-900' />
+        <span className='text-xs font-medium text-gray-900'>
+          {t('assets.receive')}
+        </span>
+      </button>
+
+      <button
+        onClick={() => navigate('HistoryScreen')}
+        className='flex flex-col items-center justify-center space-y-2 rounded-2xl bg-gray-50 py-4 transition-colors hover:bg-gray-100 active:bg-gray-200'
+      >
+        <History className='h-6 w-6 text-gray-900' />
+        <span className='text-xs font-medium text-gray-900'>
+          {t('assets.history')}
+        </span>
       </button>
     </div>
   );

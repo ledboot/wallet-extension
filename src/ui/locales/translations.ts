@@ -132,6 +132,7 @@ export const translations = {
       is_test_network: '是否为测试网络',
       add_network_warning:
         '未知的网络服务提供商可能会暴露区块链状态并追踪您的网络活动。仅在您完全信任该网络时才添加。',
+      no_custom_networks: '暂无自定义网络',
     },
 
     // Settings
@@ -214,6 +215,8 @@ export const translations = {
       back: '返回',
       wallet_address: '钱包地址',
       network: '网络',
+      copied: '已复制',
+      copy_address: '复制地址',
       address_copied: '地址已复制',
     },
 
@@ -367,6 +370,7 @@ export const translations = {
       is_test_network: 'Is test network',
       add_network_warning:
         'Unknown internet service providers may expose the blockchain state and track your network activities. Add a network only if you fully trust it.',
+      no_custom_networks: 'No custom networks yet',
     },
 
     // Settings
@@ -451,6 +455,8 @@ export const translations = {
       back: 'Back',
       wallet_address: 'Wallet Address',
       network: 'Network',
+      copied: 'Copied',
+      copy_address: 'Copy Address',
       address_copied: 'Address copied',
     },
 
@@ -605,6 +611,7 @@ export const translations = {
       is_test_network: 'テストネットワーク',
       add_network_warning:
         '未知のインターネットサービスプロバイダはブロックチェーンの状態を公開し、ネットワーク活動を追跡する可能性があります。完全に信頼できるネットワークのみを追加してください。',
+      no_custom_networks: 'カスタムネットワークはまだありません',
     },
 
     // Settings
@@ -689,6 +696,8 @@ export const translations = {
       back: '戻る',
       wallet_address: 'ウォレットアドレス',
       network: 'ネットワーク',
+      copied: 'コピー済み',
+      copy_address: 'アドレスをコピー',
       address_copied: 'アドレスがコピーされました',
     },
 
@@ -842,6 +851,7 @@ export const translations = {
       is_test_network: '테스트 네트워크',
       add_network_warning:
         '알 수 없는 인터넷 서비스 제공업체는 블록체인 상태를 노출하고 네트워크 활동을 추적할 수 있습니다. 완전히 신뢰하는 네트워크만 추가하세요.',
+      no_custom_networks: '사용자 지정 네트워크가 없습니다',
     },
 
     // Settings
@@ -925,6 +935,8 @@ export const translations = {
       back: '뒤로',
       wallet_address: '지갑 주소',
       network: '네트워크',
+      copied: '복사됨',
+      copy_address: '주소 복사',
       address_copied: '주소가 복사되었습니다',
     },
 

@@ -5,7 +5,6 @@ import type {
   UtxoAddressSumInfo,
 } from '@/shared/types';
 
-import AssetsList from '@/background/service/assetslist';
 import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
 import {
   AUTO_LOCK_TIMES,
@@ -82,7 +81,6 @@ export class WalletController {
     // 钱包解锁后立即获取区块链网络
     try {
       const blockchains = await openapiService.fetchBlockchains();
-      console.log('---------blockchains', blockchains);
     } catch (error) {
       console.error('Failed to fetch blockchains on unlock:', error);
     }
@@ -90,36 +88,21 @@ export class WalletController {
     eventBus.emit(EVENTS.broadcastToUI, { method: 'unlock', params: {} });
     this._startUtxoPolling();
   };
-  // UtxoCoin = () =>keyringService.UtxoCoin();
 
   /**
-   * 初始化更新：获取账户最新UTXO并聚合写入loadStore
+   * 同步当前账户的 UTXO：从链上拉取最新数据，写入 store，聚合余额，获取代币名称。
+   * 由 background 定时轮询调用，UI 不应主动调用此方法。
    */
-  updateInit = async (
+  syncAccountUtxos = async (
     start: number,
     limit: number,
     isBackgroundPolling = false
-  ): Promise<{
-    sums: UtxoAddressSumInfo[];
-    CoinNames: CoinNames[];
-    utxoItems: Utxo[];
-  }> => {
-    // 获取远程网络并自动添加到动态网络管理器
-    // const blockchains = await openapiService.fetchBlockchains();
-    // console.log('---------blockchains', blockchains);
+  ) => {
 
-    // // 获取所有可用网络（静态 + 动态）
-    // const allNetworks = dynamicNetworkManager.getAllNetworks();
-    // console.log('---------all available networks:', Object.keys(allNetworks));
 
-    // // 获取动态网络统计
-    // const dynamicNetworks = dynamicNetworkManager.getDynamicNetworks();
-    // console.log('---------dynamic networks count:', dynamicNetworks.length);
-
-    console.log('updateInit', start, limit);
     if (!isBackgroundPolling) this.resetLockTime();
     const account = await this.getCurrentAccount();
-    console.log('account', account);
+    console.log('syncAccountUtxos', account?.address, 'start:', start, 'limit:', limit);
     if (!account) return { sums: [], CoinNames: [], utxoItems: [] };
 
     const utxoItems = await openapiService.update(account, start, limit);
@@ -134,6 +117,7 @@ export class WalletController {
         existingUtxos.length === 0 ||
         utxoItems[0].blockHeight >= existingUtxos[0].blockHeight;
 
+      console.log('shouldUpdate', shouldUpdate);
       if (shouldUpdate) {
         const changed =
           JSON.stringify(existingUtxos) !== JSON.stringify(utxoItems);
@@ -145,16 +129,9 @@ export class WalletController {
           currentChainInfo.chainId,
           utxoItems
         );
-        const utxoMap = keyringService.getUtxosMap(
-          account.address,
-          currentChainInfo.chainId
-        );
-        console.log('---utxoMap', utxoMap);
-        console.log('UTXOs saved to preference store');
-
         if (changed) {
           eventBus.emit(EVENTS.broadcastToUI, {
-            method: 'ui:refreshAssets',
+            method: 'refreshAssets',
             params: null,
           });
         }
@@ -162,43 +139,13 @@ export class WalletController {
         console.log('Skipping UTXO update: New UTXOs are from an older block');
       }
     }
-
-    const currentChainInfo = this.getCurrentChainInfo();
-    const chainId = currentChainInfo.chainId;
-    const chainIdStr = chainId.toString();
-    let CoinNames: CoinNames[] = [];
-    if (utxoItems.length > 0) {
-      const { CoinNames: fetchedConames } = await openapiService.fetchTokentype(
-        utxoItems,
-        chainIdStr
-      );
-      console.log('wallet CoinNames:', fetchedConames);
-      CoinNames = fetchedConames;
-      console.log('update utxo', utxoItems);
-    }
-    const sums = await AssetsList.aggregate(account.address);
-
-    // const assetsLists = await AssetsList.assetsLists();
-    // console.log('assetsLists', assetsLists);
-
-    console.log('sums', sums);
-    return { sums, CoinNames, utxoItems };
   };
 
   assetsListsPage = async () => {
-    const assetsLists = await AssetsList.assetsLists();
-    console.log('assetsLists', assetsLists);
     const account = await this.getCurrentAccount();
-    // 过滤出当前账户的资产
-    const filteredAssets = assetsLists.assets.filter(
-      (asset) => asset.address === account?.address
-    );
-
-    // 使用辅助函数获取当前网络配置
     const currentChainInfo = this.getCurrentChainInfo();
-    const chainName = currentChainInfo.iconLabel;
-
-    return { assetsData: filteredAssets, chainName };
+    const assetsData = keyringService.getAssetsPage(account?.address ?? '');
+    return { assetsData, chainName: currentChainInfo.iconLabel };
   };
 
   /**
@@ -482,7 +429,7 @@ export class WalletController {
             ? sums.find((s) => s.address === account.address)?.blockHeight
             : 0) || 0;
 
-        await this.updateInit(latest, 2048, true);
+        await this.syncAccountUtxos(latest, 2048, true);
       } catch (e) {
         console.error('UTXO polling error:', e);
       } finally {
@@ -529,32 +476,6 @@ export class WalletController {
 
     this.resetLockTime();
   }
-
-  // createKeyringWithPrivateKey = async (
-  //   wif: string,
-  //   _alianName?: string
-  // ) => {
-  //   void _alianName;
-  //   const originKeyring = await keyringService.importPrivateKey(privateKey);
-
-  //   const displayedKeyring = await keyringService.displayForKeyring(
-  //     originKeyring,
-  //     keyringService.keyrings.length - 1
-  //   );
-
-  //   const keyring = this.displayedKeyringToWalletKeyring(
-  //     displayedKeyring,
-  //     keyringService.keyrings.length - 1
-  //   );
-
-  //   this.changeKeyring(keyring.key,0);
-  //   // 活动发生，刷新心跳时间
-  //   this._touchHeartbeat();
-  //   eventBus.emit(EVENTS.broadcastToUI, {
-  //     method: 'updateKeyrings',
-  //     params: {}
-  //   });
-  // };
 
   importPrivateKey = async (wif: string) => {
     const { privateKeyHex, compressed } = decodeWalletImportFormat(wif);
@@ -715,13 +636,10 @@ export class WalletController {
     let result = null;
     if (res && res.result) {
       result = res.result;
-      // 转账成功后发送刷新事件
-      eventBus.emit(EVENTS.broadcastToUI, {
-        method: 'refreshAssets',
-        params: null,
-      });
+      // 注意：不在此处广播 refreshAssets。
+      // 转账广播成功只代表交易进入 mempool，链上 UTXO 尚未变化。
+      // background 轮询到区块高度变化时会自动广播 refreshAssets，届时 UI 才真正刷新。
     }
-    console.log('transfer res:', res);
     return result;
   };
 }

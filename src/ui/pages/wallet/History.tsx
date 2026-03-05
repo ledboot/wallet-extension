@@ -196,19 +196,6 @@ export default function History() {
         try {
           setLoading(true);
 
-          // 转换 mock 数据为 TransactionDisplayItem
-          // const displayTransactions: TransactionDisplayItem[] = mockTransactions.map(
-          //   (tx: TxHistoryItem) => ({
-          //     ...tx,
-          //     type: getTransactionType(tx),
-          //     displayAmount: formatAmount(tx.value),
-          //     displaySymbol: 'ZENT',
-          //     timeAgo: formatTimeAgo(tx.blockTime),
-          //   })
-          // );
-
-          // setTransactions(displayTransactions);
-
           // 真实 API 调用（暂时注释）
           const result = await wallet.getAddressHistory(account, 0, 20);
           if (result && Array.isArray(result)) {

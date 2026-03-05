@@ -1,14 +1,15 @@
-import { ChevronLeft, Copy, Check, AlertCircle } from 'lucide-react';
-import { useLocation } from 'react-router';
-import { useNavigate } from '@/ui/pages/mainRoute';
-import { useState, useEffect } from 'react';
-import { formatAmount } from '@/ui/utils';
-import { toast } from 'sonner';
-import { useCurrentAccount } from '@/ui/state/hooks';
-import keyringService from '@background/service/keyring';
+import { useEffect, useState } from 'react';
 import type { transferAddressHistory } from '@/shared/types';
-import { useWallet } from '@/ui/utils/walletContext';
+import keyringService from '@background/service/keyring';
+import { AlertCircle, Check, ChevronLeft, Copy, X } from 'lucide-react';
+import { useLocation } from 'react-router';
+import { toast } from 'sonner';
+
 import { useLanguage } from '@/ui/contexts/LanguageContext';
+import { useNavigate } from '@/ui/pages/mainRoute';
+import { useCurrentAccount } from '@/ui/state/hooks';
+import { formatAmount } from '@/ui/utils';
+import { useWallet } from '@/ui/utils/walletContext';
 
 interface LocationState {
   token: any;
@@ -22,14 +23,9 @@ export default function TransactionConfirmScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
-  const { 
-    token, 
-    recipientAddress, 
-    amount, 
-    fee, 
-    totalAmount,
-  } = (location.state || {}) as LocationState;
-  
+  const { token, recipientAddress, amount, fee, totalAmount } =
+    (location.state || {}) as LocationState;
+
   const [password, setPassword] = useState('');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -68,13 +64,21 @@ export default function TransactionConfirmScreen() {
         token: token.name,
         fee,
       });
-      
+
       // Make the transfer
-      const result = await wallet.transfer(amount, token.tokenType, recipientAddress, password, currentAccount.address, 0, 15);
+      const result = await wallet.transfer(
+        amount,
+        token.tokenType,
+        recipientAddress,
+        password,
+        currentAccount.address,
+        0,
+        15
+      );
       console.log('Transfer result:', result);
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       await wallet.updateTransferAddressesHistory(recipientAddress);
-      
+
       if (result) {
         toast.success(t('transfer.transaction_sent'));
       } else {
@@ -97,174 +101,215 @@ export default function TransactionConfirmScreen() {
   }
 
   return (
-    <div className="h-screen flex flex-col">
-      <div className='w-full sticky top-0 z-20 flex h-14 items-center justify-between px-4 py-[15px] bg-wallet-bg'>
-        <button 
-          onClick={() => navigate('#back')} 
-          className='flex items-center space-x-1 text-sm font-medium'
+    <div className='flex h-full w-full flex-col bg-white'>
+      <div className='absolute left-0 top-0 z-10 flex h-14 w-full items-center justify-between bg-white px-4'>
+        <button
+          onClick={() => navigate('#back')}
+          className='-ml-2 flex items-center justify-center rounded-full p-2 transition-colors hover:bg-gray-100'
         >
-          <ChevronLeft className='h-5 w-5' />
-          <span>{t('transfer.back')}</span>
+          <ChevronLeft className='h-5 w-5 text-gray-800' />
         </button>
-        <h1 className='text-lg font-semibold'>{t('transfer.confirm_transaction')}</h1>
-        <div className='w-10' />
+        <h1 className='absolute left-1/2 -translate-x-1/2 transform text-lg font-semibold text-gray-900'>
+          {t('transfer.confirm_transaction')}
+        </h1>
+        <button
+          onClick={() => navigate('MainScreen')}
+          className='-mr-2 flex items-center justify-center rounded-full p-2 transition-colors hover:bg-gray-100'
+        >
+          <X className='h-5 w-5 text-gray-800' />
+        </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-wallet-bg px-4 py-6">
-        <div className="bg-wallet-card rounded-xl p-4 border border-border mb-6">
-          <div className="text-2xl font-bold text-center mb-2">
-            {amount}
-          </div>
-          <div className="text-center text-gray-400 text-sm mb-6">
-             {token.name}
-          </div>
-          
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400">{t('transfer.network')}</span>
-              <span>{token.chainLabel}</span>
+      <div className='hide-scrollbar flex-1 overflow-y-auto bg-white px-4 pb-6 pt-20'>
+        <div className='mb-6'>
+          <div className='mb-8 text-center'>
+            <div className='text-4xl font-bold text-gray-900'>{amount}</div>
+            <div className='mt-1 text-sm font-medium text-gray-500'>
+              {token.name}
             </div>
-            
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400">{t('transfer.token_label')}</span>
-              <div className="flex items-center">
-                <img 
-                  src={token.iconHtml} 
+          </div>
+
+          <div className='space-y-4 rounded-2xl bg-gray-50 p-5'>
+            <div className='flex items-center justify-between'>
+              <span className='text-sm font-medium text-gray-500'>
+                {t('transfer.network')}
+              </span>
+              <span className='text-sm font-semibold text-gray-900'>
+                {token.chainLabel}
+              </span>
+            </div>
+
+            <div className='flex items-center justify-between'>
+              <span className='text-sm font-medium text-gray-500'>
+                {t('transfer.token_label')}
+              </span>
+              <div className='flex items-center'>
+                <img
+                  src={token.iconHtml}
                   alt={token.name}
-                  className="w-5 h-5 rounded-full mr-2"
+                  className='mr-2 h-5 w-5 rounded-full'
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.src = 'https://via.placeholder.com/20';
                   }}
                 />
-                <span>{token.name}</span>
+                <span className='text-sm font-semibold text-gray-900'>
+                  {token.name}
+                </span>
               </div>
             </div>
-            
-            <div className="h-px bg-border my-2"></div>
-            
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-400">{t('transfer.send_from')}</span>
-                <div className="flex items-center">
-                  <span className="font-mono text-sm">
-                    {currentAccount?.address?.slice(0, 6)}...{currentAccount?.address?.slice(-4)}
+
+            <div className='my-2 h-px bg-gray-200'></div>
+
+            <div className='space-y-4'>
+              <div className='flex justify-between'>
+                <span className='text-sm font-medium text-gray-500'>
+                  {t('transfer.send_from')}
+                </span>
+                <div className='flex items-center text-sm font-semibold text-gray-900'>
+                  <span className='font-mono'>
+                    {currentAccount?.address?.slice(0, 6)}...
+                    {currentAccount?.address?.slice(-4)}
                   </span>
-                  <button 
-                    onClick={() => copyToClipboard(currentAccount?.address || '', 'from')}
-                    className="ml-2 text-gray-400 hover:text-primary"
+                  <button
+                    onClick={() =>
+                      copyToClipboard(currentAccount?.address || '', 'from')
+                    }
+                    className='ml-2 text-gray-400 hover:text-gray-600'
                   >
                     {copiedField === 'from' ? (
-                      <Check className="h-4 w-4" />
+                      <Check className='h-4 w-4' />
                     ) : (
-                      <Copy className="h-4 w-4" />
+                      <Copy className='h-4 w-4' />
                     )}
                   </button>
                 </div>
               </div>
-              
-              <div className="flex justify-between">
-                <span className="text-gray-400">{t('transfer.send_to')}</span>
-                <div className="flex items-center">
-                  <span className="font-mono text-sm">
-                    {recipientAddress.slice(0, 6)}...{recipientAddress.slice(-4)}
+
+              <div className='flex justify-between'>
+                <span className='text-sm font-medium text-gray-500'>
+                  {t('transfer.send_to')}
+                </span>
+                <div className='flex items-center text-sm font-semibold text-gray-900'>
+                  <span className='font-mono'>
+                    {recipientAddress.slice(0, 6)}...
+                    {recipientAddress.slice(-4)}
                   </span>
-                  <button 
+                  <button
                     onClick={() => copyToClipboard(recipientAddress, 'to')}
-                    className="ml-2 text-gray-400 hover:text-primary"
+                    className='ml-2 text-gray-400 hover:text-gray-600'
                   >
                     {copiedField === 'to' ? (
-                      <Check className="h-4 w-4" />
+                      <Check className='h-4 w-4' />
                     ) : (
-                      <Copy className="h-4 w-4" />
+                      <Copy className='h-4 w-4' />
                     )}
                   </button>
                 </div>
               </div>
             </div>
-            
-            <div className="h-px bg-border my-2"></div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-400">{t('transfer.network_fee')}</span>
-                <div className="text-right">
-                  <div>{fee} {token.name}</div>
-                  {/* <div className="text-xs text-gray-400">≈ $0.42</div> */}
+
+            <div className='my-2 h-px bg-gray-200'></div>
+
+            <div className='space-y-4'>
+              <div className='flex justify-between'>
+                <span className='text-sm font-medium text-gray-500'>
+                  {t('transfer.network_fee')}
+                </span>
+                <div className='text-right text-sm font-semibold text-gray-900'>
+                  <div>
+                    {fee} {token.name}
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex justify-between font-medium">
-                <span>{t('transfer.total')}</span>
-                <div className="text-right">
-                  <div>{totalAmount} {token.name}</div>
+
+              <div className='flex justify-between'>
+                <span className='text-sm font-medium text-gray-500'>
+                  {t('transfer.total')}
+                </span>
+                <div className='text-right text-sm font-semibold text-gray-900'>
+                  <div>
+                    {totalAmount} {token.name}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          
-          <div className="mt-6 p-3 bg-yellow-500/10 rounded-lg flex items-start">
-            <AlertCircle className="h-5 w-5 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
-            <p className="text-yellow-400 text-sm">
+
+          <div className='mt-6 flex items-start rounded-2xl bg-orange-50 p-4'>
+            <AlertCircle className='mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-orange-500' />
+            <p className='text-sm leading-relaxed text-orange-700'>
               {t('transfer.warning_message')}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="p-4 border-border bg-wallet-bg">
+      <div className='bg-white px-4 py-6'>
         <button
           onClick={handleConfirm}
           disabled={isSending}
-          className={`w-full py-3 rounded-xl font-medium ${
-            isSending 
-              ? 'bg-gray-600 text-gray-400 cursor-wait' 
-              : 'bg-primary text-white hover:bg-primary/90'
+          className={`w-full rounded-full py-3.5 font-medium transition-colors ${
+            isSending
+              ? 'cursor-wait bg-gray-100 text-gray-400'
+              : 'bg-gray-900 text-white hover:bg-gray-800'
           }`}
         >
           {isSending ? t('transfer.processing') : t('transfer.confirm_send')}
         </button>
       </div>
 
-      {/* Password Dialog */}
-      {showPasswordDialog && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-wallet-card rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-white mb-4">{t('transfer.enter_password')}</h3>
-            <p className="text-gray-400 text-sm mb-4">
-              {t('transfer.password_description')}
-            </p>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={t('transfer.wallet_password')}
-              className="w-full p-3 bg-wallet-bg border border-border rounded-lg text-white mb-4 focus:outline-none focus:ring-2 focus:ring-primary"
-              autoFocus
-            />
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowPasswordDialog(false)}
-                className="flex-1 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors"
-                disabled={isSending}
-              >
-                {t('transfer.cancel')}
-              </button>
-              <button
-                onClick={handleSend}
-                disabled={!password || isSending}
-                className={`flex-1 py-2.5 rounded-lg font-medium ${
-                  !password || isSending
-                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                    : 'bg-primary text-white hover:bg-primary/90'
-                }`}
-              >
-                {isSending ? t('transfer.sending') : t('transfer.confirm')}
-              </button>
-            </div>
+      {/* Password Dialog (DaisyUI styled) */}
+      <dialog className={`modal ${showPasswordDialog ? 'modal-open' : ''}`}>
+        <div className='modal-box bg-white'>
+          <h3 className='text-lg font-bold text-gray-900'>
+            {t('transfer.enter_password')}
+          </h3>
+          <p className='py-4 text-sm text-gray-500'>
+            {t('transfer.password_description')}
+          </p>
+
+          <input
+            type='password'
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={t('transfer.wallet_password')}
+            className='w-full rounded-xl bg-gray-50 p-4 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300'
+            autoFocus
+          />
+
+          <div className='modal-action mt-6 gap-3'>
+            <button
+              className='btn btn-ghost flex-1 rounded-full font-medium text-gray-600 hover:bg-gray-100'
+              onClick={() => setShowPasswordDialog(false)}
+              disabled={isSending}
+            >
+              {t('transfer.cancel')}
+            </button>
+            <button
+              className={`btn flex-1 rounded-full border-none font-medium text-white transition-colors ${
+                !password || isSending
+                  ? 'bg-gray-300 hover:bg-gray-300'
+                  : 'bg-gray-900 hover:bg-gray-800'
+              }`}
+              onClick={handleSend}
+              disabled={!password || isSending}
+            >
+              {isSending ? (
+                <>
+                  <span className='loading loading-spinner loading-sm'></span>
+                  {t('transfer.sending')}
+                </>
+              ) : (
+                t('transfer.confirm')
+              )}
+            </button>
           </div>
         </div>
-      )}
+        <form method='dialog' className='modal-backdrop bg-black/40'>
+          <button onClick={() => setShowPasswordDialog(false)}>close</button>
+        </form>
+      </dialog>
     </div>
   );
 }

@@ -35,12 +35,13 @@ export default function AddCustomNetwork() {
         iconLabel: symbol.trim(),
         chainId: parsedChainId,
         endpoints: [rpcUrl.trim()],
-        icon: './images/artifacts/bitcoin-mainnet.svg', // Default icon
+        icon: './images/artifacts/bitcoin-mainnet.svg',
         unit: symbol.trim(),
         networkType: isTestnet ? NetworkType.TESTNET : NetworkType.MAINNET,
         updated: Math.floor(Date.now() / 1000),
         id: parsedChainId || Date.now() % 100000,
         explorerUrl: blockExplorerUrl.trim() || undefined,
+        isCustom: true,
       };
 
       // Generate a unique chainType key

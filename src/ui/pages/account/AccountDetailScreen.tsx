@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Account } from '@shared/types';
-import { ChevronLeft, ChevronRight, Edit2, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Edit2, X } from 'lucide-react';
 import { useLocation } from 'react-router';
+import { toast } from 'sonner';
 
+import { ConfirmModal } from '@/ui/components/ConfirmModal';
 import { PixelAvatar } from '@/ui/components/PixelAvatar';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useNavigate } from '@/ui/pages/mainRoute';
+import { useKeyringsList } from '@/ui/state/hooks';
 import { useWallet } from '@/ui/utils/walletContext';
 
 interface EditNameModalProps {
@@ -98,35 +101,32 @@ const AccountDetailScreen = () => {
   const wallet = useWallet();
   const location = useLocation();
   const { t } = useLanguage();
+  const keyrings = useKeyringsList();
 
   const account = (location.state as any)?.account as Account | undefined;
-  const keyringKey = (location.state as any)?.keyringKey as string | undefined;
-  const keyringLength = (location.state as any)?.keyringLength as
-    | number
-    | undefined;
 
   const [displayName, setDisplayName] = useState(account?.alianName || '');
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   if (!account) {
     navigate('#back');
     return null;
   }
 
-  const handleDeleteAccount = async () => {
-    const confirmMessage = t('account.confirm_delete_account_specific').replace(
-      '{name}',
-      displayName || 'Unknown Account'
-    );
-    if (!confirm(confirmMessage)) return;
+  const handleDeleteAccount = () => {
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteAccount = async () => {
+    setShowDeleteModal(false);
     try {
       await wallet.removeAccount(account.address, account.type);
-      alert(t('account.delete_account_success'));
-      await wallet.updateInit(0, 10);
+      toast.success(t('account.delete_account_success'));
       navigate('AccountSelection');
     } catch (error: any) {
       console.error('Failed to delete account:', error);
-      alert(
+      toast.error(
         t('account.delete_account_failed').replace(
           '{error}',
           error.message || t('common.error')
@@ -142,10 +142,10 @@ const AccountDetailScreen = () => {
 
   const handleViewPrivateKey = () => {
     // Placeholder – private key export not yet implemented
-    alert(t('account.private_key_not_available'));
+    toast.info(t('account.private_key_not_available'));
   };
 
-  const canDelete = (keyringLength ?? 2) > 1;
+  const canDelete = (keyrings.length ?? 2) > 1;
 
   return (
     <div className='flex h-full w-full flex-col bg-white'>
@@ -160,12 +160,7 @@ const AccountDetailScreen = () => {
         <h1 className='absolute left-1/2 -translate-x-1/2 transform text-lg font-semibold text-gray-900'>
           {t('account.about_account')}
         </h1>
-        <button
-          onClick={() => navigate('AccountSelection')}
-          className='rounded-full p-2 transition-colors hover:bg-gray-100'
-        >
-          <X className='h-5 w-5 text-gray-800' />
-        </button>
+        <div className='h-9 w-9'></div>
       </div>
 
       {/* Content */}
@@ -214,20 +209,16 @@ const AccountDetailScreen = () => {
           </button>
         </div>
 
-        {/* Divider */}
-        <div className='my-2 w-full border-t border-gray-100' />
-
         {/* Delete account */}
         {canDelete && (
-          <button
-            onClick={handleDeleteAccount}
-            className='flex w-full items-center gap-3 px-4 py-4 transition-colors hover:bg-red-50'
-          >
-            <Trash2 className='h-5 w-5 text-red-500' />
-            <span className='text-sm font-medium text-red-500'>
+          <div className='px-4 py-3'>
+            <button
+              onClick={handleDeleteAccount}
+              className='w-full py-2.5 text-sm font-medium text-red-500 transition-colors hover:cursor-pointer'
+            >
               {t('account.delete_account')}
-            </span>
-          </button>
+            </button>
+          </div>
         )}
       </div>
 
@@ -239,6 +230,18 @@ const AccountDetailScreen = () => {
           onSuccess={(newName) => setDisplayName(newName)}
         />
       )}
+
+      {/* Delete confirm modal */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        message={t('account.confirm_delete_account_specific').replace(
+          '{name}',
+          displayName || 'Unknown Account'
+        )}
+        onConfirm={confirmDeleteAccount}
+        onCancel={() => setShowDeleteModal(false)}
+        confirmText={t('account.delete_account')}
+      />
     </div>
   );
 };

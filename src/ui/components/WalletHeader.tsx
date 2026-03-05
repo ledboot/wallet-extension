@@ -7,15 +7,7 @@ import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useNavigate } from '@/ui/pages/mainRoute';
 import { useCurrentAccount } from '@/ui/state/hooks';
 
-interface WalletHeaderProps {
-  onRefresh?: () => void;
-  isRefreshing?: boolean;
-}
-
-export function WalletHeader({
-  onRefresh,
-  isRefreshing = false,
-}: WalletHeaderProps) {
+export function WalletHeader() {
   const navigate = useNavigate();
   const currentAccount = useCurrentAccount();
   const { t } = useLanguage();

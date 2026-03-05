@@ -6,7 +6,6 @@ import {
   ChainInfo,
   CoinNames,
   transferAddressHistory,
-  Utxo,
   UtxoAddressSumInfo,
   WalletKeyring,
 } from '@/shared/types';
@@ -54,16 +53,6 @@ export interface WalletController {
     start: number,
     limit: number
   ): Promise<any>;
-  updateInit(
-    start: number,
-    limit: number
-  ): Promise<{
-    sums: UtxoAddressSumInfo[];
-    CoinNames: CoinNames[];
-    utxoItems: Utxo[];
-  }>;
-
-  getUtxoSum(): Promise<UtxoAddressSumInfo[]>;
 
   updateAccountAlianName(accountKey: string, newName: string): Promise<void>;
   updateKeyringAlianName(keyringKey: string, newName: string): Promise<void>;

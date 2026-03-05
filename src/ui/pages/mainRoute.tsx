@@ -17,6 +17,7 @@ import BoostScreen from './main/boostScreen';
 import MainScreen from './main/mainScreen';
 import WelcomeScreen from './main/welcomeScreen';
 import AddCustomNetwork from './network/AddCustomNetwork';
+import NetworkDetailScreen from './network/NetworkDetailScreen';
 import NetworkSelection from './network/NetworkSelection';
 import LanguageScreen from './settings/LanguageScreen';
 import PreferencesScreen from './settings/PreferencesScreen';
@@ -58,10 +59,6 @@ const routes = {
     path: '/account/create-or-import-wallet',
     element: <CreateOrImportWalletScreen />,
   },
-  //   CreateAccountScreen: {
-  //     path: '/account/create',
-  //     element: <CreateAccountScreen />,
-  //   },
   CreatePasswordScreen: {
     path: '/account/create-password',
     element: <CreatePasswordScreen />,
@@ -106,6 +103,10 @@ const routes = {
   AddCustomNetwork: {
     path: '/network/add-custom-network',
     element: <AddCustomNetwork />,
+  },
+  NetworkDetailScreen: {
+    path: '/network/detail',
+    element: <NetworkDetailScreen />,
   },
   ReceiveScreen: {
     path: '/wallet/receive',

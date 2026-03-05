@@ -70,6 +70,7 @@ export const CHAIN_INFO: { [key: string]: ChainInfo } = {
     networkType: NetworkType.TESTNET,
     updated: 0,
     id: 1,
+    isCustom: false,
   },
   [ChainType.ZENT_MAINNET]: {
     label: 'ZENT',
@@ -81,6 +82,7 @@ export const CHAIN_INFO: { [key: string]: ChainInfo } = {
     networkType: NetworkType.MAINNET,
     updated: 0,
     id: 6,
+    isCustom: false,
   },
 };
 
