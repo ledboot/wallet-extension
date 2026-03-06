@@ -25,7 +25,7 @@
     // "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "src/types/env.d.ts", "src/types/global.d.ts", "vite.config.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts", "src/types/env.d.ts", "src/types/global.d.ts", "vite.config.ts", "test/getBigRandom.d.ts"],
   "exclude": ["node_modules", "dist"],
   "types": ["chrome", "node","react", "react-dom"]
 }
