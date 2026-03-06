@@ -10,11 +10,12 @@ import {
 } from 'lucide-react';
 
 import { Account, TxHistoryItem, TxType } from '@/shared/types';
+import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useCurrentAccount } from '@/ui/state/hooks';
 
 import { useRootStore } from '../../state';
 import { useWallet } from '../../utils/walletContext';
-import { useNavigate } from '../mainRoute';
+import { useNavigate } from '../MainRoute';
 
 interface TransactionDisplayItem extends TxHistoryItem {
   type: 'send' | 'receive' | 'unknown';
@@ -25,6 +26,7 @@ interface TransactionDisplayItem extends TxHistoryItem {
 
 export default function History() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const wallet = useWallet();
   const currentAccount = useCurrentAccount();
   const { networkType } = useRootStore((state) => state.settings);
@@ -38,6 +40,14 @@ export default function History() {
   );
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+
+  // const wif = wallet.getWIF(currentAccount.address); 获取私钥
+  const filterOptions = [
+    { key: 'all', label: t('history.all') },
+    { key: 'receive', label: t('history.receive') },
+    { key: 'send', label: t('history.send') },
+    { key: 'unknown', label: t('history.unknown') },
+  ];
 
   const formatTimeAgo = (timestamp: number): string => {
     const now = Date.now();
@@ -92,9 +102,9 @@ export default function History() {
     switch (type) {
       case 'send':
         return (
-          <div className='bg-red-500/10 flex h-8 w-8 items-center justify-center rounded-full'>
+          <div className='flex h-8 w-8 items-center justify-center rounded-full bg-red-500/10'>
             <svg
-              className='text-red-500 h-4 w-4'
+              className='h-4 w-4 text-red-500'
               fill='none'
               stroke='currentColor'
               viewBox='0 0 24 24'
@@ -179,53 +189,13 @@ export default function History() {
     return tx.type === filter;
   });
 
-  const mockTransactions: TxHistoryItem[] = [
-    {
-      txid: '1234567890abcdef',
-      address: 'anex1234567890',
-      txType: TxType.RECEIVE,
-      blockHeight: 123456,
-      blockHash: '1234567890abcdef1234567890abcdef',
-      blockTime: Math.floor(Date.now() / 1000) - 3600, // 1小时前
-      tokenType: '0',
-      value: '100000000',
-      rights: ['0x0000000000000000000000000000000000000000'],
-      confirmations: 10,
-    },
-    {
-      txid: 'abcdef1234567890',
-      address: 'anex0987654321',
-      txType: TxType.SEND,
-      blockHeight: 123450,
-      blockHash: 'abcdef1234567890abcdef1234567890',
-      blockTime: Math.floor(Date.now() / 1000) - 86400, // 1天前
-      tokenType: '0',
-      value: '50000000',
-      rights: ['0x0000000000000000000000000000000000000000'],
-      confirmations: 10,
-    },
-  ];
-
   useEffect(() => {
     const fetchTransactions = async (account: Account) => {
       if (account) {
         console.log('[UI] fetchTransactions start', account);
         try {
           setLoading(true);
-          
-          // 转换 mock 数据为 TransactionDisplayItem
-          // const displayTransactions: TransactionDisplayItem[] = mockTransactions.map(
-          //   (tx: TxHistoryItem) => ({
-          //     ...tx,
-          //     type: getTransactionType(tx),
-          //     displayAmount: formatAmount(tx.value),
-          //     displaySymbol: 'ZENT',
-          //     timeAgo: formatTimeAgo(tx.blockTime),
-          //   })
-          // );
-          
-          // setTransactions(displayTransactions);
-          
+
           // 真实 API 调用（暂时注释）
           const result = await wallet.getAddressHistory(account, 0, 20);
           if (result && Array.isArray(result)) {
@@ -233,7 +203,7 @@ export default function History() {
               (tx: TxHistoryItem) => ({
                 ...tx,
                 type: getTransactionType(tx),
-                displayAmount: formatAmount(tx.value),
+                displayAmount: formatAmount(tx.value.toString()),
                 displaySymbol: 'ZENT',
                 timeAgo: formatTimeAgo(tx.blockTime),
               })
@@ -252,38 +222,34 @@ export default function History() {
   }, [currentAccount, wallet]);
 
   return (
-    <div className='flex h-screen flex-col bg-background'>
-      {/* 头部 */}
-      <div className='flex items-center justify-between p-4'>
+    <div className='flex h-screen flex-col bg-white'>
+      {/* Fixed Header */}
+      <div className='absolute left-0 top-0 z-10 flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-4'>
         <button
           onClick={() => navigate('#back')}
-          className='btn btn-ghost btn-sm'
+          className='-ml-2 flex h-8 w-8 items-center justify-center rounded-full text-gray-800 transition-colors hover:bg-gray-100'
         >
-          <ArrowLeft className='h-4 w-4' />
+          <ArrowLeft className='h-5 w-5' />
         </button>
-        <h1 className='text-lg font-semibold'>交易记录</h1>
-        <div className='h-4 w-4'/>
+        <h1 className='absolute left-1/2 -translate-x-1/2 transform text-lg font-semibold text-gray-900'>
+          {t('history.title')}
+        </h1>
+        <div className='h-8 w-8' />
       </div>
 
-      {/* 筛选器 */}
-      <div className='p-4'>
+      {/* 筛选器 (Filters) */}
+      <div className='z-10 mt-14 bg-white px-4 py-3'>
         <div className='flex items-center space-x-2'>
-          <Filter className='text-muted-foreground h-4 w-4' />
-          <span className='text-muted-foreground text-sm'>筛选:</span>
-          <div className='flex space-x-2'>
-            {[
-              { key: 'all', label: '全部' },
-              { key: 'receive', label: '接收' },
-              { key: 'send', label: '发送' },
-              { key: 'unknown', label: '未知' },
-            ].map(({ key, label }) => (
+          <Filter className='h-4 w-4 text-gray-400' />
+          <div className='hide-scrollbar flex w-full space-x-2 overflow-x-auto'>
+            {filterOptions.map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setFilter(key as any)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                className={`flex-shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   filter === key
-                    ? 'text-primary-foreground bg-primary'
-                    : 'text-muted-foreground bg-muted hover:bg-muted/80'
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-900'
                 }`}
               >
                 {label}
@@ -293,13 +259,13 @@ export default function History() {
         </div>
       </div>
 
-      {/* 交易列表 */}
-      <div className='flex-1 overflow-y-auto'>
+      {/* 交易列表 (Transaction List) */}
+      <div className='hide-scrollbar flex-1 overflow-y-auto bg-white px-4 pb-8'>
         {filteredTransactions.length === 0 && !loading ? (
-          <div className='flex h-full flex-col items-center justify-center p-8 text-center'>
-            <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted'>
+          <div className='flex h-64 flex-col items-center justify-center text-center'>
+            <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-50'>
               <svg
-                className='text-muted-foreground h-8 w-8'
+                className='h-8 w-8 text-gray-300'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -312,54 +278,69 @@ export default function History() {
                 />
               </svg>
             </div>
-            <h3 className='mb-2 text-lg font-medium'>暂无交易记录</h3>
-            <p className='text-muted-foreground text-sm'>
+            <h3 className='mb-2 text-lg font-semibold text-gray-900'>
+              {t('history.no_transactions')}
+            </h3>
+            <p className='text-sm text-gray-500'>
               {filter === 'all'
-                ? '您的钱包还没有任何交易记录'
-                : `没有${filter === 'send' ? '发送' : filter === 'receive' ? '接收' : '交换'}类型的交易`}
+                ? t('history.no_transactions_description')
+                : t('history.no_filtered_transactions').replace(
+                    '{type}',
+                    filter === 'send'
+                      ? t('history.send')
+                      : filter === 'receive'
+                        ? t('history.receive')
+                        : t('history.unknown')
+                  )}
             </p>
           </div>
         ) : (
-          <div>
+          <div className='flex flex-col space-y-3 pt-2'>
             {filteredTransactions.map((tx) => (
               <div
                 key={tx.txid}
-                className='flex items-center justify-between px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer'
+                className='flex cursor-pointer items-center justify-between rounded-2xl bg-gray-50 px-4 py-4 transition-colors hover:bg-gray-100/80 active:bg-gray-100'
                 onClick={() => handleViewOnExplorer(tx.txid)}
               >
                 {/* 左侧：图标和交易信息 */}
-                <div className='flex items-center space-x-3 flex-1 min-w-0'>
+                <div className='flex min-w-0 items-center space-x-3'>
                   {getTransactionIcon(tx.type)}
-                  <div className='flex-1 min-w-0'>
-                    <div className='flex items-center space-x-2 mb-0.5'>
-                      <span className='text-sm font-medium text-foreground'>
+                  <div className='min-w-0'>
+                    <div className='flex items-center space-x-2'>
+                      <span className='truncate text-base font-semibold text-gray-900'>
                         {tx.type === 'send'
-                          ? '发送'
+                          ? t('history.send')
                           : tx.type === 'receive'
-                            ? '接收'
-                            : '未知'}
+                            ? t('history.receive')
+                            : t('history.unknown')}
                       </span>
                     </div>
-                    <div className='text-xs text-muted-foreground truncate'>
+                    <div className='truncate text-xs font-medium text-gray-400'>
                       {tx.timeAgo}
                     </div>
                   </div>
                 </div>
 
                 {/* 右侧：金额和箭头 */}
-                <div className='flex items-center space-x-2 ml-3'>
-                  <div className='text-right'>
-                    <div className={`text-sm font-semibold ${
-                      tx.type === 'receive' 
-                        ? 'text-success' 
+                <div className='ml-3 flex shrink-0 items-center justify-end'>
+                  <div className='flex flex-col items-end'>
+                    <div
+                      className={`text-base font-bold tracking-tight ${
+                        tx.type === 'receive'
+                          ? 'text-green-500'
+                          : tx.type === 'send'
+                            ? 'text-gray-900'
+                            : 'text-gray-500'
+                      }`}
+                    >
+                      {tx.type === 'receive'
+                        ? '+'
                         : tx.type === 'send'
-                          ? 'text-foreground'
-                          : 'text-muted-foreground'
-                    }`}>
-                      {tx.type === 'receive' ? '+' : tx.type === 'send' ? '-' : ''}
+                          ? '-'
+                          : ''}
                       {tx.displayAmount}
                     </div>
-                    <div className='text-xs text-muted-foreground'>
+                    <div className='text-xs font-semibold uppercase tracking-wider text-gray-400'>
                       {tx.displaySymbol}
                     </div>
                   </div>
@@ -369,18 +350,18 @@ export default function History() {
 
             {/* 加载更多 */}
             {hasMore && (
-              <div className='py-4 text-center'>
+              <div className='pb-2 pt-6 text-center'>
                 <button
                   disabled={loading}
-                  className='btn btn-outline btn-sm'
+                  className='inline-flex items-center justify-center rounded-full bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50'
                 >
                   {loading ? (
                     <>
                       <RefreshCw className='mr-2 h-4 w-4 animate-spin' />
-                      加载中...
+                      {t('history.loading_more')}
                     </>
                   ) : (
-                    '加载更多'
+                    t('history.load_more')
                   )}
                 </button>
               </div>

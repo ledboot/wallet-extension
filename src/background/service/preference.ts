@@ -1,23 +1,23 @@
 import { compareVersions } from 'compare-versions';
 
-import { ChainType, DEFAULT_LOCKTIME_ID, NetworkType } from '@/shared/constants';
 import {
-  AnexBalance,
-  TxHistoryItem,
-} from '@/shared/types';
+  CHAIN_INFO,
+  ChainType,
+  DEFAULT_LOCKTIME_ID,
+  NetworkType,
+} from '@/shared/constants';
+import { ChainInfo } from '@/shared/types';
 
 import createPersistStore from '../utils/persisitStore';
 
 export interface PreferenceStore {
   currentKeyringKey: string;
   currentAccountIndex: number;
-  balance: AnexBalance;
   locale: string;
   networkType: NetworkType;
   chainType: ChainType;
   currentVersion: string;
   firstOpen: boolean;
-  txHistory: TxHistoryItem[];
   enableSignData: boolean;
   autoLockTimeId: number;
   openInSidePanel: boolean;
@@ -28,6 +28,7 @@ export interface PreferenceStore {
   keyringAlianNames: {
     [key: string]: string;
   };
+  chainInfo: { [key: string]: ChainInfo }; // 添加动态网络配置存储
 }
 
 // const SUPPORTED_LOCALES = ['en', 'zh_CN'];
@@ -44,25 +45,44 @@ class PreferenceService {
       template: {
         currentKeyringKey: '',
         currentAccountIndex: 0,
-        balance: {
-          amount: 0n,
-        },
         locale: 'en',
         networkType: NetworkType.MAINNET,
         chainType: ChainType.ZENT_MAINNET,
+        // networkType: NetworkType.TESTNET,
+        // chainType: ChainType.ZENT_TESTNET,
         currentVersion: '0',
         firstOpen: false,
-        txHistory: [],
         enableSignData: false,
         autoLockTimeId: DEFAULT_LOCKTIME_ID,
         openInSidePanel: false,
         accountAlianNames: {},
         addressFlags: {},
         keyringAlianNames: {},
+        chainInfo: { ...CHAIN_INFO }, // 初始化内置网络
       },
     });
+
     if (typeof this.store.autoLockTimeId !== 'number') {
       this.store.autoLockTimeId = DEFAULT_LOCKTIME_ID;
+    }
+
+    // 确保已有数据的 chainInfo 包含所有的 built-in CHAIN_INFO
+    if (!this.store.chainInfo) {
+      this.store.chainInfo = { ...CHAIN_INFO };
+    } else {
+      let needsUpdate = false;
+      for (const [key, info] of Object.entries(CHAIN_INFO)) {
+        if (
+          !this.store.chainInfo[key] ||
+          this.store.chainInfo[key].updated < info.updated
+        ) {
+          this.store.chainInfo[key] = info;
+          needsUpdate = true;
+        }
+      }
+      if (needsUpdate) {
+        this.store.chainInfo = { ...this.store.chainInfo };
+      }
     }
   };
 
@@ -133,6 +153,20 @@ class PreferenceService {
     return this.store.keyringAlianNames[keyringKey];
   };
 
+  // Remove account alias name
+  removeAccountAlianName = (accountKey: string) => {
+    const newAccountAlianNames = { ...this.store.accountAlianNames };
+    delete newAccountAlianNames[accountKey];
+    this.store.accountAlianNames = newAccountAlianNames;
+  };
+
+  // Remove keyring alias name
+  removeKeyringAlianName = (keyringKey: string) => {
+    const newKeyringAlianNames = { ...this.store.keyringAlianNames };
+    delete newKeyringAlianNames[keyringKey];
+    this.store.keyringAlianNames = newKeyringAlianNames;
+  };
+
   setNetworkType = (networkType: NetworkType) => {
     this.store.networkType = networkType;
   };
@@ -161,10 +195,38 @@ class PreferenceService {
     return this.store.chainType;
   };
 
-  setChainType = (chainTyp: ChainType) =>{
-    this.store.chainType = chainTyp
-  }
+  setChainType = (chainTyp: ChainType) => {
+    this.store.chainType = chainTyp;
+  };
 
+  // ChainInfo 管理方法
+  addchainInfo = (chainType: string, chainInfo: ChainInfo) => {
+    if (!this.store.chainInfo) {
+      this.store.chainInfo = {};
+    }
+    // 直接修改 store 对象以触发 Proxy 的 set
+    this.store.chainInfo[chainType] = chainInfo;
+
+    // 强制触发存储更新
+    const updatedChainInfo = { ...this.store.chainInfo };
+    this.store.chainInfo = updatedChainInfo;
+
+    console.log(`Added chain ${chainType} to preference store`);
+  };
+
+  getchainInfo = (chainType: string): ChainInfo | undefined => {
+    return this.store.chainInfo ? this.store.chainInfo[chainType] : undefined;
+  };
+
+  getAllchainInfo = (): { [key: string]: ChainInfo } => {
+    return this.store.chainInfo || {};
+  };
+
+  removechainInfo = (chainType: string) => {
+    if (this.store.chainInfo) {
+      delete this.store.chainInfo[chainType];
+    }
+  };
 }
 
 export default new PreferenceService();

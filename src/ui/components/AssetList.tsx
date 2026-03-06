@@ -1,53 +1,18 @@
-interface Asset {
-  id: string;
-  symbol: string;
-  name: string;
-  balance: string;
-  usdValue: string;
-  change24h: number;
-  icon: string;
-}
+import { useState } from 'react';
+import { Wallet } from 'lucide-react';
 
-interface NFT {
-  id: string;
-  name: string;
-  collection: string;
-  image: string;
-  floorPrice: string;
-  lastSale: string;
-}
+import { CHAIN_INFO } from '@/shared/constants';
+import { useLanguage } from '@/ui/contexts/LanguageContext';
+import {
+  useAssetsLoading,
+  useChainType,
+  useCurrentAccount,
+  useCurrentAssets,
+  useCurrentChainName,
+} from '@/ui/state/hooks';
 
-const assets: Asset[] = [
-  {
-    id: 'eth',
-    symbol: 'ETH',
-    name: 'Ethereum',
-    balance: '12.45678',
-    usdValue: '31,234.56',
-    change24h: 2.34,
-    icon: '⟠',
-  },
-  {
-    id: 'usdc',
-    symbol: 'USDC',
-    name: 'USD Coin',
-    balance: '1,250.00',
-    usdValue: '1,250.00',
-    change24h: 0.01,
-    icon: '💵',
-  },
-  {
-    id: 'uni',
-    symbol: 'UNI',
-    name: 'Uniswap',
-    balance: '45.28',
-    usdValue: '567.89',
-    change24h: -1.23,
-    icon: '🦄',
-  },
-];
-
-const nfts: NFT[] = [
+// NFT tab is a placeholder until real NFT data is available
+const nfts = [
   {
     id: 'nft1',
     name: 'Bored Ape #1234',
@@ -74,113 +39,148 @@ const nfts: NFT[] = [
   },
 ];
 
-import { useState } from 'react';
-
 export function AssetList() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'crypto' | 'nft'>('crypto');
 
+  // 当前账户 address + 当前链 chainId，用于从 keyringsStore 索引正确的资产
+  const currentAccount = useCurrentAccount();
+  const chainType = useChainType();
+  const chainId = CHAIN_INFO[chainType]?.chainId ?? 0;
+  const address = currentAccount?.address ?? '';
+
+  // 直接订阅 keyringsStore 中对应 address:chainId 的资产数据
+  // 切换账户或网络后自动响应，无需监听任何事件
+  const assets = useCurrentAssets(address, chainId);
+  const chainName = useCurrentChainName(address, chainId);
+  const loading = useAssetsLoading();
+
+  if (loading) {
+    return <div className='p-4 text-center'>{t('assets.loading')}</div>;
+  }
+
   return (
-    <div className='w-full sticky top-0 z-10 bg-background h-full flex flex-col'>
-      <div className='px-4 pt-2 pb-2 border-b border-gray-200'>
-        <div className='tabs tabs-border'>
-        <a 
-          className={`tab ${activeTab === 'crypto' ? 'tab-active' : ''}`}
-          onClick={() => setActiveTab('crypto')}
-        >
-          Crypto
-        </a>
-        <a 
-          className={`tab ${activeTab === 'nft' ? 'tab-active' : ''}`}
-          onClick={() => setActiveTab('nft')}
-        >
-          NFT
-        </a>
+    <div className='flex h-full w-full flex-col bg-white'>
+      <div className='px-4 pb-2 pt-2'>
+        <div className='flex w-full space-x-1 rounded-full bg-gray-100 p-1'>
+          <button
+            className={`flex-1 rounded-full py-2 text-sm font-medium transition-all ${
+              activeTab === 'crypto'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900'
+            }`}
+            onClick={() => setActiveTab('crypto')}
+          >
+            {t('assets.crypto')}
+          </button>
+          <button
+            className={`flex-1 rounded-full py-2 text-sm font-medium transition-all ${
+              activeTab === 'nft'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900'
+            }`}
+            onClick={() => setActiveTab('nft')}
+          >
+            {t('assets.nft')}
+          </button>
         </div>
       </div>
-      <div className='flex-1 overflow-y-auto px-4 pb-4 pt-2 hide-scrollbar'>
-      {/* Crypto Tab Content */}
-      {activeTab === 'crypto' && (
-        <div className='mt-4'>
-          <div className='space-y-2'>
-            {assets.map((asset) => (
-              <div
-                key={asset.id}
-                className='card cursor-pointer border border-base-300 bg-base-100 shadow-sm transition-all hover:shadow-md'
-              >
-                <div className='card-body p-3'>
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center space-x-3'>
-                      <div className='flex h-8 w-8 items-center justify-center rounded-full bg-base-200 text-lg'>
-                        {asset.icon}
+
+      <div className='hide-scrollbar flex-1 overflow-y-auto px-4 pb-4 pt-2'>
+        {/* Crypto Tab */}
+        {activeTab === 'crypto' && (
+          <div className='mt-2'>
+            <div className='space-y-3'>
+              {assets.length === 0 ? (
+                <div className='flex h-64 flex-col items-center justify-center p-4 text-center'>
+                  <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-50'>
+                    <Wallet className='h-8 w-8 text-gray-400' />
+                  </div>
+                  <div className='mb-2 text-lg font-medium text-gray-900'>
+                    {t('assets.no_tokens_found')}
+                  </div>
+                  <div className='text-sm text-gray-500'>
+                    {t('assets.no_tokens_description')}
+                  </div>
+                </div>
+              ) : (
+                assets.map((asset) => (
+                  <div
+                    key={asset.tokenType}
+                    className='cursor-pointer rounded-2xl bg-gray-50 p-4 transition-colors hover:bg-gray-100 active:bg-gray-200'
+                  >
+                    <div className='flex items-center justify-between'>
+                      <div className='flex items-center space-x-3'>
+                        <div className='flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white'>
+                          <img
+                            src={asset.iconHtml}
+                            alt={asset.name || t('assets.token_icon')}
+                            className='h-full w-full object-cover'
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                '/images/default-token.png';
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <div className='text-base font-semibold text-gray-900'>
+                            {asset.name}
+                          </div>
+                          <div className='text-xs font-medium text-gray-500'>
+                            {chainName}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div className='text-sm font-medium'>{asset.symbol}</div>
-                        <div className='text-base-content/60 text-xs'>
-                          {asset.name}
+                      <div className='text-right'>
+                        <div className='text-base font-semibold text-gray-900'>
+                          {(asset.value / 1e8).toFixed(8)}
                         </div>
                       </div>
                     </div>
-
-                    <div className='text-right'>
-                      <div className='text-sm font-medium'>{asset.balance}</div>
-                      <div className='flex items-center space-x-1'>
-                        <span className='text-base-content/60 text-xs'>
-                          ${asset.usdValue}
-                        </span>
-                        <span
-                          className={`text-xs ${
-                            asset.change24h >= 0 ? 'text-success' : 'text-error'
-                          }`}
-                        >
-                          {asset.change24h >= 0 ? '+' : ''}
-                          {asset.change24h}%
-                        </span>
-                      </div>
-                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                ))
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* NFT Tab Content */}
-      {activeTab === 'nft' && (
-        <div className='mt-4'>
-          <div className='space-y-2'>
-            {nfts.map((nft) => (
-              <div
-                key={nft.id}
-                className='card cursor-pointer border border-base-300 bg-base-100 shadow-sm transition-all hover:shadow-md'
-              >
-                <div className='card-body p-3'>
+        {/* NFT Tab */}
+        {activeTab === 'nft' && (
+          <div className='mt-2'>
+            <div className='space-y-3'>
+              {nfts.map((nft) => (
+                <div
+                  key={nft.id}
+                  className='cursor-pointer rounded-2xl bg-gray-50 p-4 transition-colors hover:bg-gray-100 active:bg-gray-200'
+                >
                   <div className='flex items-center justify-between'>
                     <div className='flex items-center space-x-3'>
-                      <div className='flex h-12 w-12 items-center justify-center rounded-lg bg-base-200 text-2xl'>
+                      <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-white text-2xl shadow-sm'>
                         {nft.image}
                       </div>
                       <div>
-                        <div className='text-sm font-medium'>{nft.name}</div>
-                        <div className='text-base-content/60 text-xs'>
+                        <div className='text-sm font-semibold text-gray-900'>
+                          {nft.name}
+                        </div>
+                        <div className='text-xs font-medium text-gray-500'>
                           {nft.collection}
                         </div>
                       </div>
                     </div>
-
                     <div className='text-right'>
-                      <div className='text-sm font-medium'>Floor: {nft.floorPrice}</div>
-                      <div className='text-base-content/60 text-xs'>
+                      <div className='text-sm font-semibold text-gray-900'>
+                        Floor: {nft.floorPrice}
+                      </div>
+                      <div className='text-xs font-medium text-gray-500'>
                         Last: {nft.lastSale}
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </div>
   );

@@ -2,11 +2,18 @@
 import encryptor from 'browser-passworder';
 import { EventEmitter } from 'eventemitter3';
 
-import { EVENTS, KEYRING_TYPE } from '@/shared/constants';
+import { CHAIN_INFO, EVENTS, KEYRING_TYPE } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
 import { ObservableStore } from '@/shared/observableStore';
-import { Account } from '@/shared/types';
+import {
+  Account,
+  CoinNames,
+  transferAddressHistory,
+  Utxo,
+  UtxoAddressSumInfo,
+} from '@/shared/types';
 
+import { preferenceService } from '../index';
 import DisplayKeyring from './display';
 import { SimpleKeyring } from './simpleKeyring';
 
@@ -18,6 +25,20 @@ interface MemStoreState {
   isUnlocked: boolean;
   keyringTypes: string[];
   keyrings: any[];
+}
+export type UtxosMap = {
+  [key: string]: {
+    // key 格式为 "address_chainId"
+    utxos: Utxo[];
+  };
+};
+
+interface KeyringState {
+  utxoSums: UtxoAddressSumInfo[];
+  CoinNames: CoinNames[];
+  utxos: Utxo[];
+  utxoMap: Map<string, Utxo[]>; // address_chainid: Utxo[]
+  utxoSumsMap: Map<string, UtxoAddressSumInfo[]>; // address_chainid_tokenType: UtxoAddressSumInfo[]
 }
 
 export interface DisplayedKeyring {
@@ -40,6 +61,8 @@ export interface Keyring {
   addAccounts(n: number): string[];
   getAccounts(): Account[];
   exportAccount(address: string): string;
+  exportPrivateKeyHex(address: string): string;
+  exportPrivateKey(address: string): string;
   removeAccount(address: string): void;
   getIndexByAddress(address: string): number;
   activeAccount(index: number): Account;
@@ -115,10 +138,9 @@ class KeyringService extends EventEmitter {
    * @returns  A Promise that resolves to the state.
    */
   importPrivateKey = async (privateKeyHex: string, compressed: boolean) => {
-    const keyring = await this.addNewKeyring(KEYRING_TYPE.SimpleKeyring, [[
-      privateKeyHex,
-      compressed,
-    ]]);
+    const keyring = await this.addNewKeyring(KEYRING_TYPE.SimpleKeyring, [
+      [privateKeyHex, compressed],
+    ]);
     this.setUnlocked();
     this.fullUpdate();
     return keyring;
@@ -219,7 +241,10 @@ class KeyringService extends EventEmitter {
     }
   };
 
-  changePassword = async (oldPassword: string, newPassword: string): Promise<void> => {
+  changePassword = async (
+    oldPassword: string,
+    newPassword: string
+  ): Promise<void> => {
     if (this.isUnlocking) {
       return Promise.reject(new Error('change_password_already_in_progress'));
     }
@@ -249,7 +274,9 @@ class KeyringService extends EventEmitter {
   verifyPassword = async (password: string): Promise<void> => {
     const encryptedBooted = this.store.getState().booted;
     if (!encryptedBooted) {
-      return Promise.reject(new Error('cannot_unlock_without_a_previous_vault'));
+      return Promise.reject(
+        new Error('cannot_unlock_without_a_previous_vault')
+      );
     }
     await this.encryptor.decrypt(password, encryptedBooted);
   };
@@ -295,10 +322,7 @@ class KeyringService extends EventEmitter {
    * @param {Array<string>} newAccountArray - Array of new accounts.
    * @returns {Array<string>} The account, if no duplicate is found.
    */
-  checkForDuplicate =  (
-    type: string,
-    newAccountArray: string[]
-  ): string[] => {
+  checkForDuplicate = (type: string, newAccountArray: string[]): string[] => {
     const keyrings = this.getKeyringsByType(type);
     const _accounts = keyrings.map((keyring) => keyring.getAccounts());
 
@@ -356,6 +380,18 @@ class KeyringService extends EventEmitter {
     return wif;
   };
 
+  exportPrivateKeyHex = (address: string): string => {
+    const keyring = this.getKeyringForAccount(address);
+    const privateKeyHex = keyring.exportPrivateKeyHex(address);
+    return privateKeyHex;
+  };
+
+  exportPrivateKey = (address: string): string => {
+    const keyring = this.getKeyringForAccount(address);
+    const privateKey = keyring.exportPrivateKey(address);
+    return privateKey;
+  };
+
   /**
    *
    * Remove Account
@@ -375,8 +411,41 @@ class KeyringService extends EventEmitter {
         `Keyring ${keyring.type} does_not_support_account_removal_operations`
       );
     }
+
+    // Get account key before removing (for preference cleanup)
+    const accounts = await keyring.getAccounts();
+
+    const accountToRemove = accounts.find((acc) => acc.address === address);
+    const accountKey = accountToRemove?.key;
+
     keyring.removeAccount(address);
     this.cachedDisplayedKeyring = null;
+
+    // Clean up UTXO data for this account
+    this.removeAccountUtxoData(address);
+
+    // Clean up preference data for this account
+    if (accountKey) {
+      // Check if the key exists in accountAlianNames
+      const hasKey = accountKey in preferenceService.store.accountAlianNames;
+
+      if (hasKey) {
+        preferenceService.removeAccountAlianName(accountKey);
+      } else {
+        // Try to find matching keys by address pattern
+        const matchingKeys = Object.keys(
+          preferenceService.store.accountAlianNames
+        ).filter(
+          (key) =>
+            key.includes(address) ||
+            key.includes(accountToRemove?.alianName || '')
+        );
+
+        matchingKeys.forEach((key) => {
+          preferenceService.removeAccountAlianName(key);
+        });
+      }
+    }
 
     this.emit('removedAccount', address);
     await this.persistAllKeyrings();
@@ -386,17 +455,30 @@ class KeyringService extends EventEmitter {
 
   removeKeyring = async (keyringKey: string) => {
     const index = this.getKeyringIndexByKey(keyringKey);
-    if (index === -1) {
-      throw new Error('keyring_not_found');
-    }
-    const keyringIndex = this.keyrings.findIndex((k) => k.key === keyringKey);
 
-    delete this.keyrings[keyringIndex];
+    if (index === -1) {
+      throw new Error(`keyring_not_found: ${keyringKey}`);
+    }
+
+    // Get the keyring reference before removing it
+    const keyringToRemove = this.keyrings[index];
+
+    // Clean up UTXO data for all accounts in this keyring FIRST
+    await this.removeKeyringUtxoData(keyringKey);
+
+    // Clean up preference data for this keyring
+    preferenceService.removeKeyringAlianName(keyringKey);
+
+    // Now remove the keyring from array
+    const removedKeyring = this.keyrings[index];
+    this.keyrings.splice(index, 1);
     this.cachedDisplayedKeyring = null;
 
+    // Persist the changes
     await this.persistAllKeyrings();
     this.updateMemStoreKeyrings();
     await this.fullUpdate();
+    return removedKeyring;
   };
 
   /**
@@ -429,33 +511,6 @@ class KeyringService extends EventEmitter {
     );
 
     this.store.updateState({ vault: encryptedString });
-    
-    
-    // return Promise.all(
-    //   this.keyrings.map((keyring) => {
-    //     return Promise.all([
-    //       keyring.type,
-    //       keyring.key,
-    //       keyring.serialize(),
-    //     ]).then((serializedKeyringArray) => {
-    //       return {
-    //         type: serializedKeyringArray[0],
-    //         key: serializedKeyringArray[1],
-    //         data: serializedKeyringArray[2],
-    //       };
-    //     });
-    //   })
-    // )
-    //   .then((serializedKeyrings) => {
-    //     return this.encryptor.encrypt(
-    //       this.password as string,
-    //       serializedKeyrings as unknown as Buffer
-    //     );
-    //   })
-    //   .then((encryptedString) => {
-    //     this.store.updateState({ vault: encryptedString });
-    //     return true;
-    //   });
   };
 
   /**
@@ -599,15 +654,16 @@ class KeyringService extends EventEmitter {
    */
   getKeyringForAccount = (
     address: string,
-    type?: string
+    type: string = KEYRING_TYPE.SimpleKeyring
   ): Keyring => {
+    console.log('getKeyringForAccount', address, type);
     const keyrings = type
       ? this.keyrings.filter((keyring) => keyring.type === type)
       : this.keyrings;
     for (let i = 0; i < keyrings.length; i++) {
       const keyring = keyrings[i];
       const accounts = keyring.getAccounts();
-      if (accounts.some((account) => account.addressHex === address)) {
+      if (accounts.some((account) => account.address === address)) {
         return keyring;
       }
     }
@@ -621,10 +677,7 @@ class KeyringService extends EventEmitter {
    * @param {Keyring} keyring
    * @returns {Promise<Object>} A keyring display object, with type and accounts properties.
    */
-  displayForKeyring = (
-    keyring: Keyring,
-    index: number
-  ): DisplayedKeyring => {
+  displayForKeyring = (keyring: Keyring, index: number): DisplayedKeyring => {
     return {
       type: keyring.type,
       key: keyring.key,
@@ -716,7 +769,323 @@ class KeyringService extends EventEmitter {
 
   changeNetwork = () => {
     this.cachedDisplayedKeyring = null;
+  };
+
+  // 批量添加 Utxos, newUtxos新增的
+  updateUtxos = (newUtxos: Utxo[]) => {
+    const utxos = this.getUtxos();
+    const utxoMap = new Map(utxos.map((u) => [`${u.txid}:${u.index}`, u]));
+    for (const u of newUtxos) {
+      utxoMap.set(`${u.txid}:${u.index}`, u);
+    }
+    this.store.updateState({ utxos: [...utxoMap.values()] });
+  };
+  // 获取所有 Utxos
+  getUtxos = (): Utxo[] => {
+    return this.store.getState().utxos || [];
+  };
+
+  getUtxosByAddress = (address: string): Utxo[] => {
+    const utxos =
+      this.store
+        .getState()
+        .utxos?.filter(
+          (utxo: { address: string }) => utxo.address === address
+        ) || [];
+    utxos.sort((a: Utxo, b: Utxo) => {
+      // 将值转换为BigInt进行比较
+      const valueA = BigInt(a.value);
+      const valueB = BigInt(b.value);
+
+      // 按值降序排序（从大到小）
+      if (valueA > valueB) return -1;
+      if (valueA < valueB) return 1;
+      return 0;
+    });
+    return utxos;
+  };
+
+  // 移除特定 UTXO
+  removeUtxo = (rmTxid: string, rmIndex: number) => {
+    const utxos = this.getUtxos().filter(
+      ({ txid, index }) => !(txid === rmTxid && index === rmIndex)
+    );
+
+    this.store.updateState({
+      utxos: utxos,
+    });
+  };
+  // 清空所有 UTXOs
+  clearUtxos = (): void => {
+    this.store.updateState({
+      utxos: [],
+    });
+  };
+
+  updateUtxoSum = (newSums: UtxoAddressSumInfo[]) => {
+    // this.store.updateState({utxoSum: newSums});
+    const utxoSum = this.getUtxoSum();
+    const utxoSumMap = new Map(
+      utxoSum.map((u) => [`${u.address}:${u.chainId}:${u.tokenType}`, u])
+    );
+    for (const u of newSums) {
+      utxoSumMap.set(`${u.address}:${u.chainId}:${u.tokenType}`, u);
+    }
+    this.store.updateState({ utxoSum: [...utxoSumMap.values()] });
+  };
+
+  getUtxoSum = (address?: any, chainId?: any): UtxoAddressSumInfo[] => {
+    const allSums = this.store.getState().utxoSum || [];
+
+    // If no filters provided, return all sums
+    if (!address && !chainId) {
+      return allSums;
+    }
+
+    // Filter by address and/or chainId
+    return allSums.filter((sum: UtxoAddressSumInfo) => {
+      const addressMatch = !address || sum.address === address;
+      const chainIdMatch = !chainId || sum.chainId === chainId;
+      return addressMatch && chainIdMatch;
+    });
+  };
+
+  removeUtxoSum = (rmAddress: string, rmChainId: number) => {
+    const newSums = this.getUtxoSum().filter(
+      ({ address, chainId }) =>
+        !(address === rmAddress && chainId === rmChainId)
+    );
+
+    this.store.updateState({
+      utxoSum: newSums,
+    });
+  };
+
+  addCoinName = (coinName: CoinNames[]) => {
+    this.store.updateState({
+      coinName: coinName,
+    });
+  };
+
+  getCoinNames = (tokenType?: string): CoinNames[] => {
+    const allCoinNames = this.store.getState().coinName || [];
+    // If no tokenType provided, return all coin names
+    if (!tokenType) {
+      return allCoinNames;
+    }
+    // Filter by tokenType
+    return allCoinNames.filter(
+      (coin: CoinNames) => coin.tokenType === tokenType
+    );
+  };
+
+  removeCoinName = (rmTokenType: string, rmChainId: number) => {
+    const coinName = this.getCoinNames().filter(
+      ({ tokenType, chainId }) =>
+        !(tokenType === rmTokenType && chainId === rmChainId)
+    );
+
+    this.store.updateState({
+      coinName: coinName,
+    });
+  };
+
+  addUtxosMap(address: string, chainId: number, utxo: Utxo[]) {
+    const key = `${address}_${chainId}`;
+
+    const utxoAllMap = this.store.getState().utxoMap || {};
+    const originKeyMap = utxoAllMap[key];
+
+    this.store.updateState({
+      utxoMap: {
+        ...utxoAllMap,
+        [key]: {
+          ...(originKeyMap || []),
+          ...utxo,
+        },
+      },
+    });
   }
+  getUtxosMap = (address: string, chainId: number): Utxo[] => {
+    const utxos = this.store.getState().utxoMap[`${address}_${chainId}`];
+    return utxos || [];
+  };
+
+  getUtxosAllMap = (): Utxo[] => {
+    return this.store.getState().utxoMap || [];
+  };
+
+  // Remove UTXO data for specific account
+  removeAccountUtxoData = (address: string) => {
+    // Remove from utxos array
+    const currentUtxos = this.getUtxos();
+    const filteredUtxos = currentUtxos.filter(
+      (utxo) => utxo.address !== address
+    );
+    this.store.updateState({ utxos: filteredUtxos });
+
+    // Remove from utxoSum
+    const currentSums = this.getUtxoSum();
+    const filteredSums = currentSums.filter((sum) => sum.address !== address);
+    this.store.updateState({ utxoSum: filteredSums });
+
+    // Remove from utxoMap (the actual map that contains data)
+    const currentState = this.store.getState();
+    const utxoMap = currentState.utxoMap || {};
+
+    const newUtxoMap: { [key: string]: any } = {};
+    let removedKeys = [];
+    for (const [key, value] of Object.entries(utxoMap)) {
+      if (key.startsWith(`${address}_`)) {
+        removedKeys.push(key);
+      } else {
+        newUtxoMap[key] = value;
+      }
+    }
+
+    this.store.updateState({ utxoMap: newUtxoMap });
+
+    // Verify the cleanup
+    const finalState = this.store.getState();
+  };
+
+  // Remove UTXO data for all accounts in a keyring
+  removeKeyringUtxoData = async (keyringKey: string) => {
+    const keyring = this.keyrings.find((k) => k.key === keyringKey);
+    if (!keyring) {
+      return;
+    }
+
+    try {
+      const accounts = await keyring.getAccounts();
+      const addresses = accounts.map((account) => account.address);
+
+      // Remove UTXO data for each account
+      addresses.forEach((address) => {
+        this.removeAccountUtxoData(address);
+      });
+
+      // Clean up account aliases for all accounts in this keyring
+      let removedAccountKeys: string[] = [];
+      accounts.forEach((account) => {
+        if (account.key) {
+          const hasKey =
+            account.key in preferenceService.store.accountAlianNames;
+          if (hasKey) {
+            preferenceService.removeAccountAlianName(account.key);
+            removedAccountKeys.push(account.key);
+          } else {
+            // Try to find matching keys by different patterns
+            const matchingKeys = Object.keys(
+              preferenceService.store.accountAlianNames
+            ).filter(
+              (key) =>
+                key.includes(keyringKey) || // Keys that contain the keyring key
+                key.includes(`${keyringKey}#`) || // Keys in format "keyringKey#index"
+                key.includes(account.address) || // Keys that contain the address
+                key.includes(account.alianName || '') // Keys that contain the account name
+            );
+            matchingKeys.forEach((key) => {
+              preferenceService.removeAccountAlianName(key);
+              removedAccountKeys.push(key);
+            });
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Debug: Error removing UTXO data for keyring:', error);
+    }
+  };
+
+  updateTransferAddressesHistory = (
+    newAddressHistory: transferAddressHistory[]
+  ) => {
+    const transferAddressHistory = this.getTransferAddressHistory();
+    const existingHistoryMap = new Map(
+      transferAddressHistory.map((u) => [`${u.address}`, u])
+    );
+    for (const u of newAddressHistory) {
+      existingHistoryMap.set(`${u.address}`, u);
+    }
+    this.store.updateState({
+      transferAddressHistory: [...existingHistoryMap.values()],
+    });
+  };
+
+  getTransferAddressHistory = (): transferAddressHistory[] => {
+    return this.store.getState().transferAddressHistory || [];
+  };
+
+  /**
+   * 按 address + tokenType 聚合 UTXOs，写入 utxoSum store 并返回结果。
+   * 替代原 AssetsList.aggregate()。
+   */
+  aggregateUtxoSums = (address: string): UtxoAddressSumInfo[] => {
+    const currentChainType = preferenceService.getChainType();
+    let currentChainId: number;
+    if (CHAIN_INFO[currentChainType]) {
+      currentChainId = CHAIN_INFO[currentChainType].chainId;
+    } else {
+      const storedChainInfo = preferenceService.getchainInfo(currentChainType);
+      if (!storedChainInfo) {
+        throw new Error(`Chain info not found for: ${currentChainType}`);
+      }
+      currentChainId = storedChainInfo.chainId;
+    }
+
+    const utxos = this.getUtxos().filter((u) => u.address === address);
+    const sumsMap = new Map<string, UtxoAddressSumInfo>();
+
+    for (const utxo of utxos) {
+      const key = `${utxo.address}|${utxo.tokenType}`;
+      const existing = sumsMap.get(key);
+      if (existing) {
+        existing.value = Number(existing.value) + Number(utxo.value);
+        if (utxo.blockHeight > existing.blockHeight) {
+          existing.blockHeight = utxo.blockHeight;
+          existing.blockHash = utxo.blockHash;
+        }
+      } else {
+        sumsMap.set(key, {
+          address: utxo.address,
+          tokenType: utxo.tokenType,
+          value: Number(utxo.value),
+          chainId: currentChainId,
+          blockHeight: utxo.blockHeight,
+          blockHash: utxo.blockHash,
+        });
+      }
+    }
+
+    const sums = Array.from(sumsMap.values());
+    this.updateUtxoSum(sums);
+    return sums;
+  };
+
+  /**
+   * 获取当前账户的资产列表（utxoSum 合并 coinNames），供 UI 直接展示。
+   * 替代原 AssetsList.assetsLists()。
+   */
+  getAssetsPage = (
+    address: string
+  ): Array<
+    UtxoAddressSumInfo & Partial<CoinNames> & { chainLabel: string }
+  > => {
+    const existingSums = this.getUtxoSum().filter((s) => s.address === address);
+    const coinNamesMap = new Map(
+      this.getCoinNames().map((coin) => [coin.tokenType, coin])
+    );
+
+    return existingSums.map((sum) => {
+      const coinInfo = coinNamesMap.get(sum.tokenType);
+      // 从 CHAIN_INFO 查 label，兜底 Unknown Chain
+      const chainEntry = Object.entries(CHAIN_INFO).find(
+        ([, info]) => info.chainId === sum.chainId
+      );
+      const chainLabel = chainEntry ? chainEntry[1].iconLabel : 'Unknown Chain';
+      return { ...sum, ...(coinInfo || {}), chainId: sum.chainId, chainLabel };
+    });
+  };
 }
 
 export default new KeyringService();

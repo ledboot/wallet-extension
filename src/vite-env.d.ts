@@ -21,3 +21,14 @@ declare global {
     require: any
   }
 }
+
+// Vite script imports
+declare module '*.ts?url' {
+  const url: string;
+  export default url;
+}
+
+declare module '*.js?url' {
+  const url: string;
+  export default url;
+}

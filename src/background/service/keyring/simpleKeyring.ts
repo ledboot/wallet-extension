@@ -4,10 +4,17 @@ import { getPublicKey, utils as secpUtils } from '@noble/secp256k1';
 import bs58check from 'bs58check';
 
 import { bytesToHex2, hexToBytes } from '@/background/utils';
-import { BRAND_ALIAN_TYPE_TEXT, NetworkType } from '@/shared/constants';
+import {
+  BRAND_ALIAN_TYPE_TEXT,
+  MainnetAddressPrefix,
+  MainnetPrivateKeyPrefix,
+  NetworkType,
+  TestnetAddressPrefix,
+  TestnetPrivateKeyPrefix,
+} from '@/shared/constants';
 import { Account } from '@/shared/types';
+
 import preferenceService from '../preference';
-import { MainnetPrivateKeyPrefix, MainnetAddressPrefix, TestnetPrivateKeyPrefix, TestnetAddressPrefix } from '@/shared/constants';
 
 export const type = 'Simple Key Pair';
 
@@ -22,15 +29,14 @@ interface ECKey {
   getPub(): Uint8Array;
 }
 
-class ECKeyImpl implements ECKey {
-  privateKey: any;
+export class ECKeyImpl implements ECKey {
+  privateKey: any; // secpUtils.Bytes
   compressed: boolean;
 
   constructor(privateKey: any, compressed: boolean) {
     this.privateKey = privateKey;
     this.compressed = compressed;
   }
-
 
   toWIF(): string {
     const key = this.privateKey; // 32 bytes
@@ -80,7 +86,7 @@ export class SimpleKeyring {
     this.key = '';
     this.type = type;
   }
-  
+
   getIndexByAddress(address: string): number {
     return this.wallets.findIndex((wallet) => wallet.getAddress() === address);
   }
@@ -96,7 +102,7 @@ export class SimpleKeyring {
       address: wallet.getAddress(),
       addressHex: wallet.getAddressHex(),
       index: index,
-      key: this.type + "_" + wallet.getAddressHex(),
+      key: this.type + '_' + wallet.getAddressHex(),
       flag: 0,
       alianName: `${BRAND_ALIAN_TYPE_TEXT[this.type]} ${index + 1}`,
     };
@@ -107,11 +113,11 @@ export class SimpleKeyring {
     return this.wallets.map((wallet) => [wallet.toHex(), wallet.compressed]);
   }
 
-  async deserialize(opts: any):Promise<void> {
-    const keyArray = opts as [string, boolean][][];
+  async deserialize(opts: any): Promise<void> {
+    const keyArray = opts as [string, boolean][];
     console.log('deserialize keyArray', keyArray);
     // [['9d5799bd5449a8ee4eb5dbcddd5dd18a16f194fdef102a110867dd6773034feb', true], ['9d5799bd5449a8ee4eb5dbcddd5dd18a16f194fdef102a110867dd6773034feb', true]]
-    
+
     for (const [hex, compressed] of keyArray) {
       console.log('deserialize hex', hex);
       console.log('deserialize compressed', compressed);
@@ -140,13 +146,13 @@ export class SimpleKeyring {
       address: wallet.getAddress(),
       addressHex: wallet.getAddressHex(),
       index: index,
-      key: this.type + "_" + wallet.getAddressHex(),
+      key: this.type + '_' + wallet.getAddressHex(),
       flag: 0,
       alianName: `${BRAND_ALIAN_TYPE_TEXT[this.type]} ${index + 1}`,
     }));
   }
 
-  generatePrePrivateKey(): { address: string; wif: string} {
+  generatePrePrivateKey(): { address: string; wif: string } {
     const privateKey = secpUtils.randomPrivateKey();
     const eckey = new ECKeyImpl(privateKey, true);
     const preAddress = eckey.getAddress();
@@ -160,6 +166,18 @@ export class SimpleKeyring {
   exportAccount(address: string) {
     const wallet = this.getWalletForAccount(address);
     return wallet.toWIF();
+  }
+
+  exportPrivateKeyHex(address: string): string {
+    const wallet = this.getWalletForAccount(address);
+    console.log('exportPrivateKeyHex wallet pk', wallet.privateKey);
+    return wallet.toHex();
+  }
+
+  exportPrivateKey(address: string): string {
+    const wallet = this.getWalletForAccount(address);
+    console.log('exportPrivateKeyHex wallet pk', wallet.privateKey);
+    return wallet.privateKey;
   }
 
   removeAccount(publicKey: string) {
@@ -183,16 +201,23 @@ export class SimpleKeyring {
 }
 
 export function getPrivateKeyPrefix(): number {
-  return preferenceService.getNetworkType() === NetworkType.MAINNET ? MainnetPrivateKeyPrefix : TestnetPrivateKeyPrefix;
+  return preferenceService.getNetworkType() === NetworkType.MAINNET
+    ? MainnetPrivateKeyPrefix
+    : TestnetPrivateKeyPrefix;
 }
 
 export function getAddressPrefix(): number {
-  return preferenceService.getNetworkType() === NetworkType.MAINNET ? MainnetAddressPrefix : TestnetAddressPrefix;
+  return preferenceService.getNetworkType() === NetworkType.MAINNET
+    ? MainnetAddressPrefix
+    : TestnetAddressPrefix;
 }
 
-export function decodeWalletImportFormat(wif: string): { privateKeyHex: string; compressed: boolean } {
+export function decodeWalletImportFormat(wif: string): {
+  privateKeyHex: string;
+  compressed: boolean;
+} {
   const decoded = bs58check.decode(wif); // version + key [+ 0x01]
-  
+
   const compressed = isCompressedWalletImportFormat(wif);
   // if (!verifyWalletImportFormat(wif, compressed)) {
   //   throw new Error('Invalid private key format!');
@@ -200,43 +225,58 @@ export function decodeWalletImportFormat(wif: string): { privateKeyHex: string; 
 
   // 根据网络类型检查前缀
   const expectedPrefix = getPrivateKeyPrefix();
-  
+
   if (decoded[0] !== expectedPrefix) {
     throw new Error('Version not supported!');
   }
-  
+
   const priv = decoded.slice(1, 33);
   const privateKeyHex = bytesToHex2(priv);
   return { privateKeyHex, compressed };
-};
+}
 
 export function isCompressedWalletImportFormat(wif: string): boolean {
-  if (preferenceService.getNetworkType() === NetworkType.MAINNET ){
-    return /^[LK][123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{51}$/.test(wif);
-  }else{
-    return /^c[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{51}$/.test(wif);
+  if (preferenceService.getNetworkType() === NetworkType.MAINNET) {
+    return /^[LK][123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{51}$/.test(
+      wif
+    );
+  } else {
+    return /^c[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{51}$/.test(
+      wif
+    );
   }
 }
 
-export function verifyWalletImportFormat(wif: string, compressed: boolean): boolean {
+export function verifyWalletImportFormat(
+  wif: string,
+  compressed: boolean
+): boolean {
   const decoded = bs58check.decode(wif);
   let hash: Uint8Array;
   if (compressed) {
     hash = decoded.slice(0, 34);
-  }else{
+  } else {
     hash = decoded.slice(0, 33);
   }
   const checksum = sha256(sha256(hash));
   if (compressed) {
-    if (checksum[0] !== decoded[34] || checksum[1] !== decoded[35] || checksum[2] !== decoded[36] || checksum[3] !== decoded[37]) {
+    if (
+      checksum[0] !== decoded[34] ||
+      checksum[1] !== decoded[35] ||
+      checksum[2] !== decoded[36] ||
+      checksum[3] !== decoded[37]
+    ) {
       return false;
     }
-  }else{
-    if (checksum[0] !== decoded[33] || checksum[1] !== decoded[34] || checksum[2] !== decoded[35] || checksum[3] !== decoded[36]) {
+  } else {
+    if (
+      checksum[0] !== decoded[33] ||
+      checksum[1] !== decoded[34] ||
+      checksum[2] !== decoded[35] ||
+      checksum[3] !== decoded[36]
+    ) {
       return false;
     }
   }
   return true;
-
-
 }

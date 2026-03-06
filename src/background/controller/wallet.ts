@@ -1,25 +1,34 @@
+import type {
+  CoinNames,
+  transferAddressHistory,
+  Utxo,
+  UtxoAddressSumInfo,
+} from '@/shared/types';
+
+import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
 import {
   AUTO_LOCK_TIMES,
+  CHAIN_INFO,
+  ChainType,
   DEFAULT_LOCKTIME_ID,
   EVENTS,
   KEYRING_TYPE,
   KEYRING_TYPES,
-  ChainType,
-  CHAIN_INFO
 } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
-import { Account, WalletKeyring } from '@/shared/types';
+import { Account, ChainInfo, WalletKeyring } from '@/shared/types';
 
+import { openapiService } from '../service';
 import keyringService from '../service/keyring';
 import { DisplayedKeyring } from '../service/keyring/index';
 import preferenceService from '../service/preference';
-import { openapiService } from '../service';
-import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
 
 export class WalletController {
   timer: any = null;
   private lastHeartbeatTs: number | null = null;
   private heartbeatInterval: any = null;
+  private utxoPollingInterval: any = null;
+  private isPollingUtxos: boolean = false;
 
   /**
    * 启动钱包
@@ -62,14 +71,82 @@ export class WalletController {
     // 心跳模式：初始化心跳时间并启动监控
     this._initHeartbeat();
     // 更新当前keyring和account
-    if (!preferenceService.getCurrentKeyringKey()){
+    if (!preferenceService.getCurrentKeyringKey()) {
       const displayedKeyring = await keyringService.getAllDisplayedKeyrings();
       if (displayedKeyring.length > 0) {
         preferenceService.setCurrentKeyringKey(displayedKeyring[0].key);
         preferenceService.setCurrentAccountIndex(0);
       }
     }
+
+    // 钱包解锁后立即获取区块链网络
+    try {
+      const blockchains = await openapiService.fetchBlockchains();
+    } catch (error) {
+      console.error('Failed to fetch blockchains on unlock:', error);
+    }
+
     eventBus.emit(EVENTS.broadcastToUI, { method: 'unlock', params: {} });
+    this._startUtxoPolling();
+  };
+
+  /**
+   * 同步当前账户的 UTXO：从链上拉取最新数据，写入 store，聚合余额，获取代币名称。
+   * 由 background 定时轮询调用，UI 不应主动调用此方法。
+   */
+  syncAccountUtxos = async (
+    start: number,
+    limit: number,
+    isBackgroundPolling = false
+  ) => {
+
+
+    if (!isBackgroundPolling) this.resetLockTime();
+    const account = await this.getCurrentAccount();
+    console.log('syncAccountUtxos', account?.address, 'start:', start, 'limit:', limit);
+    if (!account) return { sums: [], CoinNames: [], utxoItems: [] };
+
+    const utxoItems = await openapiService.update(account, start, limit);
+
+    // Save UTXOs to preference store with block height check
+    if (utxoItems.length > 0) {
+      const existingUtxos = keyringService
+        .getUtxos()
+        .filter((utxo) => utxo.address === account.address);
+      // const existingUtxos = preferenceService.getUtxos();
+      const shouldUpdate =
+        existingUtxos.length === 0 ||
+        utxoItems[0].blockHeight >= existingUtxos[0].blockHeight;
+
+      console.log('shouldUpdate', shouldUpdate);
+      if (shouldUpdate) {
+        const changed =
+          JSON.stringify(existingUtxos) !== JSON.stringify(utxoItems);
+
+        keyringService.updateUtxos(utxoItems);
+        const currentChainInfo = this.getCurrentChainInfo();
+        keyringService.addUtxosMap(
+          account.address,
+          currentChainInfo.chainId,
+          utxoItems
+        );
+        if (changed) {
+          eventBus.emit(EVENTS.broadcastToUI, {
+            method: 'refreshAssets',
+            params: null,
+          });
+        }
+      } else {
+        console.log('Skipping UTXO update: New UTXOs are from an older block');
+      }
+    }
+  };
+
+  assetsListsPage = async () => {
+    const account = await this.getCurrentAccount();
+    const currentChainInfo = this.getCurrentChainInfo();
+    const assetsData = keyringService.getAssetsPage(account?.address ?? '');
+    return { assetsData, chainName: currentChainInfo.iconLabel };
   };
 
   /**
@@ -89,6 +166,7 @@ export class WalletController {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = null;
     }
+    this._stopUtxoPolling();
   }
 
   /**
@@ -130,8 +208,17 @@ export class WalletController {
     const keyrings = await this.getKeyrings();
     const nextKeyring = keyrings[keyrings.length - 1];
     if (nextKeyring) {
-      this.changeKeyring(nextKeyring.key,0);
+      await this.changeKeyring(nextKeyring.key);
     }
+  };
+
+  /**
+   * 移除账户
+   * @param address 账户地址
+   * @param type 账户类型
+   */
+  removeAccount = async (address: string, type: string) => {
+    await keyringService.removeAccount(address, type);
   };
 
   getKeyrings = async (): Promise<WalletKeyring[]> => {
@@ -156,8 +243,13 @@ export class WalletController {
   getCurrentAccount = async () => {
     const currentKeyring = await this.getCurrentKeyring();
     if (!currentKeyring) return null;
-    const account = currentKeyring.accounts[preferenceService.getCurrentAccountIndex()];
+    const account =
+      currentKeyring.accounts[preferenceService.getCurrentAccountIndex()];
     return account;
+  };
+
+  getWIF = (address: string) => {
+    return keyringService.exportAccount(address);
   };
 
   displayedKeyringToWalletKeyring = (
@@ -166,7 +258,7 @@ export class WalletController {
     initName = true
   ) => {
     const type = displayedKeyring.type;
-    
+
     // 账户 alianName 从 PreferenceService 获取，如果没有则使用来自 SimpleKeyring 的默认值
     const accounts = displayedKeyring.accounts.map((account, j) => {
       const accountKey = displayedKeyring.key + '#' + j;
@@ -174,7 +266,7 @@ export class WalletController {
         accountKey,
         account.alianName // 使用来自 SimpleKeyring 的默认值
       );
-      
+
       return {
         type,
         pubkey: account.pubkey,
@@ -192,7 +284,7 @@ export class WalletController {
       displayedKeyring.key,
       initName ? `${KEYRING_TYPES[type].alianName} #${index + 1}` : ''
     );
-    
+
     return {
       index,
       key: displayedKeyring.key,
@@ -202,10 +294,31 @@ export class WalletController {
     };
   };
 
-
   getAccounts = async () => {
     const keyrings = await this.getKeyrings();
-    return keyrings.reduce<Account[]>((pre, cur) => pre.concat(cur.accounts), []);
+    return keyrings.reduce<Account[]>(
+      (pre, cur) => pre.concat(cur.accounts),
+      []
+    );
+  };
+
+  /**
+   * 获取当前网络配置（支持动态网络）
+   */
+  private getCurrentChainInfo = (): ChainInfo => {
+    const currentChainType = preferenceService.getChainType();
+
+    // 优先从 CHAIN_INFO 获取，如果没有则从存储获取
+    if (CHAIN_INFO[currentChainType]) {
+      return CHAIN_INFO[currentChainType];
+    } else {
+      const storedChainInfo = preferenceService.getchainInfo(currentChainType);
+      if (storedChainInfo) {
+        return storedChainInfo;
+      } else {
+        throw new Error(`Chain info not found for: ${currentChainType}`);
+      }
+    }
   };
 
   /**
@@ -216,9 +329,18 @@ export class WalletController {
   };
 
   changeNetwork = async (chainType: ChainType) => {
-    const chainInfo = CHAIN_INFO[chainType]
-    preferenceService.setNetworkType(chainInfo.networkType)
-    preferenceService.setChainType(chainType)
+    // 优先从存储中获取网络配置，如果没有则从常量中获取
+    let chainInfo = preferenceService.getchainInfo(chainType);
+    if (!chainInfo) {
+      chainInfo = CHAIN_INFO[chainType];
+    }
+
+    if (!chainInfo) {
+      throw new Error(`Chain info not found for: ${chainType}`);
+    }
+
+    preferenceService.setNetworkType(chainInfo.networkType);
+    preferenceService.setChainType(chainType);
     keyringService.changeNetwork();
     eventBus.emit(EVENTS.broadcastToUI, {
       method: 'networkChanged',
@@ -232,14 +354,18 @@ export class WalletController {
   getCurrentKeyring = async () => {
     this.resetLockTime();
     const currentKeyringKey = preferenceService.getCurrentKeyringKey();
-    if (!currentKeyringKey){
-      return null
+    if (!currentKeyringKey) {
+      return null;
     }
-    const displayedKeyring = await keyringService.getDisplayedKeyringByKey(currentKeyringKey);
+    const displayedKeyring =
+      await keyringService.getDisplayedKeyringByKey(currentKeyringKey);
     if (!displayedKeyring) {
       return null;
     }
-    return this.displayedKeyringToWalletKeyring(displayedKeyring, displayedKeyring.index);
+    return this.displayedKeyringToWalletKeyring(
+      displayedKeyring,
+      displayedKeyring.index
+    );
   };
 
   /**
@@ -247,7 +373,7 @@ export class WalletController {
    * @param keyring 密钥环
    * @param accountIndex 账户索引
    */
-  changeKeyring = async (keyringKey: string,accountIndex = 0) => {
+  changeKeyring = async (keyringKey: string, accountIndex = 0) => {
     await keyringService.changeKeyring(keyringKey);
     preferenceService.setCurrentKeyringKey(keyringKey);
     preferenceService.setCurrentAccountIndex(accountIndex);
@@ -255,10 +381,9 @@ export class WalletController {
     // 发送更新事件
     eventBus.emit(EVENTS.broadcastToUI, {
       method: 'updateKeyrings',
-      params: {}
+      params: {},
     });
   };
-
 
   /** UI 心跳：更新心跳时间 */
   heartbeat = () => {
@@ -284,6 +409,41 @@ export class WalletController {
         this.lockWallet();
       }
     }, timeConfig.time);
+  }
+
+  private _startUtxoPolling() {
+    if (this.utxoPollingInterval) {
+      clearInterval(this.utxoPollingInterval);
+    }
+    this.utxoPollingInterval = setInterval(async () => {
+      const isUnlocked = await this.isUnlocked();
+      if (!isUnlocked || this.isPollingUtxos) return;
+
+      this.isPollingUtxos = true;
+      try {
+        const account = await this.getCurrentAccount();
+        if (!account) return;
+
+        const sums = await this.getUtxoSum();
+        const latest =
+          (Array.isArray(sums)
+            ? sums.find((s) => s.address === account.address)?.blockHeight
+            : 0) || 0;
+
+        await this.syncAccountUtxos(latest, 2048, true);
+      } catch (e) {
+        console.error('UTXO polling error:', e);
+      } finally {
+        this.isPollingUtxos = false;
+      }
+    }, 15000); // 15秒轮询
+  }
+
+  private _stopUtxoPolling() {
+    if (this.utxoPollingInterval) {
+      clearInterval(this.utxoPollingInterval);
+      this.utxoPollingInterval = null;
+    }
   }
 
   private _initHeartbeat() {
@@ -316,38 +476,14 @@ export class WalletController {
     }, 1000);
 
     this.resetLockTime();
-
   }
-
-  // createKeyringWithPrivateKey = async (
-  //   wif: string,
-  //   _alianName?: string
-  // ) => {
-  //   void _alianName;
-  //   const originKeyring = await keyringService.importPrivateKey(privateKey);
-
-  //   const displayedKeyring = await keyringService.displayForKeyring(
-  //     originKeyring,
-  //     keyringService.keyrings.length - 1
-  //   );
-
-  //   const keyring = this.displayedKeyringToWalletKeyring(
-  //     displayedKeyring,
-  //     keyringService.keyrings.length - 1
-  //   );
-
-  //   this.changeKeyring(keyring.key,0);
-  //   // 活动发生，刷新心跳时间
-  //   this._touchHeartbeat();
-  //   eventBus.emit(EVENTS.broadcastToUI, {
-  //     method: 'updateKeyrings',
-  //     params: {}
-  //   });
-  // };
 
   importPrivateKey = async (wif: string) => {
     const { privateKeyHex, compressed } = decodeWalletImportFormat(wif);
-    const originKeyring = await keyringService.importPrivateKey(privateKeyHex, compressed);
+    const originKeyring = await keyringService.importPrivateKey(
+      privateKeyHex,
+      compressed
+    );
 
     const displayedKeyring = await keyringService.displayForKeyring(
       originKeyring,
@@ -359,28 +495,41 @@ export class WalletController {
       keyringService.keyrings.length - 1
     );
 
-    this.changeKeyring(keyring.key,0);
+    this.changeKeyring(keyring.key, 0);
     // 活动发生，刷新心跳时间
     this._touchHeartbeat();
     eventBus.emit(EVENTS.broadcastToUI, {
       method: 'updateKeyrings',
-      params: {}
+      params: {},
     });
   };
-  
-  generatePrePrivateKey = async (keyringType: string) =>{
-    const keyring = await keyringService.createTmpKeyring(
-      keyringType,
-      []
-    );
-    return keyring.generatePrePrivateKey();
-  }
 
-  getAddressHistory = async (account: Account, start: number, limit: number) => {
+  generatePrePrivateKey = async (keyringType: string) => {
+    const keyring = await keyringService.createTmpKeyring(keyringType, []);
+    return keyring.generatePrePrivateKey();
+  };
+
+  getAddressHistory = async (
+    account: Account,
+    start: number,
+    limit: number
+  ) => {
     this.resetLockTime();
-    const res = await openapiService.getAddressHistory(account, start, limit);
-    console.log('getAddressHistory', res);
-    return res;
+    const { txHistory } = await openapiService.getAddressHistory(
+      account,
+      start,
+      limit
+    );
+    console.log('getAddressHistory', txHistory);
+    return txHistory;
+  };
+
+  /**
+   * 获取已聚合的 UTXO 汇总（用于确定最新的 blockHeight）
+   */
+  getUtxoSum = async (): Promise<UtxoAddressSumInfo[]> => {
+    const state = (keyringService as any)?.store?.getState?.() || {};
+    return state.utxoSum || [];
   };
 
   /**
@@ -393,7 +542,7 @@ export class WalletController {
     // 触发 UI 更新
     eventBus.emit(EVENTS.broadcastToUI, {
       method: 'updateKeyrings',
-      params: {}
+      params: {},
     });
   };
 
@@ -407,10 +556,93 @@ export class WalletController {
     // 触发 UI 更新
     eventBus.emit(EVENTS.broadcastToUI, {
       method: 'updateKeyrings',
-      params: {}
+      params: {},
     });
   };
-}
 
+  getTransferAddressHistory = async (): Promise<transferAddressHistory[]> => {
+    const addresses = keyringService.getTransferAddressHistory();
+    return addresses;
+  };
+
+  updateTransferAddressesHistory = async (newAddress: string) => {
+    const addresses = newAddress.includes(',')
+      ? newAddress
+          .split(',')
+          .map((addr) => addr.trim())
+          .filter((addr) => addr.length > 0)
+      : [newAddress];
+    const historyList: transferAddressHistory[] = addresses.map((address) => ({
+      address,
+      updated: Date.now(),
+    }));
+    keyringService.updateTransferAddressesHistory(historyList);
+  };
+
+  getTransferFees = async (
+    tokenType: number,
+    senderAddress: string,
+    isAll: boolean,
+    amount?: string,
+    receivedAddress?: string
+  ) => {
+    let fees = 0;
+    if (isAll) {
+      fees = await openapiService.computeTransactioFeesMax(
+        tokenType,
+        senderAddress
+      );
+    } else {
+      fees = await openapiService.computeTransactioFees(
+        tokenType,
+        senderAddress,
+        Number(amount),
+        receivedAddress || ''
+      );
+    }
+    return fees;
+  };
+  /**
+   * 获取存储的网络配置
+   */
+  getStoredChainInfo = async (): Promise<{ [key: string]: ChainInfo }> => {
+    return preferenceService.getAllchainInfo();
+  };
+
+  /**
+   * 添加自定义网络
+   */
+  addchainInfo = async (chainType: string, chainInfo: ChainInfo) => {
+    preferenceService.addchainInfo(chainType, chainInfo);
+  };
+
+  transfer = async (
+    amount: string,
+    tokenType: string,
+    receivedAddress: string,
+    password: string,
+    senderAddress: string,
+    crosschain: number,
+    timeLimit: number
+  ) => {
+    const res = await openapiService.transfer(
+      BigInt(Number(amount) * 1e8),
+      BigInt(Number(tokenType)),
+      receivedAddress,
+      password,
+      senderAddress,
+      crosschain,
+      timeLimit
+    );
+    let result = null;
+    if (res && res.result) {
+      result = res.result;
+      // 注意：不在此处广播 refreshAssets。
+      // 转账广播成功只代表交易进入 mempool，链上 UTXO 尚未变化。
+      // background 轮询到区块高度变化时会自动广播 refreshAssets，届时 UI 才真正刷新。
+    }
+    return result;
+  };
+}
 
 export default new WalletController();

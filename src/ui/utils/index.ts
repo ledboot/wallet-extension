@@ -1,5 +1,6 @@
 export * from './hooks';
 export * from './walletContext';
+export * from './format';
 
 const UI_TYPE = {
   Tab: 'index',

@@ -29,7 +29,7 @@ abstract class Message extends EventEmitter {
   // available id list
   // max concurrent request limit
   private _requestIdPool = [...Array(500).keys()];
-  protected _EVENT_PRE = 'ANEX_WALLET_';
+  protected _EVENT_PRE = 'ZENT_WALLET_';
   protected listenCallback?: (data: unknown) => Promise<unknown>;
 
   private _waitingMap = new Map<number, WaitingItem>();

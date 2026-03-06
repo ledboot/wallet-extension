@@ -1,19 +1,14 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import {
-  Account,
-  AddressSummary,
-  AnexBalance,
-  TxHistoryItem,
-} from '../../shared/types';
+import { Account, AddressSummary, TxHistoryItem } from '../../shared/types';
 
 export interface AccountsState {
   accounts: Account[];
   current: Account;
   loading: boolean;
   balanceMap: {
-    [key: string]: AnexBalance;
+    [key: string]: number;
   };
   historyMap: {
     [key: string]: {
@@ -24,7 +19,7 @@ export interface AccountsState {
   addressSummary: AddressSummary;
   setCurrent: (payload: Account) => void;
   setAccounts: (payload: Account[]) => void;
-  setBalance: (payload: { [key: string]: AnexBalance }) => void;
+  setBalance: (payload: { [key: string]: number }) => void;
   setHistory: (payload: {
     [key: string]: { list: TxHistoryItem[]; expired: boolean };
   }) => void;
@@ -84,7 +79,7 @@ export const accountsStore = create<AccountsState>()(
 
       setAccounts: (payload: Account[]) => set({ accounts: payload || [] }),
 
-      setBalance: (payload: { [key: string]: AnexBalance }) =>
+      setBalance: (payload: { [key: string]: number }) =>
         set({ balanceMap: payload || {} }),
 
       setHistory: (payload: {

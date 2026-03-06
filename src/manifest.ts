@@ -33,6 +33,20 @@ export default defineManifest({
     128: 'icon128.png',
   },
   permissions: ['activeTab', 'storage', 'unlimitedStorage'],
+  content_scripts: [
+    {
+      js: ['src/content_scripts/index.ts'],
+      matches: ['<all_urls>'],
+      run_at: 'document_start',
+    },
+    {
+      js: ['src/content_scripts/inpage.ts'],
+      matches: ['<all_urls>'],
+      run_at: 'document_start',
+      // @ts-expect-error world is valid in MV3 Chrome ≥ 111 but missing from crxjs types
+      world: 'MAIN',
+    },
+  ],
   web_accessible_resources: [
     {
       resources: ['*.js', '*.css', 'public/*', 'public/js/*.js'],

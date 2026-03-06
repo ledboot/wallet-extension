@@ -1,10 +1,9 @@
+// import { preferenceService } from '@background/service';
 import { ChainInfo } from '../types';
 
 export enum ChainType {
   ZENT_MAINNET = 'ZENT_MAINNET',
   ZENT_TESTNET = 'ZENT_TESTNET',
-  HOVM_MAINNET = 'HOVM_MAINNET',
-  GCT_TESTNET = 'GCT_TESTNET',
 }
 
 export enum NetworkType {
@@ -59,16 +58,8 @@ export const EVENTS = {
   },
 };
 
-export const CHAIN_INFO: { [key in ChainType]: ChainInfo } = {
-  [ChainType.ZENT_MAINNET]: {
-    label: 'ZENT',
-    iconLabel: 'ZENT',
-    chainId: 0x1,
-    endpoints: ['http://omegasuite.org:9789'],
-    icon: './images/artifacts/bitcoin-mainnet.svg',
-    unit: 'ZENT',
-    networkType: NetworkType.MAINNET,
-  },
+// 动态 CHAIN_INFO 对象，支持运行时添加网络
+export const CHAIN_INFO: { [key: string]: ChainInfo } = {
   [ChainType.ZENT_TESTNET]: {
     label: 'ZENT Testnet',
     iconLabel: 'ZENT',
@@ -77,24 +68,21 @@ export const CHAIN_INFO: { [key in ChainType]: ChainInfo } = {
     icon: './images/artifacts/bitcoin-mainnet.svg',
     unit: 'ZENT',
     networkType: NetworkType.TESTNET,
+    updated: 0,
+    id: 1,
+    isCustom: false,
   },
-  [ChainType.HOVM_MAINNET]: {
-    label: 'HOVM Mainnet',
-    iconLabel: 'HOVM',
-    chainId: 0x2,
-    endpoints: ['http://omegasuite.org:3789'],
+  [ChainType.ZENT_MAINNET]: {
+    label: 'ZENT',
+    iconLabel: 'ZENT',
+    chainId: 0x1,
+    endpoints: ['http://omegasuite.org:9789'],
     icon: './images/artifacts/bitcoin-mainnet.svg',
-    unit: 'HOVM',
+    unit: 'ZENT',
     networkType: NetworkType.MAINNET,
-  },
-  [ChainType.GCT_TESTNET]: {
-    label: 'GCT Testnet',
-    iconLabel: 'GCT',
-    chainId: 0x2,
-    endpoints: ['http://omegasuite.org:6789'],
-    icon: './images/artifacts/bitcoin-mainnet.svg',
-    unit: 'GCT',
-    networkType: NetworkType.TESTNET,
+    updated: 0,
+    id: 6,
+    isCustom: false,
   },
 };
 
@@ -124,5 +112,24 @@ export const DEFAULT_LOCKTIME_ID = 5;
 
 export const MainnetPrivateKeyPrefix = 0x80;
 export const MainnetAddressPrefix = 0;
-export const TestnetPrivateKeyPrefix = 0xEF;
-export const TestnetAddressPrefix = 0x6F;
+export const TestnetPrivateKeyPrefix = 0xef;
+export const TestnetAddressPrefix = 0x6f;
+
+export const ServerConfiguration = {
+  serverEndpoint: 'http://omegasuite.org',
+  chainclass: 2,
+};
+
+export const addChainType = (name: string, value: string): void => {
+  console.log('Adding to ChainType:', name, value);
+  (ChainType as any)[name] = value;
+  console.log('ChainType after adding:', Object.keys(ChainType));
+};
+
+// 获取所有 ChainType 值（包括动态的）
+// export const getAllChainTypeValues = (): string[] => {
+//   const values = Object.values(ChainType);
+//   console.log('ChainType enum keys:', Object.keys(ChainType));
+//   console.log('ChainType enum values:', values);
+//   return values;
+// };

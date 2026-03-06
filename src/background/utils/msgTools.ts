@@ -1,11 +1,18 @@
 import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
 
+import {
+  BorderDef,
+  PolygonDef,
+  RightDef,
+  RightSetDef,
+  SeparatorDef,
+  TinDef,
+  ToutDef,
+  VertexDef,
+} from './defs';
+import { hashReverse } from './index';
 import { Packer } from './packer';
 import { Reader } from './reader';
-import { hashReverse } from './index';
-import { VertexDef, BorderDef , PolygonDef, RightDef, RightSetDef, SeparatorDef, TinDef, ToutDef } from './defs';
-
-
 
 export class MsgT {
   version: number;
@@ -174,7 +181,6 @@ export class MsgT {
       this.txDef = [];
       for (let i = 0; i < dcount; i++) {
         let t = r.read(1);
-        console.log('t', t);
         t = t[0] as number;
         let c: any;
         switch (t) {
@@ -208,7 +214,6 @@ export class MsgT {
         t.read(r);
         this.tIn.push(t);
       }
-      // console.log('this.tIn', this.tIn);
 
       count = r.readVarInt();
       this.tOut = [];
@@ -217,7 +222,6 @@ export class MsgT {
         t.read(r);
         this.tOut.push(t);
       }
-      // console.log('this.tOut', this.tOut);
 
       if ((this.version & 0x10) === 0) {
         this.lockTime = r.readInt32();
@@ -234,7 +238,10 @@ export class MsgT {
   modifiable() {
     let m = this.signatureScripts.length === 0;
     for (let i = 0; i < this.tIn.length && m; i++) {
-      if (this.tIn[i].previousOutPoint.hash === '0000000000000000000000000000000000000000000000000000000000000000') {
+      if (
+        this.tIn[i].previousOutPoint.hash ===
+        '0000000000000000000000000000000000000000000000000000000000000000'
+      ) {
         continue;
       } else if (this.tIn[i].signatureIndex !== -1) {
         m = false;
@@ -260,24 +267,11 @@ export class MsgT {
     // });
   }
 
-  inputOf (tokenType: any) {
-    // return new Promise(resolve=>omegaDB.transaction(function (dbtx) {
-    //   var sql = '', glue = '';
-    //   for (var i = 0; i < T.TIn.length; i++) {
-    //     if (T.TIn[i].prototype.IsSeparator()) continue;
+  inputOf(tokenType: any) {
 
-    //     sql += glue + "(txid='" + T.TIn[i].PreviousOutPoint.Hash + "' AND opindex=" + T.TIn[i].PreviousOutPoint.Index.toString() + ")";
-    //     glue = " OR ";
-    //   }
-
-    //   tx.executeSql('SELECT sum(amount) FROM ' + T.model.module + 'ut_table WHERE tokentype=? AND (' +sql+ ')', [Model.prototype.tokentype2Hex(tokentype)], function (tx, res) {
-    //     var res = SentenceSql(res);
-    //     resolve(res.rows[0]['sum(amount)']);
-    //   });
-    // }));
   }
-  
-  outputOf (tokenType: any) {
+
+  outputOf(tokenType: any) {
     let sum = BigInt(0);
     for (let i = 0; i < this.tOut.length; i++) {
       if (this.tOut[i].isSeparator() || this.tOut[i].tokenType !== tokenType) {
