@@ -3,7 +3,7 @@ import { ArrowLeft, Info } from 'lucide-react';
 
 import { NetworkType } from '@/shared/constants';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
-import { useNavigate } from '@/ui/pages/mainRoute';
+import { useNavigate } from '@/ui/pages/MainRoute';
 import { useWallet } from '@/ui/utils';
 
 export default function AddCustomNetwork() {

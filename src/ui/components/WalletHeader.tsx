@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 
 import { PixelAvatar } from '@/ui/components/PixelAvatar';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
-import { useNavigate } from '@/ui/pages/mainRoute';
+import { useNavigate } from '@/ui/pages/MainRoute';
 import { useCurrentAccount } from '@/ui/state/hooks';
 
 export function WalletHeader() {

@@ -1,14 +1,11 @@
-import { useEffect, useState } from 'react';
-import type { transferAddressHistory } from '@/shared/types';
-import keyringService from '@background/service/keyring';
+import { useState } from 'react';
+import { useNavigate } from '@/ui/pages/MainRoute';
 import { AlertCircle, Check, ChevronLeft, Copy, X } from 'lucide-react';
 import { useLocation } from 'react-router';
 import { toast } from 'sonner';
 
 import { useLanguage } from '@/ui/contexts/LanguageContext';
-import { useNavigate } from '@/ui/pages/mainRoute';
 import { useCurrentAccount } from '@/ui/state/hooks';
-import { formatAmount } from '@/ui/utils';
 import { useWallet } from '@/ui/utils/walletContext';
 
 interface LocationState {

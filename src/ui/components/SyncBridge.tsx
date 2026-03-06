@@ -3,7 +3,7 @@ import { PropsWithChildren, useEffect } from 'react';
 import { CHAIN_INFO, ChainType, EVENTS, NetworkType } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
 import { Message } from '@/shared/utils';
-import { useNavigate } from '@/ui/pages/mainRoute';
+import { useNavigate } from '@/ui/pages/MainRoute';
 import { accountsStore } from '@/ui/state/accounts';
 import { globalStore } from '@/ui/state/global';
 import { keyringsStore } from '@/ui/state/keyrings';

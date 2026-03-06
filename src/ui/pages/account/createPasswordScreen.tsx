@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 
-import { useWallet, useWalletRequest } from '@/ui/utils';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
+import { useWallet, useWalletRequest } from '@/ui/utils';
 
-import { useNavigate } from '../mainRoute';
+import { useNavigate } from '../MainRoute';
 
 export default function CreatePasswordScreen() {
   const navigate = useNavigate();
@@ -51,7 +51,9 @@ export default function CreatePasswordScreen() {
 
   return (
     <div className='flex h-full flex-col items-center justify-center'>
-      <div className='mb-4 text-xl font-bold'>{t('password.create_password')}</div>
+      <div className='mb-4 text-xl font-bold'>
+        {t('password.create_password')}
+      </div>
       <div className='flex flex-col gap-2'>
         <input
           type='password'

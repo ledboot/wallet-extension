@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { CoinNames, UtxoAddressSumInfo } from '@/shared/types';
+import { useNavigate } from '@/ui/pages/MainRoute';
 import { ChevronLeft, ChevronRight, Wallet, X } from 'lucide-react';
 
-import { CHAIN_INFO } from '@/shared/constants';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
-import { useNavigate } from '@/ui/pages/mainRoute';
 import { useChainType, useCurrentAccount } from '@/ui/state/hooks';
 import { formatAmount } from '@/ui/utils';
 import { useWallet } from '@/ui/utils/walletContext';

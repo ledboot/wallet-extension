@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 
+import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { getUiType } from '@/ui/utils';
 import { useWallet } from '@/ui/utils/walletContext';
-import { useLanguage } from '@/ui/contexts/LanguageContext';
 
-import { useNavigate } from '../mainRoute';
+import { useNavigate } from '../MainRoute';
 
 export default function BoostScreen() {
   const navigate = useNavigate();
@@ -43,7 +43,6 @@ export default function BoostScreen() {
     }
 
     navigate('MainScreen');
-
   };
 
   const init = async () => {
@@ -60,7 +59,7 @@ export default function BoostScreen() {
 
   useEffect(() => {
     init();
-  },[]);
+  }, []);
 
   return <div>{t('boost.boosting')}</div>;
 }

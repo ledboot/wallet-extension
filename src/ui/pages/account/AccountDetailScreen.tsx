@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { ConfirmModal } from '@/ui/components/ConfirmModal';
 import { PixelAvatar } from '@/ui/components/PixelAvatar';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
-import { useNavigate } from '@/ui/pages/mainRoute';
+import { useNavigate } from '@/ui/pages/MainRoute';
 import { useKeyringsList } from '@/ui/state/hooks';
 import { useWallet } from '@/ui/utils/walletContext';
 

@@ -9,7 +9,7 @@ import { EditAccountName } from '@/ui/components/EditAccountName';
 import { EditKeyringName } from '@/ui/components/EditKeyringName';
 import { PixelAvatar } from '@/ui/components/PixelAvatar';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
-import { useNavigate } from '@/ui/pages/mainRoute';
+import { useNavigate } from '@/ui/pages/MainRoute';
 import { useCurrentKeyring, useKeyringsList } from '@/ui/state/hooks';
 import { useWallet } from '@/ui/utils/walletContext';
 

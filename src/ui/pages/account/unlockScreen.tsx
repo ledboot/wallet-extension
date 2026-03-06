@@ -1,10 +1,10 @@
 import { useState } from 'react';
-
-import { useWallet } from '@/ui/utils';
-import { useLanguage } from '@/ui/contexts/LanguageContext';
-
-import { useNavigate } from '../mainRoute';
 import { toast } from 'sonner';
+
+import { useLanguage } from '@/ui/contexts/LanguageContext';
+import { useWallet } from '@/ui/utils';
+
+import { useNavigate } from '../MainRoute';
 
 export default function UnlockScreen() {
   const navigate = useNavigate();
@@ -22,14 +22,19 @@ export default function UnlockScreen() {
         navigate('WelcomeScreen');
       }
     } catch (error: any) {
-      const errorMessage = t('password.unlock_failed').replace('{error}', error.message || t('common.error'));
+      const errorMessage = t('password.unlock_failed').replace(
+        '{error}',
+        error.message || t('common.error')
+      );
       toast.error(errorMessage);
     }
   };
   return (
     <div className='flex h-full w-full flex-col items-center justify-center p-4'>
       <div className='text-2xl font-bold'>{t('password.unlock_title')}</div>
-      <span className='mb-2 text-sm text-gray-500'>{t('password.unlock_subtitle')}</span>
+      <span className='mb-2 text-sm text-gray-500'>
+        {t('password.unlock_subtitle')}
+      </span>
       <input
         type='password'
         required

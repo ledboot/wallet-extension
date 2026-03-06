@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Info, X } from 'lucide-react';
 
 import { useLanguage } from '@/ui/contexts/LanguageContext';
-import { useNavigate } from '@/ui/pages/mainRoute';
+import { useNavigate } from '@/ui/pages/MainRoute';
 
 export default function PreferencesScreen() {
   const navigate = useNavigate();

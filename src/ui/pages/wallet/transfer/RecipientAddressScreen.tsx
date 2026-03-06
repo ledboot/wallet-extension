@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import type { transferAddressHistory } from '@/shared/types';
-import { Check, ChevronLeft, Clock, Copy, X } from 'lucide-react';
+import { useNavigate } from '@/ui/pages/MainRoute';
+import { ChevronLeft, Clock, Copy, X } from 'lucide-react';
 import { useLocation } from 'react-router';
 import { toast } from 'sonner';
 
 import { useLanguage } from '@/ui/contexts/LanguageContext';
-import { useNavigate } from '@/ui/pages/mainRoute';
 import { useCurrentAccount } from '@/ui/state/hooks';
 import { useWallet } from '@/ui/utils/walletContext';
 

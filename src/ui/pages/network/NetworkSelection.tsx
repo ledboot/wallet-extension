@@ -4,7 +4,7 @@ import { ArrowLeft, Check, MoreHorizontal } from 'lucide-react';
 import { CHAIN_INFO, ChainType } from '@/shared/constants';
 import { ChainInfo } from '@/shared/types';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
-import { useNavigate } from '@/ui/pages/mainRoute';
+import { useNavigate } from '@/ui/pages/MainRoute';
 import { useChainType } from '@/ui/state/hooks';
 import { useWallet } from '@/ui/utils';
 

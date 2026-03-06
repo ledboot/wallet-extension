@@ -10,12 +10,12 @@ import SyncBridge from '@/ui/components/SyncBridge';
 
 import AccountDetailScreen from './account/AccountDetailScreen';
 import AccountSelection from './account/AccountSelection';
-import CreateOrImportWalletScreen from './account/createOrImportWalletScreen';
-import CreatePasswordScreen from './account/createPasswordScreen';
-import UnlockScreen from './account/unlockScreen';
-import BoostScreen from './main/boostScreen';
-import MainScreen from './main/mainScreen';
-import WelcomeScreen from './main/welcomeScreen';
+import CreateOrImportWalletScreen from './account/CreateOrImportWalletScreen';
+import CreatePasswordScreen from './account/CreatePasswordScreen';
+import UnlockScreen from './account/UnlockScreen';
+import BoostScreen from './main/BoostScreen';
+import MainScreen from './main/MainScreen';
+import WelcomeScreen from './main/WelcomeScreen';
 import AddCustomNetwork from './network/AddCustomNetwork';
 import NetworkDetailScreen from './network/NetworkDetailScreen';
 import NetworkSelection from './network/NetworkSelection';

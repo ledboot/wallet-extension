@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from '@/ui/pages/MainRoute';
 import {
   BookOpen,
   ChevronLeft,
-  ClipboardCheck,
   Clock,
   Contact,
   CreditCard,
@@ -12,14 +12,12 @@ import {
   Hexagon,
   MessageCircle,
   PenLine,
-  ScanLine,
   ShoppingBag,
   SlidersHorizontal,
   Trash2,
 } from 'lucide-react';
 
 import { useLanguage } from '@/ui/contexts/LanguageContext';
-import { useNavigate } from '@/ui/pages/mainRoute';
 
 export default function SettingsScreen() {
   const navigate = useNavigate();

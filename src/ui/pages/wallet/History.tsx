@@ -15,7 +15,7 @@ import { useCurrentAccount } from '@/ui/state/hooks';
 
 import { useRootStore } from '../../state';
 import { useWallet } from '../../utils/walletContext';
-import { useNavigate } from '../mainRoute';
+import { useNavigate } from '../MainRoute';
 
 interface TransactionDisplayItem extends TxHistoryItem {
   type: 'send' | 'receive' | 'unknown';

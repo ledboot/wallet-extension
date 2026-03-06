@@ -2,7 +2,7 @@ import { Download, History, Send } from 'lucide-react';
 
 import { useLanguage } from '@/ui/contexts/LanguageContext';
 
-import { useNavigate } from '../pages/mainRoute';
+import { useNavigate } from '../pages/MainRoute';
 
 export function WalletActions() {
   const navigate = useNavigate();

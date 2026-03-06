@@ -1,13 +1,15 @@
 import { createRoot } from 'react-dom/client';
 
 import '@/assets/styles/index.css';
-import MainRoute from './pages/mainRoute';
-import { WalletProvider } from './utils/walletContext';
-import { LanguageProvider } from './contexts/LanguageContext';
-import { Message } from '@/shared/utils';
-import { AppDimensions } from './components/appDimensions';
+
 import { Toaster } from 'sonner';
 
+import { Message } from '@/shared/utils';
+
+import { AppDimensions } from './components/AppDimensions';
+import { LanguageProvider } from './contexts/LanguageContext';
+import MainRoute from './pages/MainRoute';
+import { WalletProvider } from './utils/walletContext';
 
 const { PortMessage } = Message;
 
@@ -18,22 +20,20 @@ portMessageChannel.connect('popup');
 const wallet: Record<string, any> = new Proxy(
   {},
   {
-    get(obj,key){
-      switch(key){
+    get(obj, key) {
+      switch (key) {
         default:
-          return function(...args: any){
+          return function (...args: any) {
             return portMessageChannel.request({
               type: 'controller',
               method: key,
-              args
+              args,
             });
-          }
+          };
       }
-    }
+    },
   }
 );
-
-
 
 const root = createRoot(document.getElementById('root') as HTMLElement);
 root.render(
@@ -41,7 +41,7 @@ root.render(
     <LanguageProvider>
       <AppDimensions>
         <Toaster position='bottom-right' duration={2000} />
-        <MainRoute/>
+        <MainRoute />
       </AppDimensions>
     </LanguageProvider>
   </WalletProvider>

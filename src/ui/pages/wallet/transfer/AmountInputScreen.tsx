@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useNavigate } from '@/ui/pages/MainRoute';
+import { ChevronLeft, X } from 'lucide-react';
 import { useLocation } from 'react-router';
 
 import { useLanguage } from '@/ui/contexts/LanguageContext';
-import { useNavigate } from '@/ui/pages/mainRoute';
 import { useCurrentAccount } from '@/ui/state/hooks';
 import { formatAmount } from '@/ui/utils';
 import { useWallet } from '@/ui/utils/walletContext';
