@@ -222,35 +222,34 @@ export default function History() {
   }, [currentAccount, wallet]);
 
   return (
-    <div className='flex h-screen flex-col bg-background'>
-      {/* 头部 */}
-      <div className='flex items-center justify-between p-4'>
+    <div className='flex h-screen flex-col bg-white'>
+      {/* Fixed Header */}
+      <div className='absolute left-0 top-0 z-10 flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-4'>
         <button
           onClick={() => navigate('#back')}
-          className='btn btn-ghost btn-sm'
+          className='-ml-2 flex h-8 w-8 items-center justify-center rounded-full text-gray-800 transition-colors hover:bg-gray-100'
         >
-          <ArrowLeft className='h-4 w-4' />
+          <ArrowLeft className='h-5 w-5' />
         </button>
-        <h1 className='text-lg font-semibold'>{t('history.title')}</h1>
-        <div className='h-4 w-4' />
+        <h1 className='absolute left-1/2 -translate-x-1/2 transform text-lg font-semibold text-gray-900'>
+          {t('history.title')}
+        </h1>
+        <div className='h-8 w-8' />
       </div>
 
-      {/* 筛选器 */}
-      <div className='p-4'>
+      {/* 筛选器 (Filters) */}
+      <div className='z-10 mt-14 bg-white px-4 py-3'>
         <div className='flex items-center space-x-2'>
-          <Filter className='text-muted-foreground h-4 w-4' />
-          <span className='text-muted-foreground text-sm'>
-            {t('history.filter')}
-          </span>
-          <div className='flex space-x-2'>
+          <Filter className='h-4 w-4 text-gray-400' />
+          <div className='hide-scrollbar flex w-full space-x-2 overflow-x-auto'>
             {filterOptions.map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setFilter(key as any)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                className={`flex-shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   filter === key
-                    ? 'text-primary-foreground bg-primary'
-                    : 'text-muted-foreground bg-muted hover:bg-muted/80'
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-900'
                 }`}
               >
                 {label}
@@ -260,13 +259,13 @@ export default function History() {
         </div>
       </div>
 
-      {/* 交易列表 */}
-      <div className='flex-1 overflow-y-auto'>
+      {/* 交易列表 (Transaction List) */}
+      <div className='hide-scrollbar flex-1 overflow-y-auto bg-white px-4 pb-8'>
         {filteredTransactions.length === 0 && !loading ? (
-          <div className='flex h-full flex-col items-center justify-center p-8 text-center'>
-            <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted'>
+          <div className='flex h-64 flex-col items-center justify-center text-center'>
+            <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-50'>
               <svg
-                className='text-muted-foreground h-8 w-8'
+                className='h-8 w-8 text-gray-300'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -279,10 +278,10 @@ export default function History() {
                 />
               </svg>
             </div>
-            <h3 className='mb-2 text-lg font-medium'>
+            <h3 className='mb-2 text-lg font-semibold text-gray-900'>
               {t('history.no_transactions')}
             </h3>
-            <p className='text-muted-foreground text-sm'>
+            <p className='text-sm text-gray-500'>
               {filter === 'all'
                 ? t('history.no_transactions_description')
                 : t('history.no_filtered_transactions').replace(
@@ -296,19 +295,19 @@ export default function History() {
             </p>
           </div>
         ) : (
-          <div>
+          <div className='flex flex-col space-y-3 pt-2'>
             {filteredTransactions.map((tx) => (
               <div
                 key={tx.txid}
-                className='flex cursor-pointer items-center justify-between px-4 py-3 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800'
+                className='flex cursor-pointer items-center justify-between rounded-2xl bg-gray-50 px-4 py-4 transition-colors hover:bg-gray-100/80 active:bg-gray-100'
                 onClick={() => handleViewOnExplorer(tx.txid)}
               >
                 {/* 左侧：图标和交易信息 */}
-                <div className='flex min-w-0 flex-1 items-center space-x-3'>
+                <div className='flex min-w-0 items-center space-x-3'>
                   {getTransactionIcon(tx.type)}
-                  <div className='min-w-0 flex-1'>
-                    <div className='mb-0.5 flex items-center space-x-2'>
-                      <span className='text-sm font-medium text-foreground'>
+                  <div className='min-w-0'>
+                    <div className='flex items-center space-x-2'>
+                      <span className='truncate text-base font-semibold text-gray-900'>
                         {tx.type === 'send'
                           ? t('history.send')
                           : tx.type === 'receive'
@@ -316,22 +315,22 @@ export default function History() {
                             : t('history.unknown')}
                       </span>
                     </div>
-                    <div className='text-muted-foreground truncate text-xs'>
+                    <div className='truncate text-xs font-medium text-gray-400'>
                       {tx.timeAgo}
                     </div>
                   </div>
                 </div>
 
                 {/* 右侧：金额和箭头 */}
-                <div className='ml-3 flex items-center space-x-2'>
-                  <div className='text-right'>
+                <div className='ml-3 flex shrink-0 items-center justify-end'>
+                  <div className='flex flex-col items-end'>
                     <div
-                      className={`text-sm font-semibold ${
+                      className={`text-base font-bold tracking-tight ${
                         tx.type === 'receive'
-                          ? 'text-success'
+                          ? 'text-green-500'
                           : tx.type === 'send'
-                            ? 'text-foreground'
-                            : 'text-muted-foreground'
+                            ? 'text-gray-900'
+                            : 'text-gray-500'
                       }`}
                     >
                       {tx.type === 'receive'
@@ -341,7 +340,7 @@ export default function History() {
                           : ''}
                       {tx.displayAmount}
                     </div>
-                    <div className='text-muted-foreground text-xs'>
+                    <div className='text-xs font-semibold uppercase tracking-wider text-gray-400'>
                       {tx.displaySymbol}
                     </div>
                   </div>
@@ -351,8 +350,11 @@ export default function History() {
 
             {/* 加载更多 */}
             {hasMore && (
-              <div className='py-4 text-center'>
-                <button disabled={loading} className='btn btn-outline btn-sm'>
+              <div className='pb-2 pt-6 text-center'>
+                <button
+                  disabled={loading}
+                  className='inline-flex items-center justify-center rounded-full bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50'
+                >
                   {loading ? (
                     <>
                       <RefreshCw className='mr-2 h-4 w-4 animate-spin' />

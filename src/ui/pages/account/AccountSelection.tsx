@@ -141,131 +141,149 @@ const AccountSelection = () => {
   };
 
   return (
-    <div className='h-full w-full bg-base-100'>
+    <div className='flex h-full w-full flex-col bg-white'>
       {/* Fixed Header */}
-      <div className='fixed left-0 right-0 top-0 h-14 border-b border-base-300 bg-base-100'>
-        <div className='flex items-center justify-between px-4 py-3'>
-          <h2 className='text-lg font-semibold'>
-            {t('account.select_wallet')}
-          </h2>
-          <button
-            className='btn btn-ghost btn-sm h-8 w-8 p-0'
-            onClick={() => navigate('MainScreen')}
-          >
-            <X className='h-4 w-4' />
-          </button>
-        </div>
+      <div className='absolute left-0 top-0 z-10 flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-4'>
+        <div className='h-8 w-8' /> {/* Spacer for centering */}
+        <h2 className='absolute left-1/2 -translate-x-1/2 transform text-lg font-semibold text-gray-900'>
+          {t('account.select_wallet')}
+        </h2>
+        <button
+          className='-mr-2 flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-gray-100'
+          onClick={() => navigate('MainScreen')}
+        >
+          <X className='h-5 w-5 text-gray-800' />
+        </button>
       </div>
 
       {/* Scrollable Content */}
-      <div className='hide-scrollbar h-[calc(100vh-56px)] space-y-4 overflow-y-auto pb-20 pt-14'>
+      <div className='hide-scrollbar flex-1 overflow-y-auto bg-white px-4 pb-[88px] pt-16'>
         {keyringsList.map((kr, kIndex) => (
-          <div key={kr.key || kIndex}>
-            <div className='text-base-content/60 flex items-center justify-between px-4 py-2 text-xs'>
-              <span>{kr.alianName || `Keyring ${kIndex + 1}`}</span>
-              <div className='flex items-center space-x-1'>
+          <div key={kr.key || kIndex} className='mb-6'>
+            <div className='mb-2 flex items-center justify-between px-1'>
+              <span className='text-xs font-semibold uppercase tracking-wider text-gray-500'>
+                {kr.alianName || `Keyring ${kIndex + 1}`}
+              </span>
+              <div className='flex items-center space-x-2'>
                 {isEditingMode && (
                   <>
                     <button
                       onClick={(e) => handleEditKeyring(kr, e)}
-                      className='btn btn-ghost btn-xs h-6 w-6 p-0'
+                      className='flex h-6 w-6 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900'
                       title={t('account.edit_name')}
                     >
-                      <Edit3 className='h-3 w-3' />
+                      <Edit3 className='h-3.5 w-3.5' />
                     </button>
                     {keyringsList.length > 1 && (
                       <button
                         onClick={(e) => handleDeleteKeyring(kr, e)}
-                        className='btn btn-ghost btn-xs h-6 w-6 p-0 text-error hover:bg-error/10'
+                        className='flex h-6 w-6 items-center justify-center rounded-full text-red-400 transition-colors hover:bg-red-50 hover:text-red-600'
                         title={t('account.delete_wallet')}
                       >
-                        <Trash2 className='h-3 w-3' />
+                        <Trash2 className='h-3.5 w-3.5' />
                       </button>
                     )}
                   </>
                 )}
               </div>
             </div>
-            <div className='space-y-2 px-4'>
-              {kr.accounts.map((account: Account, aIndex: number) => (
-                <button
-                  key={account.key || aIndex}
-                  onClick={() => handleAccountSelect(kr, aIndex)}
-                  className='w-full rounded-lg border border-base-300 p-3 text-left transition-colors hover:bg-gray-100'
-                >
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center space-x-3'>
-                      <PixelAvatar
-                        seed={account.address || account.key || 'default'}
-                        size={32}
-                        borderRadius={8}
-                      />
-                      <div>
-                        <div className='text-sm font-medium'>
+
+            <div className='flex flex-col space-y-3'>
+              {kr.accounts.map((account: Account, aIndex: number) => {
+                const isSelected =
+                  !isEditingMode &&
+                  selectedKeyringIndex === kIndex &&
+                  selectedAccountIndex === aIndex;
+                return (
+                  <button
+                    key={account.key || aIndex}
+                    onClick={() => handleAccountSelect(kr, aIndex)}
+                    className={`flex w-full items-center justify-between rounded-2xl p-4 transition-colors ${
+                      isSelected
+                        ? 'bg-gray-100/80 ring-1 ring-gray-200'
+                        : 'bg-gray-50 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className='flex items-center space-x-3 overflow-hidden'>
+                      <div className='shrink-0 rounded-xl bg-white p-0.5 shadow-sm ring-1 ring-gray-100'>
+                        <PixelAvatar
+                          seed={account.address || account.key || 'default'}
+                          size={36}
+                          borderRadius={10}
+                        />
+                      </div>
+                      <div className='min-w-0 pr-2 text-left'>
+                        <div
+                          className={`truncate text-sm font-semibold ${isSelected ? 'text-gray-900' : 'text-gray-800'}`}
+                        >
                           {account.alianName}
                         </div>
-                        <div className='text-base-content/60 text-xs'>
+                        <div className='truncate text-xs font-medium text-gray-500'>
                           {`${account.address.slice(0, 6)}...${account.address.slice(-4)}`}
                         </div>
                       </div>
                     </div>
-                    <div className='flex items-center space-x-2'>
-                      {isEditingMode && (
+
+                    <div className='flex shrink-0 items-center space-x-1.5'>
+                      {isEditingMode ? (
                         <>
                           <div
                             onClick={(e) => handleEditAccount(account, e)}
-                            className='btn btn-ghost btn-xs h-6 w-6 cursor-pointer p-0'
+                            className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-900'
                             title={t('account.edit_name')}
                           >
-                            <Edit3 className='h-3 w-3' />
+                            <Edit3 className='h-4 w-4' />
                           </div>
                           <div
                             onClick={(e) =>
                               handleViewAccountDetail(account, kr, e)
                             }
-                            className='btn btn-ghost btn-xs h-6 w-6 cursor-pointer p-0'
+                            className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-900'
                             title={t('account.about_account')}
                           >
-                            <MoreHorizontal className='h-3 w-3' />
+                            <MoreHorizontal className='h-4 w-4' />
                           </div>
                           {kr.accounts.length > 1 && (
                             <div
                               onClick={(e) =>
                                 handleDeleteAccount(account, kr, e)
                               }
-                              className='btn btn-ghost btn-xs h-6 w-6 cursor-pointer p-0 text-error hover:bg-error/10'
+                              className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-red-400 transition-colors hover:bg-red-50 hover:text-red-600'
                               title={t('account.delete_account')}
                             >
-                              <Trash2 className='h-3 w-3' />
+                              <Trash2 className='h-4 w-4' />
                             </div>
                           )}
                         </>
-                      )}
-                      {!isEditingMode &&
-                        selectedKeyringIndex === kIndex &&
-                        selectedAccountIndex === aIndex && (
-                          <Check className='h-4 w-4 text-primary' />
-                        )}
+                      ) : isSelected ? (
+                        <div className='ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-900'>
+                          <Check className='h-3.5 w-3.5 text-white' />
+                        </div>
+                      ) : null}
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
         ))}
       </div>
 
       {/* Fixed Bottom Actions */}
-      <div className='fixed bottom-0 left-0 right-0 border-t border-base-300 bg-base-100'>
-        <div className='grid grid-cols-2 gap-3 px-4 py-3'>
+      <div className='absolute bottom-0 left-0 right-0 border-t border-gray-100 bg-white px-4 py-4'>
+        <div className='grid grid-cols-2 gap-4'>
           <button
-            className={`btn ${isEditingMode ? 'btn-active' : 'btn-outline'}`}
+            className={`flex items-center justify-center rounded-full py-3.5 text-sm font-semibold transition-colors ${
+              isEditingMode
+                ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+            }`}
             onClick={() => setIsEditingMode(!isEditingMode)}
           >
             {isEditingMode ? t('common.cancel') : t('common.edit')}
           </button>
           <button
-            className='btn btn-primary'
+            className='flex items-center justify-center rounded-full bg-gray-900 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800'
             onClick={() => navigate('WelcomeScreen')}
           >
             {t('account.add_wallet')}

@@ -133,6 +133,7 @@ export const translations = {
       add_network_warning:
         '未知的网络服务提供商可能会暴露区块链状态并追踪您的网络活动。仅在您完全信任该网络时才添加。',
       no_custom_networks: '暂无自定义网络',
+      network_details: '网络详情',
     },
 
     // Settings
@@ -371,6 +372,7 @@ export const translations = {
       add_network_warning:
         'Unknown internet service providers may expose the blockchain state and track your network activities. Add a network only if you fully trust it.',
       no_custom_networks: 'No custom networks yet',
+      network_details: 'Network Details',
     },
 
     // Settings
@@ -612,6 +614,7 @@ export const translations = {
       add_network_warning:
         '未知のインターネットサービスプロバイダはブロックチェーンの状態を公開し、ネットワーク活動を追跡する可能性があります。完全に信頼できるネットワークのみを追加してください。',
       no_custom_networks: 'カスタムネットワークはまだありません',
+      network_details: 'ネットワークの詳細',
     },
 
     // Settings
@@ -852,6 +855,7 @@ export const translations = {
       add_network_warning:
         '알 수 없는 인터넷 서비스 제공업체는 블록체인 상태를 노출하고 네트워크 활동을 추적할 수 있습니다. 완전히 신뢰하는 네트워크만 추가하세요.',
       no_custom_networks: '사용자 지정 네트워크가 없습니다',
+      network_details: '네트워크 세부 정보',
     },
 
     // Settings

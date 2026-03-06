@@ -58,107 +58,122 @@ export default function NetworkSelection() {
   };
 
   return (
-    <div className='flex h-full w-full flex-col bg-base-100'>
+    <div className='flex h-full w-full flex-col bg-white'>
       {/* Fixed Header */}
-      <div className='fixed left-0 right-0 top-0 z-10 border-b border-base-300 bg-base-100'>
-        <div className='flex items-center px-4 py-3'>
+      <div className='absolute left-0 top-0 z-10 flex w-full flex-col bg-white'>
+        <div className='flex items-center justify-between px-4 py-3'>
           <button
-            className='flex items-center rounded p-1 hover:bg-gray-100'
             onClick={() => navigate('#back')}
+            className='-ml-2 flex flex-shrink-0 items-center justify-center rounded-full p-2 transition-colors hover:bg-gray-100'
           >
-            <ArrowLeft className='h-6 w-6' />
+            <ArrowLeft className='h-5 w-5 text-gray-800' />
           </button>
-          <div className='flex-1 text-center text-lg font-semibold'>
+          <div className='absolute left-1/2 -translate-x-1/2 transform text-lg font-semibold text-gray-900'>
             {t('network.select_network')}
           </div>
-          {/* spacer to keep title centered */}
-          <div className='w-8' />
+          <div className='h-9 w-9 shrink-0' />
         </div>
 
-        {/* Tabs */}
-        <div className='flex border-b border-base-300 px-4'>
-          {(['rpc', 'custom'] as Tab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`mr-6 pb-2.5 text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? 'border-b-2 border-black text-black dark:border-white dark:text-white'
-                  : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              {tab === 'rpc' ? 'RPC' : 'Custom'}
-            </button>
-          ))}
+        {/* Tabs - iOS Segment Control Style */}
+        <div className='px-4 pb-3 pt-1'>
+          <div className='flex h-10 w-full rounded-2xl bg-gray-100 p-1'>
+            {(['rpc', 'custom'] as Tab[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 rounded-xl text-sm font-medium transition-all ${
+                  activeTab === tab
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {tab === 'rpc' ? 'RPC' : 'Custom'}
+              </button>
+            ))}
+          </div>
         </div>
+        <div className='h-[1px] w-full bg-gray-100' />
       </div>
 
-      {/* List – offset for header (~96px) */}
-      <div className='flex-1 overflow-y-auto' style={{ paddingTop: '96px' }}>
+      {/* List Content */}
+      <div className='hide-scrollbar flex-1 overflow-y-auto bg-white px-4 pb-6 pt-[104px]'>
         {displayed.length === 0 ? (
-          <div className='flex flex-col items-center justify-center py-20 text-gray-400'>
-            <div className='mb-3 text-4xl'>🌐</div>
-            <div className='text-sm'>{t('network.no_custom_networks')}</div>
+          <div className='flex h-64 flex-col items-center justify-center text-gray-400'>
+            <div className='mb-3 text-4xl opacity-50'>🌐</div>
+            <div className='text-sm text-gray-500'>
+              {t('network.no_custom_networks')}
+            </div>
           </div>
         ) : (
-          displayed.map(([key, info]) => {
-            const isActive = currentChainType === key;
-            const rpcUrl = info.endpoints?.[0] ?? '';
+          <div className='flex flex-col space-y-3 pt-2'>
+            {displayed.map(([key, info]) => {
+              const isActive = currentChainType === key;
+              const rpcUrl = info.endpoints?.[0] ?? '';
 
-            return (
-              <div
-                key={key}
-                className='flex cursor-pointer items-center px-4 py-3 hover:bg-gray-50 active:bg-gray-100'
-                onClick={() => handleSelect(key)}
-              >
-                {/* Icon */}
-                <div className='mr-3 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-100'>
-                  <img
-                    src={info.icon}
-                    alt={info.label}
-                    className='h-7 w-7 object-contain'
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </div>
-
-                {/* Name + RPC URL */}
-                <div className='min-w-0 flex-1'>
-                  <div className='flex items-center gap-1.5'>
-                    <span className='text-sm font-medium'>{info.label}</span>
-                    {isActive && (
-                      <Check className='h-3.5 w-3.5 shrink-0 text-primary' />
-                    )}
-                  </div>
-                  {rpcUrl ? (
-                    <div className='mt-0.5 truncate text-xs text-gray-400'>
-                      {rpcUrl}
-                    </div>
-                  ) : null}
-                </div>
-
-                {/* Detail button */}
-                <button
-                  className='ml-2 shrink-0 rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDetail(key, info);
-                  }}
+              return (
+                <div
+                  key={key}
+                  className={`flex cursor-pointer items-center rounded-2xl p-4 transition-colors ${
+                    isActive
+                      ? 'bg-gray-100/80 ring-1 ring-gray-200'
+                      : 'bg-gray-50 hover:bg-gray-100'
+                  }`}
+                  onClick={() => handleSelect(key)}
                 >
-                  <MoreHorizontal className='h-4 w-4' />
-                </button>
-              </div>
-            );
-          })
+                  {/* Icon */}
+                  <div className='mr-4 flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-gray-100'>
+                    <img
+                      src={info.icon}
+                      alt={info.label}
+                      className='h-7 w-7 object-contain'
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+
+                  {/* Name + RPC URL */}
+                  <div className='min-w-0 flex-1'>
+                    <div className='flex items-center gap-2'>
+                      <span className='truncate text-base font-semibold text-gray-900'>
+                        {info.label}
+                      </span>
+                    </div>
+                    {rpcUrl ? (
+                      <div className='mt-1 truncate text-xs font-medium text-gray-500'>
+                        {rpcUrl}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {isActive && (
+                    <div className='ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-900'>
+                      <Check className='h-3.5 w-3.5 text-white' />
+                    </div>
+                  )}
+
+                  {/* Detail button */}
+                  <button
+                    className='ml-3 flex shrink-0 items-center justify-center rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-900 focus:outline-none'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDetail(key, info);
+                    }}
+                  >
+                    <MoreHorizontal className='h-5 w-5' />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         )}
 
-        {/* Add network – Custom tab only, compact */}
+        {/* Add network button */}
         {activeTab === 'custom' && (
-          <div className='px-4 py-3'>
+          <div className='mt-6 pb-2'>
             <button
               onClick={() => navigate('AddCustomNetwork')}
-              className='w-full rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50'
+              className='w-full rounded-full bg-gray-900 py-4 text-sm font-medium text-white transition-all hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2'
             >
               {t('network.add_custom_network')}
             </button>

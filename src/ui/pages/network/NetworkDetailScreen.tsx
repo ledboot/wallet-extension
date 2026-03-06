@@ -86,10 +86,10 @@ export default function NetworkDetailScreen() {
       <input
         type='text'
         readOnly={!isCustom}
-        className={`w-full rounded-xl px-4 py-3.5 text-sm outline-none ${
+        className={`w-full rounded-2xl px-4 py-3.5 text-sm font-medium outline-none transition-colors ${
           isCustom
-            ? 'bg-gray-50 text-gray-900 placeholder:text-gray-400'
-            : 'cursor-default select-all bg-gray-100 text-gray-500'
+            ? 'bg-gray-50 text-gray-900 placeholder:font-normal placeholder:text-gray-400 focus:ring-2 focus:ring-gray-300'
+            : 'cursor-default select-all bg-gray-50/50 text-gray-500'
         }`}
         placeholder={placeholder}
         value={value}
@@ -99,95 +99,103 @@ export default function NetworkDetailScreen() {
   );
 
   return (
-    <div className='flex h-full w-full flex-col overflow-y-auto bg-white'>
+    <div className='flex h-full w-full flex-col bg-white'>
       {/* Header */}
-      <div className='flex items-center px-4 py-4'>
+      <div className='absolute left-0 top-0 z-10 flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-4'>
         <button
           onClick={() => navigate('#back')}
-          className='rounded p-1 transition-colors hover:bg-gray-100'
+          className='-ml-2 flex items-center justify-center rounded-full p-2 transition-colors hover:bg-gray-100'
         >
-          <ArrowLeft className='h-6 w-6 text-gray-800' />
+          <ArrowLeft className='h-5 w-5 text-gray-800' />
         </button>
+        <h1 className='absolute left-1/2 -translate-x-1/2 transform text-lg font-semibold text-gray-900'>
+          {t('network.network_details')}
+        </h1>
+        <div className='h-9 w-9'></div>
       </div>
 
-      {/* Network icon + name */}
-      <div className='mb-6 flex flex-col items-center px-4'>
-        <div className='mb-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gray-100'>
-          <img
-            src={chainInfo.icon}
-            alt={chainInfo.label}
-            className='h-10 w-10 object-contain'
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
-          />
-        </div>
-        <h1 className='text-xl font-bold text-gray-900'>{chainInfo.label}</h1>
-      </div>
-
-      {/* Fields */}
-      <div className='flex-1 space-y-5 px-4'>
-        {field(
-          t('network.network_name'),
-          name,
-          isCustom ? setName : undefined,
-          'e.g., Ethereum'
-        )}
-        {field(
-          t('network.rpc_url'),
-          rpcUrl,
-          isCustom ? setRpcUrl : undefined,
-          'https://...'
-        )}
-        {field(
-          t('network.chain_id'),
-          chainId,
-          isCustom ? (v) => setChainId(v) : undefined,
-          '0',
-          true
-        )}
-        {field(
-          t('network.symbol'),
-          symbol,
-          isCustom ? setSymbol : undefined,
-          'e.g., ETH'
-        )}
-        {field(
-          t('network.block_explorer_url_optional'),
-          explorerUrl,
-          isCustom ? setExplorerUrl : undefined,
-          'https://...'
-        )}
-
-        {/* Testnet toggle – only for custom */}
-        {isCustom && (
-          <div className='flex items-center space-x-2 pt-2'>
-            <label className='relative inline-flex cursor-pointer items-center'>
-              <input
-                type='checkbox'
-                className='peer sr-only'
-                checked={isTestnet}
-                onChange={(e) => setIsTestnet(e.target.checked)}
-              />
-              <div className="peer h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-black peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none" />
-            </label>
-            <span className='text-sm font-semibold text-gray-900'>
-              {t('network.is_test_network')}
-            </span>
+      <div className='hide-scrollbar flex-1 overflow-y-auto bg-white px-4 pb-6 pt-20'>
+        {/* Network icon + name */}
+        <div className='mb-8 flex flex-col items-center'>
+          <div className='mb-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-50'>
+            <img
+              src={chainInfo.icon}
+              alt={chainInfo.label}
+              className='h-10 w-10 object-contain'
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
           </div>
-        )}
+          <h1 className='text-2xl font-bold text-gray-900'>
+            {chainInfo.label}
+          </h1>
+        </div>
+
+        {/* Fields */}
+        <div className='space-y-4 rounded-2xl bg-white'>
+          {field(
+            t('network.network_name'),
+            name,
+            isCustom ? setName : undefined,
+            'e.g., Ethereum'
+          )}
+          {field(
+            t('network.rpc_url'),
+            rpcUrl,
+            isCustom ? setRpcUrl : undefined,
+            'https://...'
+          )}
+          {field(
+            t('network.chain_id'),
+            chainId,
+            isCustom ? (v) => setChainId(v) : undefined,
+            '0',
+            true
+          )}
+          {field(
+            t('network.symbol'),
+            symbol,
+            isCustom ? setSymbol : undefined,
+            'e.g., ETH'
+          )}
+          {field(
+            t('network.block_explorer_url_optional'),
+            explorerUrl,
+            isCustom ? setExplorerUrl : undefined,
+            'https://...'
+          )}
+
+          {/* Testnet toggle – only for custom */}
+          {isCustom && (
+            <div className='flex items-center space-x-3 pt-2'>
+              <label className='relative inline-flex cursor-pointer items-center'>
+                <input
+                  type='checkbox'
+                  className='peer sr-only'
+                  checked={isTestnet}
+                  onChange={(e) => setIsTestnet(e.target.checked)}
+                />
+                <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] focus:outline-none peer-checked:bg-gray-900 peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-gray-600 dark:bg-gray-700"></div>
+              </label>
+              <span className='text-sm font-semibold text-gray-900'>
+                {t('network.is_test_network')}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Save button – custom only */}
       {isCustom && (
-        <div className='px-4 py-3'>
+        <div className='bg-white px-4 py-6'>
           <button
             onClick={handleSave}
             disabled={!isFormValid || saving}
-            className={`w-full rounded-xl border py-2.5 text-sm font-medium transition-colors ${
+            className={`w-full rounded-full py-4 text-sm font-medium transition-colors ${
               isFormValid && !saving
-                ? 'border-gray-800 text-gray-800 hover:bg-gray-50'
-                : 'cursor-not-allowed border-gray-200 text-gray-400'
+                ? 'bg-gray-900 text-white hover:bg-gray-800'
+                : 'cursor-not-allowed bg-gray-100 text-gray-400'
             }`}
           >
             {saving ? t('common.saving') : t('common.save')}
