@@ -12,7 +12,7 @@ ZENT Wallet is a secure, user-friendly browser extension for managing cryptocurr
 - **State Management**: Context API
 - **Storage**: IndexedDB for wallet data
 - **Cryptography**: Web Crypto API
-- **Package Manager**: pnpm
+- **Package Manager**: bun
 - **Build Tool**: Webpack
 - **Linting & Formatting**: ESLint, Prettier
 
@@ -33,20 +33,20 @@ src/
 ### Prerequisites
 
 - Node.js >= 16.0.0
-- pnpm >= 7.0.0
+- bun >= 1.1.10
 - Chrome or Firefox for development
 
 ### Setup
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Start development server
-pnpm run dev
+bun run dev
 
 # Build for production
-pnpm run build
+bun run build
 ```
 
 ### Code Style

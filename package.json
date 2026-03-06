@@ -10,10 +10,10 @@
     "build": "tsc && vite build",
     "build:dev": "NODE_ENV=development tsc && vite build",
     "build:prod": "NODE_ENV=production tsc && vite build",
-    "debug": "NODE_ENV=development npm run build && ./scripts/debug.sh",
+    "debug": "NODE_ENV=development bun run build && ./scripts/debug.sh",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "preinstall": "npx only-allow pnpm",
+    "preinstall": "npx only-allow bun",
     "prepare": "husky install"
   },
   "dependencies": {
@@ -99,9 +99,9 @@
       "prettier --write"
     ]
   },
-  "packageManager": "pnpm@8.15.0",
+  "packageManager": "bun@1.1.10",
   "engines": {
     "node": ">=20.x",
-    "pnpm": ">=8.15.0"
+    "bun": ">=1.1.10"
   }
 }

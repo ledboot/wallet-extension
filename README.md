@@ -17,16 +17,16 @@ Important modules currently implemented in the project:
 
 ## 🛠 Initialization & Installation
 
-This project utilizes `pnpm` as the package management strategy to optimize the performance and stability of dependency resolution. A `Node.js >= 20` development environment is required.
+This project utilizes `bun` as the package management strategy to optimize the performance and stability of dependency resolution. A `Node.js >= 20` development environment is required.
 
 ### 1. Development Preparation
 
 ```bash
 # Fetch and configure all corresponding dependency libraries
-pnpm install
+bun install
 
 # Start Vite and other development servers with watch and hot reload by default.
-pnpm run dev
+bun run dev
 ```
 
 ### 2. Production Build Strategy
@@ -34,7 +34,7 @@ pnpm run dev
 If you wish to compile a distribution artifact capable of being submitted to the Chrome Web Store or properly loaded at the production level, please execute the build command:
 
 ```bash
-pnpm run build
+bun run build
 ```
 
 The final result of an optimized build will be packaged and automatically outputted into the `dist/` root directory. Subsequently, you can load the `dist/` directory locally as an "unpacked extension" via Chrome's extensions management page (`chrome://extensions/`).

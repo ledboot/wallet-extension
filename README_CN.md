@@ -17,16 +17,16 @@ ZENT Wallet Extension 是一款基于 Chrome Extension 的现代化加密货币�
 
 ## 🛠 初始化与安装 (Installation)
 
-本项目采用了 `pnpm` 作为包管理策略以增加依赖管理的性能与稳定性。并要求 `Node.js >= 20` 的开发工作环境。
+本项目采用了 `bun` 作为包管理策略以增加依赖管理的性能与稳定性。并要求 `Node.js >= 20` 的开发工作环境。
 
 ### 1. 开发阶段准备
 
 ```bash
 # 获取并配置对应所有的依赖库资源
-pnpm install
+bun install
 
 # 默认会以 watch 和 hot reload 方式启动 Vite 等开发服务器。
-pnpm run dev
+bun run dev
 ```
 
 ### 2. 生产环境构建策略
@@ -34,7 +34,7 @@ pnpm run dev
 如果你希望编译出能在 Chrome 应用商店或在生产级别加载的分发产物，请运行安全和压缩逻辑指令：
 
 ```bash
-pnpm run build
+bun run build
 ```
 
 所有合规构建的最终结果将打包在自动输出的 `dist/` 根目录里，随后你可将 `dist/` 目录从 chrome 开发者中心打包引入本地作为扩展启动项。
