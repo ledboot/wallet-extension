@@ -35,7 +35,6 @@ export class WalletController {
    * @param password 密码
    */
   boot = (password: string) => keyringService.boot(password);
-  
 
   /**
    * 检查钱包是否已启动
