@@ -179,12 +179,9 @@ export class OpenapiService {
       newConames.push(coname);
     }
 
-    console.log('newConames', newConames);
-
     // Save to preference store
     keyringService.addCoinName(newConames);
     const updatedConames = keyringService.getCoinNames();
-    console.log('Updated CoinNames in preference store', updatedConames);
 
     return { CoinNames: updatedConames };
   };
@@ -255,8 +252,6 @@ export class OpenapiService {
       console.log('Dynamic networks added successfully');
 
     }
-
-    return res;
   };
 
   decodeMsgHex = (hex: string) => {

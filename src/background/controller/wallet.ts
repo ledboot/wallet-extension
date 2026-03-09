@@ -1,9 +1,4 @@
-import type {
-  CoinNames,
-  transferAddressHistory,
-  Utxo,
-  UtxoAddressSumInfo,
-} from '@/shared/types';
+import type { CoinNames, transferAddressHistory, Utxo, UtxoAddressSumInfo } from '@/shared/types';
 
 import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
 import {
@@ -34,7 +29,22 @@ export class WalletController {
    * 启动钱包
    * @param password 密码
    */
-  boot = (password: string) => keyringService.boot(password);
+  boot = async (password: string) => {
+    await keyringService.boot(password);
+
+    // 心跳模式：初始化心跳时间并启动监控
+    this._initHeartbeat();
+
+    // 钱包启动后立即获取区块链网络
+    try {
+      await openapiService.fetchBlockchains();
+    } catch (error) {
+      console.error('Failed to fetch blockchains on boot:', error);
+    }
+
+    eventBus.emit(EVENTS.broadcastToUI, { method: 'unlock', params: {} });
+    this._startUtxoPolling();
+  };
 
   /**
    * 检查钱包是否已启动
@@ -50,16 +60,14 @@ export class WalletController {
    * 验证密码
    * @param password 密码
    */
-  verifyPassword = (password: string) =>
-    keyringService.verifyPassword(password);
+  verifyPassword = (password: string) => keyringService.verifyPassword(password);
 
   /**
    * 修改密码
    * @param password 旧密码
    * @param newPassword 新密码
    */
-  changePassword = (password: string, newPassword: string) =>
-    keyringService.changePassword(password, newPassword);
+  changePassword = (password: string, newPassword: string) => keyringService.changePassword(password, newPassword);
 
   /**
    * 解锁钱包
@@ -80,7 +88,7 @@ export class WalletController {
 
     // 钱包解锁后立即获取区块链网络
     try {
-      const blockchains = await openapiService.fetchBlockchains();
+      await openapiService.fetchBlockchains();
     } catch (error) {
       console.error('Failed to fetch blockchains on unlock:', error);
     }
@@ -93,13 +101,7 @@ export class WalletController {
    * 同步当前账户的 UTXO：从链上拉取最新数据，写入 store，聚合余额，获取代币名称。
    * 由 background 定时轮询调用，UI 不应主动调用此方法。
    */
-  syncAccountUtxos = async (
-    start: number,
-    limit: number,
-    isBackgroundPolling = false
-  ) => {
-
-
+  syncAccountUtxos = async (start: number, limit: number, isBackgroundPolling = false) => {
     if (!isBackgroundPolling) this.resetLockTime();
     const account = await this.getCurrentAccount();
     console.log('syncAccountUtxos', account?.address, 'start:', start, 'limit:', limit);
@@ -109,26 +111,17 @@ export class WalletController {
 
     // Save UTXOs to preference store with block height check
     if (utxoItems.length > 0) {
-      const existingUtxos = keyringService
-        .getUtxos()
-        .filter((utxo) => utxo.address === account.address);
+      const existingUtxos = keyringService.getUtxos().filter((utxo) => utxo.address === account.address);
       // const existingUtxos = preferenceService.getUtxos();
-      const shouldUpdate =
-        existingUtxos.length === 0 ||
-        utxoItems[0].blockHeight >= existingUtxos[0].blockHeight;
+      const shouldUpdate = existingUtxos.length === 0 || utxoItems[0].blockHeight >= existingUtxos[0].blockHeight;
 
       console.log('shouldUpdate', shouldUpdate);
       if (shouldUpdate) {
-        const changed =
-          JSON.stringify(existingUtxos) !== JSON.stringify(utxoItems);
+        const changed = JSON.stringify(existingUtxos) !== JSON.stringify(utxoItems);
 
         keyringService.updateUtxos(utxoItems);
         const currentChainInfo = this.getCurrentChainInfo();
-        keyringService.addUtxosMap(
-          account.address,
-          currentChainInfo.chainId,
-          utxoItems
-        );
+        keyringService.addUtxosMap(account.address, currentChainInfo.chainId, utxoItems);
         if (changed) {
           eventBus.emit(EVENTS.broadcastToUI, {
             method: 'refreshAssets',
@@ -226,10 +219,7 @@ export class WalletController {
     for (let index = 0; index < displayedKeyrings.length; index++) {
       const displayedKeyring = displayedKeyrings[index];
       if (displayedKeyring.type !== KEYRING_TYPE.Empty) {
-        const keyring = this.displayedKeyringToWalletKeyring(
-          displayedKeyring,
-          displayedKeyring.index
-        );
+        const keyring = this.displayedKeyringToWalletKeyring(displayedKeyring, displayedKeyring.index);
         keyrings.push(keyring);
       }
     }
@@ -242,8 +232,7 @@ export class WalletController {
   getCurrentAccount = async () => {
     const currentKeyring = await this.getCurrentKeyring();
     if (!currentKeyring) return null;
-    const account =
-      currentKeyring.accounts[preferenceService.getCurrentAccountIndex()];
+    const account = currentKeyring.accounts[preferenceService.getCurrentAccountIndex()];
     return account;
   };
 
@@ -251,11 +240,7 @@ export class WalletController {
     return keyringService.exportAccount(address);
   };
 
-  displayedKeyringToWalletKeyring = (
-    displayedKeyring: DisplayedKeyring,
-    index: number,
-    initName = true
-  ) => {
+  displayedKeyringToWalletKeyring = (displayedKeyring: DisplayedKeyring, index: number, initName = true) => {
     const type = displayedKeyring.type;
 
     // 账户 alianName 从 PreferenceService 获取，如果没有则使用来自 SimpleKeyring 的默认值
@@ -295,10 +280,7 @@ export class WalletController {
 
   getAccounts = async () => {
     const keyrings = await this.getKeyrings();
-    return keyrings.reduce<Account[]>(
-      (pre, cur) => pre.concat(cur.accounts),
-      []
-    );
+    return keyrings.reduce<Account[]>((pre, cur) => pre.concat(cur.accounts), []);
   };
 
   /**
@@ -356,15 +338,11 @@ export class WalletController {
     if (!currentKeyringKey) {
       return null;
     }
-    const displayedKeyring =
-      await keyringService.getDisplayedKeyringByKey(currentKeyringKey);
+    const displayedKeyring = await keyringService.getDisplayedKeyringByKey(currentKeyringKey);
     if (!displayedKeyring) {
       return null;
     }
-    return this.displayedKeyringToWalletKeyring(
-      displayedKeyring,
-      displayedKeyring.index
-    );
+    return this.displayedKeyringToWalletKeyring(displayedKeyring, displayedKeyring.index);
   };
 
   /**
@@ -399,8 +377,7 @@ export class WalletController {
       clearTimeout(this.timer);
     }
     const timeId = preferenceService.getAutoLockTimeId();
-    const timeConfig =
-      AUTO_LOCK_TIMES[timeId] || AUTO_LOCK_TIMES[DEFAULT_LOCKTIME_ID];
+    const timeConfig = AUTO_LOCK_TIMES[timeId] || AUTO_LOCK_TIMES[DEFAULT_LOCKTIME_ID];
 
     this.timer = setTimeout(() => {
       const isUnlocked = keyringService.memStore.getState().isUnlocked;
@@ -424,10 +401,7 @@ export class WalletController {
         if (!account) return;
 
         const sums = await this.getUtxoSum();
-        const latest =
-          (Array.isArray(sums)
-            ? sums.find((s) => s.address === account.address)?.blockHeight
-            : 0) || 0;
+        const latest = (Array.isArray(sums) ? sums.find((s) => s.address === account.address)?.blockHeight : 0) || 0;
 
         await this.syncAccountUtxos(latest, 2048, true);
       } catch (e) {
@@ -461,8 +435,7 @@ export class WalletController {
       }
 
       const timeId = preferenceService.getAutoLockTimeId();
-      const timeConfig =
-        AUTO_LOCK_TIMES[timeId] || AUTO_LOCK_TIMES[DEFAULT_LOCKTIME_ID];
+      const timeConfig = AUTO_LOCK_TIMES[timeId] || AUTO_LOCK_TIMES[DEFAULT_LOCKTIME_ID];
 
       const now = Date.now();
       // 修复：如果 lastHeartbeatTs 为 null，使用当前时间
@@ -479,20 +452,11 @@ export class WalletController {
 
   importPrivateKey = async (wif: string) => {
     const { privateKeyHex, compressed } = decodeWalletImportFormat(wif);
-    const originKeyring = await keyringService.importPrivateKey(
-      privateKeyHex,
-      compressed
-    );
+    const originKeyring = await keyringService.importPrivateKey(privateKeyHex, compressed);
 
-    const displayedKeyring = await keyringService.displayForKeyring(
-      originKeyring,
-      keyringService.keyrings.length - 1
-    );
+    const displayedKeyring = await keyringService.displayForKeyring(originKeyring, keyringService.keyrings.length - 1);
 
-    const keyring = this.displayedKeyringToWalletKeyring(
-      displayedKeyring,
-      keyringService.keyrings.length - 1
-    );
+    const keyring = this.displayedKeyringToWalletKeyring(displayedKeyring, keyringService.keyrings.length - 1);
 
     this.changeKeyring(keyring.key, 0);
     // 活动发生，刷新心跳时间
@@ -508,17 +472,9 @@ export class WalletController {
     return keyring.generatePrePrivateKey();
   };
 
-  getAddressHistory = async (
-    account: Account,
-    start: number,
-    limit: number
-  ) => {
+  getAddressHistory = async (account: Account, start: number, limit: number) => {
     this.resetLockTime();
-    const { txHistory } = await openapiService.getAddressHistory(
-      account,
-      start,
-      limit
-    );
+    const { txHistory } = await openapiService.getAddressHistory(account, start, limit);
     console.log('getAddressHistory', txHistory);
     return txHistory;
   };
@@ -587,10 +543,7 @@ export class WalletController {
   ) => {
     let fees = 0;
     if (isAll) {
-      fees = await openapiService.computeTransactioFeesMax(
-        tokenType,
-        senderAddress
-      );
+      fees = await openapiService.computeTransactioFeesMax(tokenType, senderAddress);
     } else {
       fees = await openapiService.computeTransactioFees(
         tokenType,
