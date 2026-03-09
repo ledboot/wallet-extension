@@ -107,7 +107,7 @@ export class WalletController {
     console.log('syncAccountUtxos', account?.address, 'start:', start, 'limit:', limit);
     if (!account) return { sums: [], CoinNames: [], utxoItems: [] };
 
-    const utxoItems = await openapiService.update(account, start, limit);
+    const { utxoItems } = await openapiService.getAddressHistory(account, start, limit);
 
     // Save UTXOs to preference store with block height check
     if (utxoItems.length > 0) {

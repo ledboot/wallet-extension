@@ -138,11 +138,6 @@ export class OpenapiService {
     return { txHistory: [], utxoItems: [] };
   };
 
-  update = async (account: Account, start: number, limit: number) => {
-    const { utxoItems } = await this.getAddressHistory(account, start, limit);
-    return utxoItems;
-  };
-
   fetchTokentype = async (
     utxos: Utxo[] = [],
     chainId?: string
