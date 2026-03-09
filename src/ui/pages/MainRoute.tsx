@@ -1,10 +1,5 @@
 import { useCallback, useRef } from 'react';
-import {
-  HashRouter,
-  Route,
-  Routes,
-  useNavigate as useNavigateOrigin,
-} from 'react-router';
+import { HashRouter, Route, Routes, useNavigate as useNavigateOrigin } from 'react-router';
 
 import SyncBridge from '@/ui/components/SyncBridge';
 
@@ -12,6 +7,7 @@ import AccountDetailScreen from './account/AccountDetailScreen';
 import AccountSelection from './account/AccountSelection';
 import CreateOrImportWalletScreen from './account/CreateOrImportWalletScreen';
 import CreatePasswordScreen from './account/CreatePasswordScreen';
+import ExportPrivateKeyScreen from './account/ExportPrivateKeyScreen';
 import UnlockScreen from './account/UnlockScreen';
 import BoostScreen from './main/BoostScreen';
 import MainScreen from './main/MainScreen';
@@ -62,6 +58,10 @@ const routes = {
   CreatePasswordScreen: {
     path: '/account/create-password',
     element: <CreatePasswordScreen />,
+  },
+  ExportPrivateKeyScreen: {
+    path: '/account/export-private-key',
+    element: <ExportPrivateKeyScreen />,
   },
   UnlockScreen: {
     path: '/account/unlock',

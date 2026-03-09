@@ -40,9 +40,7 @@ function EditNameModal({ account, onClose, onSuccess }: EditNameModalProps) {
   return (
     <div className='fixed inset-0 z-[100] flex items-center justify-center bg-black/50'>
       <div className='w-[343px] max-w-[90vw] rounded-2xl bg-white p-6'>
-        <h3 className='mb-6 text-center text-[20px] font-bold text-black'>
-          {t('common.account_name')}
-        </h3>
+        <h3 className='mb-6 text-center text-[20px] font-bold text-black'>{t('common.account_name')}</h3>
         <div className='mb-6'>
           <div className='mb-1 flex items-center rounded-xl bg-[#F5F5F5] p-3'>
             <input
@@ -63,9 +61,7 @@ function EditNameModal({ account, onClose, onSuccess }: EditNameModalProps) {
               </button>
             )}
           </div>
-          <div className='text-right text-sm text-[#999999]'>
-            {name.length}/25
-          </div>
+          <div className='text-right text-sm text-[#999999]'>{name.length}/25</div>
         </div>
         <div className='flex gap-3'>
           <button
@@ -84,11 +80,7 @@ function EditNameModal({ account, onClose, onSuccess }: EditNameModalProps) {
                 : 'bg-primary text-white hover:bg-primary/90'
             }`}
           >
-            {loading ? (
-              <span className='loading loading-spinner loading-sm'></span>
-            ) : (
-              t('common.confirm')
-            )}
+            {loading ? <span className='loading loading-spinner loading-sm'></span> : t('common.confirm')}
           </button>
         </div>
       </div>
@@ -126,12 +118,7 @@ const AccountDetailScreen = () => {
       navigate('AccountSelection');
     } catch (error: any) {
       console.error('Failed to delete account:', error);
-      toast.error(
-        t('account.delete_account_failed').replace(
-          '{error}',
-          error.message || t('common.error')
-        )
-      );
+      toast.error(t('account.delete_account_failed').replace('{error}', error.message || t('common.error')));
     }
   };
 
@@ -141,8 +128,7 @@ const AccountDetailScreen = () => {
   };
 
   const handleViewPrivateKey = () => {
-    // Placeholder – private key export not yet implemented
-    toast.info(t('account.private_key_not_available'));
+    navigate('ExportPrivateKeyScreen', { account });
   };
 
   const canDelete = (keyrings.length ?? 2) > 1;
@@ -166,11 +152,7 @@ const AccountDetailScreen = () => {
       {/* Content */}
       <div className='flex flex-1 flex-col items-center pb-6 pt-20'>
         {/* Avatar */}
-        <PixelAvatar
-          seed={account.address || account.key || 'default'}
-          size={80}
-          borderRadius={16}
-        />
+        <PixelAvatar seed={account.address || account.key || 'default'} size={80} borderRadius={16} />
 
         {/* Account name with edit icon */}
         <div className='mt-4 flex items-center gap-2'>
@@ -191,9 +173,7 @@ const AccountDetailScreen = () => {
             onClick={handleViewAddress}
             className='flex w-full items-center justify-between border-b border-gray-100 px-4 py-4 text-left transition-colors hover:bg-gray-50'
           >
-            <span className='text-sm font-medium text-gray-900'>
-              {t('common.account_address')}
-            </span>
+            <span className='text-sm font-medium text-gray-900'>{t('common.account_address')}</span>
             <ChevronRight className='h-4 w-4 text-gray-400' />
           </button>
 
@@ -202,9 +182,7 @@ const AccountDetailScreen = () => {
             onClick={handleViewPrivateKey}
             className='flex w-full items-center justify-between border-b border-gray-100 px-4 py-4 text-left transition-colors hover:bg-gray-50'
           >
-            <span className='text-sm font-medium text-gray-900'>
-              {t('account.private_key')}
-            </span>
+            <span className='text-sm font-medium text-gray-900'>{t('account.private_key')}</span>
             <ChevronRight className='h-4 w-4 text-gray-400' />
           </button>
         </div>
@@ -234,10 +212,7 @@ const AccountDetailScreen = () => {
       {/* Delete confirm modal */}
       <ConfirmModal
         isOpen={showDeleteModal}
-        message={t('account.confirm_delete_account_specific').replace(
-          '{name}',
-          displayName || 'Unknown Account'
-        )}
+        message={t('account.confirm_delete_account_specific').replace('{name}', displayName || 'Unknown Account')}
         onConfirm={confirmDeleteAccount}
         onCancel={() => setShowDeleteModal(false)}
         confirmText={t('account.delete_account')}

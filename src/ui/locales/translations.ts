@@ -23,10 +23,8 @@ export const translations = {
       confirm_delete_account: '确定要删除这个账户吗？',
       wallet_deleted: '钱包已删除',
       account_deleted: '账户已删除',
-      confirm_delete_account_specific:
-        '确定要删除账户 "{name}" 吗？此操作不可恢复。',
-      confirm_delete_keyring_specific:
-        '确定要删除钱包 "{name}" 吗？此操作将删除钱包中的所有账户，且不可恢复。',
+      confirm_delete_account_specific: '确定要删除账户 "{name}" 吗？此操作不可恢复。',
+      confirm_delete_keyring_specific: '确定要删除钱包 "{name}" 吗？此操作将删除钱包中的所有账户，且不可恢复。',
       delete_account_success: '账户删除成功',
       delete_wallet_success: '钱包删除成功',
       delete_account_failed: '删除账户失败: {error}',
@@ -46,6 +44,10 @@ export const translations = {
       wallet_import_failed: '钱包导入失败: {error}',
       about_account: '关于账户',
       private_key_not_available: '私钥导出功能即将推出',
+      hover_to_show_private_key: '悬停或点击显示私钥',
+      ensure_privacy: '请确保周围没有人在看您的屏幕',
+      secure_copy: '安全复制',
+      copy: '复制',
     },
 
     // Common
@@ -97,6 +99,7 @@ export const translations = {
       unlock_subtitle: '请输入您的密码',
       unlock_button: '解锁',
       unlock_failed: '解锁失败: {error}',
+      enter_password: '输入密码',
     },
 
     // Assets
@@ -130,8 +133,7 @@ export const translations = {
       symbol: '符号',
       block_explorer_url_optional: '区块链浏览器 (可选)',
       is_test_network: '是否为测试网络',
-      add_network_warning:
-        '未知的网络服务提供商可能会暴露区块链状态并追踪您的网络活动。仅在您完全信任该网络时才添加。',
+      add_network_warning: '未知的网络服务提供商可能会暴露区块链状态并追踪您的网络活动。仅在您完全信任该网络时才添加。',
       no_custom_networks: '暂无自定义网络',
       network_details: '网络详情',
     },
@@ -284,6 +286,10 @@ export const translations = {
       wallet_import_failed: 'Failed to import wallet: {error}',
       about_account: 'About account',
       private_key_not_available: 'Private key export coming soon',
+      hover_to_show_private_key: 'Hover cursor or tap to show the private key.',
+      ensure_privacy: 'Make sure no one is looking at your screen.',
+      secure_copy: 'Secure copy',
+      copy: 'Copy',
     },
 
     // Common
@@ -328,14 +334,14 @@ export const translations = {
       password_placeholder: 'Password',
       confirm_password_placeholder: 'Confirm Password',
       continue: 'Continue',
-      password_requirements:
-        'Must be more than 8 characters, including number, lowercase letter, uppercase letter',
+      password_requirements: 'Must be more than 8 characters, including number, lowercase letter, uppercase letter',
       password_min_length: 'Password must be at least 8 characters',
       password_mismatch: 'Passwords do not match',
       unlock_title: 'Unlock Wallet',
       unlock_subtitle: 'Enter your password',
       unlock_button: 'Unlock',
       unlock_failed: 'Unlock failed: {error}',
+      enter_password: 'Enter Password',
     },
 
     // Assets
@@ -434,11 +440,9 @@ export const translations = {
       token_label: 'Token',
       confirm_send: 'Confirm Send',
       processing: 'Processing...',
-      warning_message:
-        'Please carefully check the transaction details. Once sent, it cannot be undone.',
+      warning_message: 'Please carefully check the transaction details. Once sent, it cannot be undone.',
       enter_password: 'Enter Password',
-      password_description:
-        'Please enter your wallet password to confirm the transaction',
+      password_description: 'Please enter your wallet password to confirm the transaction',
       wallet_password: 'Wallet Password',
       cancel: 'Cancel',
       confirm: 'Confirm',
@@ -502,8 +506,7 @@ export const translations = {
       confirm_delete_account: 'このアカウントを削除してもよろしいですか？',
       wallet_deleted: 'ウォレットが削除されました',
       account_deleted: 'アカウントが削除されました',
-      confirm_delete_account_specific:
-        'アカウント "{name}" を削除してもよろしいですか？この操作は元に戻せません。',
+      confirm_delete_account_specific: 'アカウント "{name}" を削除してもよろしいですか？この操作は元に戻せません。',
       confirm_delete_keyring_specific:
         'ウォレット "{name}" を削除してもよろしいですか？これによりウォレット内のすべてのアカウントが削除され、元に戻せません。',
       delete_account_success: 'アカウントが正常に削除されました',
@@ -525,6 +528,10 @@ export const translations = {
       wallet_import_failed: 'ウォレットのインポートに失敗しました: {error}',
       about_account: 'アカウントについて',
       private_key_not_available: '秘密鍵エクスポートは近日公開',
+      hover_to_show_private_key: 'カーソルを合わせるかタップして秘密鍵を表示',
+      ensure_privacy: '誰も画面を見ていないことを確認してください',
+      secure_copy: '安全にコピー',
+      copy: 'コピー',
     },
 
     // Common
@@ -569,14 +576,14 @@ export const translations = {
       password_placeholder: 'パスワード',
       confirm_password_placeholder: 'パスワードを確認',
       continue: '続行',
-      password_requirements:
-        '8文字以上で、数字、小文字、大文字を含む必要があります',
+      password_requirements: '8文字以上で、数字、小文字、大文字を含む必要があります',
       password_min_length: 'パスワードは最低8文字必要です',
       password_mismatch: 'パスワードが一致しません',
       unlock_title: 'ウォレットをロック解除',
       unlock_subtitle: 'パスワードを入力してください',
       unlock_button: 'ロック解除',
       unlock_failed: 'ロック解除に失敗しました: {error}',
+      enter_password: 'パスワードを入力',
     },
 
     // Assets
@@ -592,8 +599,7 @@ export const translations = {
       token_icon: 'トークンアイコン',
       refresh_success: '更新完了',
       refresh_failed: '更新失敗',
-      fetch_assets_failed:
-        'アセットリストの取得に失敗しました。もう一度お試しください',
+      fetch_assets_failed: 'アセットリストの取得に失敗しました。もう一度お試しください',
     },
 
     // Boost
@@ -676,11 +682,9 @@ export const translations = {
       token_label: 'トークン',
       confirm_send: '送信を確認',
       processing: '処理中...',
-      warning_message:
-        '取引詳細を慎重に確認してください。一度送信すると取り消せません。',
+      warning_message: '取引詳細を慎重に確認してください。一度送信すると取り消せません。',
       enter_password: 'パスワードを入力',
-      password_description:
-        '取引を確認するためウォレットのパスワードを入力してください',
+      password_description: '取引を確認するためウォレットのパスワードを入力してください',
       wallet_password: 'ウォレットのパスワード',
       cancel: 'キャンセル',
       confirm: '確認',
@@ -744,8 +748,7 @@ export const translations = {
       confirm_delete_account: '이 계정을 삭제하시겠습니까?',
       wallet_deleted: '지갑이 삭제되었습니다',
       account_deleted: '계정이 삭제되었습니다',
-      confirm_delete_account_specific:
-        '계정 "{name}"을(를) 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+      confirm_delete_account_specific: '계정 "{name}"을(를) 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
       confirm_delete_keyring_specific:
         '지갑 "{name}"을(를) 삭제하시겠습니까? 이렇게 하면 지갑의 모든 계정이 삭제되며 되돌릴 수 없습니다.',
       delete_account_success: '계정이 성공적으로 삭제되었습니다',
@@ -767,6 +770,10 @@ export const translations = {
       wallet_import_failed: '지갑 가져오기 실패: {error}',
       about_account: '계정 정보',
       private_key_not_available: '개인 키 내보내기 기능 준비 중',
+      hover_to_show_private_key: '마우스를 올리거나 탭하여 개인 키 표시',
+      ensure_privacy: '주변에 화면을 보는 사람이 없는지 확인하세요',
+      secure_copy: '안전한 복사',
+      copy: '복사',
     },
 
     // Common
@@ -818,6 +825,7 @@ export const translations = {
       unlock_subtitle: '비밀번호를 입력하세요',
       unlock_button: '잠금 해제',
       unlock_failed: '잠금 해제 실패: {error}',
+      enter_password: '비밀번호 입력',
     },
 
     // Assets
@@ -833,8 +841,7 @@ export const translations = {
       token_icon: '토큰 아이콘',
       refresh_success: '새로고침 완료',
       refresh_failed: '새로고침 실패',
-      fetch_assets_failed:
-        '자산 목록을 가져오는 데 실패했습니다. 다시 시도하세요',
+      fetch_assets_failed: '자산 목록을 가져오는 데 실패했습니다. 다시 시도하세요',
     },
 
     // Boost
@@ -917,8 +924,7 @@ export const translations = {
       token_label: '토큰',
       confirm_send: '전송 확인',
       processing: '처리 중...',
-      warning_message:
-        '거래 세부 정보를 신중히 확인하세요. 한번 전송되면 취소할 수 없습니다.',
+      warning_message: '거래 세부 정보를 신중히 확인하세요. 한번 전송되면 취소할 수 없습니다.',
       enter_password: '비밀번호 입력',
       password_description: '거래를 확인하려면 지갑 비밀번호를 입력하세요',
       wallet_password: '지갑 비밀번호',
