@@ -14,6 +14,7 @@ import eventBus from '@/shared/eventBus';
 import { Account, ChainInfo, WalletKeyring } from '@/shared/types';
 
 import { openapiService } from '../service';
+import assetService from '../service/asset';
 import keyringService from '../service/keyring';
 import { DisplayedKeyring } from '../service/keyring/index';
 import preferenceService from '../service/preference';
@@ -111,7 +112,7 @@ export class WalletController {
 
     // Save UTXOs to preference store with block height check
     if (utxoItems.length > 0) {
-      const existingUtxos = keyringService.getUtxos().filter((utxo) => utxo.address === account.address);
+      const existingUtxos = assetService.getUtxos().filter((utxo) => utxo.address === account.address);
       // const existingUtxos = preferenceService.getUtxos();
       const shouldUpdate = existingUtxos.length === 0 || utxoItems[0].blockHeight >= existingUtxos[0].blockHeight;
 
@@ -119,9 +120,9 @@ export class WalletController {
       if (shouldUpdate) {
         const changed = JSON.stringify(existingUtxos) !== JSON.stringify(utxoItems);
 
-        keyringService.updateUtxos(utxoItems);
+        assetService.updateUtxos(utxoItems);
         const currentChainInfo = this.getCurrentChainInfo();
-        keyringService.addUtxosMap(account.address, currentChainInfo.chainId, utxoItems);
+        assetService.addUtxosMap(account.address, currentChainInfo.chainId, utxoItems);
         if (changed) {
           eventBus.emit(EVENTS.broadcastToUI, {
             method: 'refreshAssets',
@@ -137,7 +138,7 @@ export class WalletController {
   assetsListsPage = async () => {
     const account = await this.getCurrentAccount();
     const currentChainInfo = this.getCurrentChainInfo();
-    const assetsData = keyringService.getAssetsPage(account?.address ?? '');
+    const assetsData = assetService.getAssetsPage(account?.address ?? '');
     return { assetsData, chainName: currentChainInfo.iconLabel };
   };
 
@@ -483,8 +484,7 @@ export class WalletController {
    * 获取已聚合的 UTXO 汇总（用于确定最新的 blockHeight）
    */
   getUtxoSum = async (): Promise<UtxoAddressSumInfo[]> => {
-    const state = (keyringService as any)?.store?.getState?.() || {};
-    return state.utxoSum || [];
+    return assetService.getUtxoSum();
   };
 
   /**
@@ -516,8 +516,7 @@ export class WalletController {
   };
 
   getTransferAddressHistory = async (): Promise<transferAddressHistory[]> => {
-    const addresses = keyringService.getTransferAddressHistory();
-    return addresses;
+    return assetService.getTransferAddressHistory();
   };
 
   updateTransferAddressesHistory = async (newAddress: string) => {
@@ -531,7 +530,7 @@ export class WalletController {
       address,
       updated: Date.now(),
     }));
-    keyringService.updateTransferAddressesHistory(historyList);
+    assetService.updateTransferAddressesHistory(historyList);
   };
 
   getTransferFees = async (

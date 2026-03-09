@@ -1,12 +1,13 @@
-import Address from './address';
-import { bytesToHex, hexToBytes } from "./index";
-import { TinDef, ToutDef } from "./defs";
-import { keyringService } from "../service";
 import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
-import { signAsync } from "@noble/secp256k1";
-import { getPublicKey } from "@noble/secp256k1";
-import { Packer } from "./packer";
-import { MsgT } from "./msgTools";
+import { getPublicKey, signAsync } from '@noble/secp256k1';
+
+import { keyringService } from '../service';
+import assetService from '../service/asset';
+import Address from './address';
+import { TinDef, ToutDef } from './defs';
+import { bytesToHex, hexToBytes } from './index';
+import { MsgT } from './msgTools';
+import { Packer } from './packer';
 
 export interface ConditionType {
   level: number;
@@ -21,7 +22,16 @@ export interface ConditionType {
   sendAddress?: string;
 }
 
-export function buildTx(tokenType: bigint, amount: bigint, receivedPks: string, senderAddress: string, checkutxo: boolean, notxfee: boolean, merge: boolean, crosschain: number) {
+export function buildTx(
+  tokenType: bigint,
+  amount: bigint,
+  receivedPks: string,
+  senderAddress: string,
+  checkutxo: boolean,
+  notxfee: boolean,
+  merge: boolean,
+  crosschain: number
+) {
   var condition: ConditionType = {
     level: 0,
     bytype: tokenType,
@@ -66,7 +76,8 @@ export function buildTx(tokenType: bigint, amount: bigint, receivedPks: string, 
         txout.push({ tokenType: tokenType, value: sum - amount - 5000n, pkScript: bytesToHex(adb), Rights: rights });
       } else {
         const ret = sum - amount - (tokenType == 0n && !notxfee ? r.minTxfee : 0n);
-        if (ret != 0n && (tokenType != 0n || ret > 200n)) txout.push({ tokenType: tokenType, value: ret, pkScript: bytesToHex(adb) });
+        if (ret != 0n && (tokenType != 0n || ret > 200n))
+          txout.push({ tokenType: tokenType, value: ret, pkScript: bytesToHex(adb) });
       }
     }
   }
@@ -102,8 +113,15 @@ export function buildTx(tokenType: bigint, amount: bigint, receivedPks: string, 
   return tx;
 }
 
-
-function gatherCoins(condition: ConditionType, amount: bigint, fees: number, rights: any, notxfee: boolean, checkutxo: boolean, crosschain: number) {
+function gatherCoins(
+  condition: ConditionType,
+  amount: bigint,
+  fees: number,
+  rights: any,
+  notxfee: boolean,
+  checkutxo: boolean,
+  crosschain: number
+) {
   let sum = 0n;
   const txin: any[] = [];
   const inaddress: string[] = [];
@@ -115,7 +133,8 @@ function gatherCoins(condition: ConditionType, amount: bigint, fees: number, rig
   const difff = false;
   let assets: any[] = [];
 
-  const min = amount / 900n, max = 0n;
+  const min = amount / 900n,
+    max = 0n;
   condition.min = min;
   condition.max = 0n;
 
@@ -124,14 +143,17 @@ function gatherCoins(condition: ConditionType, amount: bigint, fees: number, rig
 
   // }
   condition.skip = skip;
-  assets = keyringService.getUtxosByAddress(condition.sendAddress || '');
+  assets = assetService.getUtxosByAddress(condition.sendAddress || '');
   skip += assets.length;
-  more = (assets.length > 0) || (min > 0n);
+  more = assets.length > 0 || min > 0n;
 
   for (let i = 0; i < assets.length; i++) {
     const asset = assets[i];
 
-    if (txin.findIndex((a) => a.previousOutPoint.hash === asset.txid && a.previousOutPoint.index === asset.opindex) >= 0) continue;
+    if (
+      txin.findIndex((a) => a.previousOutPoint.hash === asset.txid && a.previousOutPoint.index === asset.opindex) >= 0
+    )
+      continue;
     txin.push({
       previousOutPoint: {
         hash: asset.txid,
@@ -145,7 +167,7 @@ function gatherCoins(condition: ConditionType, amount: bigint, fees: number, rig
 
     if (inaddress.findIndex((a) => a === asset.address) < 0) {
       inaddress.push(asset.address);
-      fees += 240
+      fees += 240;
     }
 
     if (inclfee) minTxfee = BigInt(Math.max(fees, 1000));
@@ -155,15 +177,11 @@ function gatherCoins(condition: ConditionType, amount: bigint, fees: number, rig
   return { sum: sum, txin: txin, inaddress: inaddress, minTxfee: minTxfee, fees: inclfee ? 0 : fees };
 }
 
-
 export async function signTransaction(tx: MsgT, mode: number, password?: string) {
-
-  const allUtxos = keyringService.getUtxos();
+  const allUtxos = assetService.getUtxos();
   for (let i = 0; i < tx.tIn.length; i++) {
-
-    const utxo = allUtxos.find(u =>
-      u.txid === tx.tIn[i].previousOutPoint.hash &&
-      u.index === tx.tIn[i].previousOutPoint.index  // 或者可能是 u.index 或 u.n，取决于 UTXO 结构
+    const utxo = allUtxos.find(
+      (u) => u.txid === tx.tIn[i].previousOutPoint.hash && u.index === tx.tIn[i].previousOutPoint.index // 或者可能是 u.index 或 u.n，取决于 UTXO 结构
     );
     if (!utxo) continue;
     const scriptPubKey = utxo.scriptPubKey;
@@ -171,17 +189,13 @@ export async function signTransaction(tx: MsgT, mode: number, password?: string)
 
     const pks = scriptPubKey.substring(0, 42);
 
-
-
     const privateKey = keyringService.exportPrivateKeyHex(address);
-
 
     const msgh = hexToBytes(tx.tIn[i].previousOutPoint.hash);
     const msg = tx.encode(0);
     const h = nobleSha256(msg);
 
     const hash = genSigHash(tx, mode, i);
-
 
     const sig = await signAsync(hash, privateKey, { extraEntropy: true });
 
@@ -194,7 +208,15 @@ export async function signTransaction(tx: MsgT, mode: number, password?: string)
 
     const sigIndex = tx.tIn[i].signatureIndex;
 
-    tx.signatureScripts[sigIndex] = '56' + bytesToHex([(pubKeyHex.length >> 1) + 1, pubKeyHex.length >> 1]) + pubKeyHex + '56' + bytesToHex([sigBytesDER.length + 1, sigBytesDER.length]) + sighex + '4a' + bytesToHex([mode])
+    tx.signatureScripts[sigIndex] =
+      '56' +
+      bytesToHex([(pubKeyHex.length >> 1) + 1, pubKeyHex.length >> 1]) +
+      pubKeyHex +
+      '56' +
+      bytesToHex([sigBytesDER.length + 1, sigBytesDER.length]) +
+      sighex +
+      '4a' +
+      bytesToHex([mode]);
   }
 
   return tx;
@@ -210,7 +232,6 @@ function genSigHash(tx: any, mode: number, index: number) {
   w.PackV(text.length);
   const bytes = new Uint8Array([...w.Bytes(), ...text]);
   return nobleSha256(nobleSha256(bytes));
-
 }
 
 function rawToDer(raw: any) {

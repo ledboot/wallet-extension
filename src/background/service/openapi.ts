@@ -1,21 +1,10 @@
 import { ripemd160 as nobleRipemd160 } from '@noble/hashes/ripemd160';
 import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
 
-import {
-  CHAIN_INFO,
-  NetworkType,
-  ServerConfiguration,
-} from '@/shared/constants';
-import {
-  Account,
-  ChainInfo,
-  CoinNames,
-  TxHistoryItem,
-  TxType,
-  Utxo,
-} from '@/shared/types';
+import { CHAIN_INFO, NetworkType, ServerConfiguration } from '@/shared/constants';
+import { Account, ChainInfo, CoinNames, TxHistoryItem, TxType, Utxo } from '@/shared/types';
 
-import keyringService from '../service/keyring';
+import assetService from '../service/asset';
 import { addressHexToString, bytesToHex, hexToBytes } from '../utils';
 import Address from '../utils/address';
 import { MsgT } from '../utils/msgTools';
@@ -27,8 +16,7 @@ export class OpenapiService {
 
   getEndpoint = () => {
     const chainType = preferenceService.getChainType();
-    const chainInfo =
-      preferenceService.getchainInfo(chainType) || CHAIN_INFO[chainType];
+    const chainInfo = preferenceService.getchainInfo(chainType) || CHAIN_INFO[chainType];
 
     if (!chainInfo) {
       throw new Error(`Chain info not found for: ${chainType}`);
@@ -41,14 +29,11 @@ export class OpenapiService {
     return chainInfo.endpoints[0];
   };
 
-  getRespData = async <T = any>(
-    res: Response
-  ): Promise<{ id: number; error: any; result: T }> => {
+  getRespData = async <T = any>(res: Response): Promise<{ id: number; error: any; result: T }> => {
     let jsonRes: { id: number; error: any; result: T };
 
     if (!res) throw new Error('Network error, no response');
-    if (res.status !== 200)
-      throw new Error('Network error with status: ' + res.status);
+    if (res.status !== 200) throw new Error('Network error with status: ' + res.status);
     try {
       // const clone = res.clone();
       jsonRes = await res.json();
@@ -92,9 +77,7 @@ export class OpenapiService {
     }
   };
 
-  httpGet = async <T = any>(
-    url: string
-  ): Promise<{ id: number; error: any; result: T }> => {
+  httpGet = async <T = any>(url: string): Promise<{ id: number; error: any; result: T }> => {
     console.log('httpGet', url);
     const headers = new Headers();
     // headers.append('Content-Type', 'application/json');
@@ -115,41 +98,21 @@ export class OpenapiService {
     }
   };
 
-  getAddressHistory = async (
-    account: Account,
-    start: number,
-    limit: number
-  ) => {
-    const res = await this.httpPost(this.getEndpoint(), 'schrt', [
-      account.address,
-      0,
-      start,
-      limit,
-      0,
-      true,
-    ]);
+  getAddressHistory = async (account: Account, start: number, limit: number) => {
+    const res = await this.httpPost(this.getEndpoint(), 'schrt', [account.address, 0, start, limit, 0, true]);
     if (res.result && Array.isArray(res.result)) {
-      const { txHistory, utxoItems } = await this.analyzeResult(
-        account,
-        res.result
-      );
+      const { txHistory, utxoItems } = await this.analyzeResult(account, res.result);
       return { txHistory, utxoItems };
     }
     return { txHistory: [], utxoItems: [] };
   };
 
-  fetchTokentype = async (
-    utxos: Utxo[] = [],
-    chainId?: string
-  ): Promise<{ CoinNames: CoinNames[] }> => {
-    const CoinNames = keyringService.getCoinNames();
-    const tokenTypes = utxos
-      .map((u) => u.tokenType)
-      .filter((t) => t !== undefined && t !== null && t !== '');
+  fetchTokentype = async (utxos: Utxo[] = [], chainId?: string): Promise<{ CoinNames: CoinNames[] }> => {
+    const CoinNames = assetService.getCoinNames();
+    const tokenTypes = utxos.map((u) => u.tokenType).filter((t) => t !== undefined && t !== null && t !== '');
     const tokenTypesStr = [...new Set(tokenTypes)].join(',');
     let updated: number = 0;
-    if (CoinNames.length > 0)
-      updated = Math.max(0, ...CoinNames.map((c) => Number(c.updated || 0)));
+    if (CoinNames.length > 0) updated = Math.max(0, ...CoinNames.map((c) => Number(c.updated || 0)));
     const { serverEndpoint, chainclass } = ServerConfiguration;
 
     const url =
@@ -175,8 +138,8 @@ export class OpenapiService {
     }
 
     // Save to preference store
-    keyringService.addCoinName(newConames);
-    const updatedConames = keyringService.getCoinNames();
+    assetService.addCoinName(newConames);
+    const updatedConames = assetService.getCoinNames();
 
     return { CoinNames: updatedConames };
   };
@@ -199,12 +162,7 @@ export class OpenapiService {
     const maxchainid = chainIds.length > 0 ? Math.max(...chainIds) : 0;
     const updated = updatedTimes.length > 0 ? Math.max(...updatedTimes) : 0;
 
-    console.log(
-      'fetchBlockchains - maxchainid:',
-      maxchainid,
-      'updated:',
-      updated
-    );
+    console.log('fetchBlockchains - maxchainid:', maxchainid, 'updated:', updated);
 
     const url = `${serverEndpoint}/omega/index.php?module=ncx&MOD_op=getblockchains&class=${chainclass}&id=${maxchainid}&updated=${updated}`;
     const res = await this.httpGet(url);
@@ -229,9 +187,7 @@ export class OpenapiService {
               : [rpcEndpoint],
             icon: apiData.icon || './images/artifacts/bitcoin-mainnet.svg',
             unit: apiData.name,
-            networkType: Number(apiData.testnet)
-              ? NetworkType.TESTNET
-              : NetworkType.MAINNET,
+            networkType: Number(apiData.testnet) ? NetworkType.TESTNET : NetworkType.MAINNET,
             updated: apiData.updated || 0,
             id: apiData.id,
           };
@@ -245,7 +201,6 @@ export class OpenapiService {
         }
       });
       console.log('Dynamic networks added successfully');
-
     }
   };
 
@@ -282,9 +237,7 @@ export class OpenapiService {
       if (btc && output.value == 0n) continue;
 
       // 提取地址
-      const addressHex = btc
-        ? '00' + output.pkScript.substr(6, 40)
-        : output.pkScript.substr(2, 40);
+      const addressHex = btc ? '00' + output.pkScript.substr(6, 40) : output.pkScript.substr(2, 40);
       const version = parseInt(output.pkScript.substr(0, 2), 16);
 
       // 检查跨链交易
@@ -311,10 +264,7 @@ export class OpenapiService {
       const input = msgtx?.tIn[j];
 
       if (input.isSeparator()) continue;
-      if (
-        input.previousOutPoint.hash ==
-        '0000000000000000000000000000000000000000000000000000000000000000'
-      ) {
+      if (input.previousOutPoint.hash == '0000000000000000000000000000000000000000000000000000000000000000') {
         continue;
       }
 
@@ -331,7 +281,7 @@ export class OpenapiService {
   analyzeResult = async (account: Account, list: any[]) => {
     // 初始化变量
     const txHistory: TxHistoryItem[] = [];
-    const utxotype: Utxo[] = keyringService.getUtxos();
+    const utxotype: Utxo[] = assetService.getUtxos();
     const utxoItems = [];
     // 处理交易输出（UTXO添加）
     for (let i = list.length - 1; i >= 0; i--) {
@@ -342,26 +292,18 @@ export class OpenapiService {
         const previousOutPointIndex = tIn[j].previousOutPointIndex;
         // 从utxotype中查找并删除已消费的UTXO
         const utxoIndex = utxotype.findIndex(
-          (utxo) =>
-            utxo.txid === previousOutPointHash &&
-            utxo.index === previousOutPointIndex
+          (utxo) => utxo.txid === previousOutPointHash && utxo.index === previousOutPointIndex
         );
         if (utxoIndex !== -1) {
-          console.log(
-            `Removing spent UTXO: ${previousOutPointHash}:${previousOutPointIndex}`
-          );
+          console.log(`Removing spent UTXO: ${previousOutPointHash}:${previousOutPointIndex}`);
           utxotype.splice(utxoIndex, 1);
         }
 
         const utxoItemIndex = utxoItems.findIndex(
-          (item) =>
-            item.txid === previousOutPointHash &&
-            item.index === previousOutPointIndex
+          (item) => item.txid === previousOutPointHash && item.index === previousOutPointIndex
         );
         if (utxoItemIndex !== -1) {
-          console.log(
-            `Removing from utxoItems: ${previousOutPointHash}:${previousOutPointIndex}`
-          );
+          console.log(`Removing from utxoItems: ${previousOutPointHash}:${previousOutPointIndex}`);
           utxoItems.splice(utxoItemIndex, 1);
         }
       }
@@ -370,9 +312,7 @@ export class OpenapiService {
         if (account.addressHex == output.addressHex) {
           let sender = '';
           if (tIn.length > 0) {
-            const previousTx = await this.getRawTransaction(
-              tIn[0].previousOutPointHash
-            );
+            const previousTx = await this.getRawTransaction(tIn[0].previousOutPointHash);
             const { tOut: previousTxOut } = this.decodeMsgHex(previousTx);
             sender = previousTxOut[0].address;
           }
@@ -411,13 +351,7 @@ export class OpenapiService {
     return { txHistory, utxoItems };
   };
 
-
-  private isOurAddress(
-    addrhex: string,
-    targetAddress: string,
-    pkScript: string,
-    btc: boolean
-  ): boolean {
+  private isOurAddress(addrhex: string, targetAddress: string, pkScript: string, btc: boolean): boolean {
     // 检查地址是否匹配
     if (addrhex === targetAddress) return true;
 
@@ -454,12 +388,7 @@ export class OpenapiService {
   }
 
   getRawTransaction = async (txid: string) => {
-    const res = await this.httpPost(this.getEndpoint(), 'getrawtransaction', [
-      txid,
-      0,
-      true,
-      false,
-    ]);
+    const res = await this.httpPost(this.getEndpoint(), 'getrawtransaction', [txid, 0, true, false]);
     if (res.result) {
       return res.result;
     }
@@ -467,28 +396,17 @@ export class OpenapiService {
   };
 
   getTxOut = async (txid: string, vout: number) => {
-    const res = await this.httpPost(this.getEndpoint(), 'gettxout', [
-      txid,
-      vout,
-      false,
-    ]);
+    const res = await this.httpPost(this.getEndpoint(), 'gettxout', [txid, vout, false]);
     return res;
   };
 
   gto = async (txid: string, index: number, locked?: boolean) => {
-    const res = await this.httpPost(this.getEndpoint(), 'gettxout', [
-      txid,
-      index,
-      false,
-      locked ? true : false,
-    ]);
+    const res = await this.httpPost(this.getEndpoint(), 'gettxout', [txid, index, false, locked ? true : false]);
     return res;
   };
 
   getxchtxfee = async (target: number) => {
-    const res = await this.httpPost(this.getEndpoint(), 'getxchtxfee', [
-      target,
-    ]);
+    const res = await this.httpPost(this.getEndpoint(), 'getxchtxfee', [target]);
     return res;
   };
 
@@ -498,13 +416,8 @@ export class OpenapiService {
   };
 
   sendRawTransaction = async (txhex: any, waitconfirmation: number) => {
-    if (typeof txhex != 'string')
-      txhex = bytesToHex(Array.from(txhex.encode(1)));
-    const res = await this.httpPost(this.getEndpoint(), 'srt', [
-      txhex,
-      true,
-      waitconfirmation,
-    ]);
+    if (typeof txhex != 'string') txhex = bytesToHex(Array.from(txhex.encode(1)));
+    const res = await this.httpPost(this.getEndpoint(), 'srt', [txhex, true, waitconfirmation]);
     return res;
   };
 
@@ -518,22 +431,12 @@ export class OpenapiService {
     timeLimit: number
   ) => {
     var adb = Array.from(Address.decodeString(receivedAddress));
-    const op =
-      adb[0] === 0 || adb[0] === 0x6f ? 0x41 : adb[0] === 0x78 ? 0x43 : 0x42;
+    const op = adb[0] === 0 || adb[0] === 0x6f ? 0x41 : adb[0] === 0x78 ? 0x43 : 0x42;
     adb = adb.concat([op, 0, 0, 0]);
     const pks = bytesToHex(adb);
     const merge = receivedAddress === senderAddress;
 
-    let tx = await buildTx(
-      tokenType,
-      amount,
-      pks,
-      senderAddress,
-      false,
-      false,
-      merge,
-      crosschain
-    );
+    let tx = await buildTx(tokenType, amount, pks, senderAddress, false, false, merge, crosschain);
 
     if (timeLimit) {
       const height = await this.gbc();
@@ -551,13 +454,10 @@ export class OpenapiService {
     return hextx;
   };
 
-  computeTransactioFeesMax = async (
-    tokenType: number,
-    senderAddress: string
-  ) => {
+  computeTransactioFeesMax = async (tokenType: number, senderAddress: string) => {
     let fees = 0;
     const addrs: string[] = [];
-    const assets = keyringService.getUtxosByAddress(senderAddress || '');
+    const assets = assetService.getUtxosByAddress(senderAddress || '');
     fees += assets.length * 356;
     for (let i = 0; i < assets.length; i++) {
       if (addrs.findIndex((e) => e == assets[i].address) < 0) {
@@ -569,21 +469,15 @@ export class OpenapiService {
     return fees;
   };
 
-  computeTransactioFees = async (
-    tokenType: number,
-    senderAddress: string,
-    amount: number,
-    receivedAddress: string
-  ) => {
+  computeTransactioFees = async (tokenType: number, senderAddress: string, amount: number, receivedAddress: string) => {
     var adb = Array.from(Address.decodeString(receivedAddress));
-    const op =
-      adb[0] === 0 || adb[0] === 0x6f ? 0x41 : adb[0] === 0x78 ? 0x43 : 0x42;
+    const op = adb[0] === 0 || adb[0] === 0x6f ? 0x41 : adb[0] === 0x78 ? 0x43 : 0x42;
     adb = adb.concat([op, 0, 0, 0]);
     const receivedPks = bytesToHex(adb);
     var fees = 1200 + (receivedPks ? receivedPks.length : 0);
 
     const inclfee = tokenType === 0;
-    const assets = keyringService.getUtxosByAddress(senderAddress || '');
+    const assets = assetService.getUtxosByAddress(senderAddress || '');
     const addrs: string[] = [];
     let sum = 0;
     var minTxfee = 0;

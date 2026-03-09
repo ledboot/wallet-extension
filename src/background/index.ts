@@ -3,13 +3,10 @@ import eventBus from '@/shared/eventBus';
 import PortMessage from '@/shared/utils/message/portMessage';
 
 import { walletController } from './controller';
-import { keyringService, openapiService, preferenceService } from './service';
+import { assetService, keyringService, openapiService, preferenceService } from './service';
 import { signTransaction } from './utils/transactionTools';
 import { storage } from './webapi';
-import {
-  browserRuntimeOnConnect,
-  browserRuntimeOnInstalled,
-} from './webapi/browser';
+import { browserRuntimeOnConnect, browserRuntimeOnInstalled } from './webapi/browser';
 import { openExtensionInTab } from './webapi/tab';
 
 let appStoreLoaded = false;
@@ -20,6 +17,7 @@ async function start() {
   keyringService.loadStore(keyringState);
   keyringService.store.subscribe((value) => storage.set('keyringState', value));
   await preferenceService.init();
+  await assetService.init();
   appStoreLoaded = true;
   console.log('appStoreLoaded', appStoreLoaded);
 }
@@ -49,12 +47,7 @@ browserRuntimeOnInstalled((details: any) => {
 const contentScriptPorts = new Set<PortMessage>();
 
 browserRuntimeOnConnect((port: any) => {
-  if (
-    port.name === 'popup' ||
-    port.name === 'notification' ||
-    port.name === 'tab' ||
-    port.name === 'sidepanel'
-  ) {
+  if (port.name === 'popup' || port.name === 'notification' || port.name === 'tab' || port.name === 'sidepanel') {
     console.log('port', port);
     const pm = new PortMessage(port as any);
     pm.listen(async (data: any) => {
@@ -66,9 +59,10 @@ browserRuntimeOnConnect((port: any) => {
           case 'controller':
             console.log('received controller', data);
             if (data.method) {
-              const result = await walletController[
-                data.method as keyof typeof walletController
-              ].apply(null, data.args);
+              const result = await walletController[data.method as keyof typeof walletController].apply(
+                null,
+                data.args
+              );
               console.log('result-----', result);
               return result;
             }
@@ -165,19 +159,14 @@ browserRuntimeOnConnect((port: any) => {
 
         case 'switchNetwork': {
           const targetChainId = (params as any)?.chainId;
-          let targetChainType = Object.entries(
-            preferenceService.getAllchainInfo()
-          ).find(([_, ci]) => ci.chainId === targetChainId)?.[0];
+          let targetChainType = Object.entries(preferenceService.getAllchainInfo()).find(
+            ([_, ci]) => ci.chainId === targetChainId
+          )?.[0];
           if (!targetChainType) {
-            targetChainType = Object.entries(CHAIN_INFO).find(
-              ([_, ci]) => ci.chainId === targetChainId
-            )?.[0];
+            targetChainType = Object.entries(CHAIN_INFO).find(([_, ci]) => ci.chainId === targetChainId)?.[0];
           }
-          if (!targetChainType)
-            throw new Error(`Unsupported chainId: ${targetChainId}`);
-          const targetChainInfo =
-            preferenceService.getchainInfo(targetChainType) ||
-            CHAIN_INFO[targetChainType];
+          if (!targetChainType) throw new Error(`Unsupported chainId: ${targetChainId}`);
+          const targetChainInfo = preferenceService.getchainInfo(targetChainType) || CHAIN_INFO[targetChainType];
           preferenceService.store.chainType = targetChainType as ChainType;
           preferenceService.store.networkType = targetChainInfo.networkType;
           keyringService.changeNetwork();
@@ -190,9 +179,9 @@ browserRuntimeOnConnect((port: any) => {
 
         case 'getBalance': {
           const { address, chainId } = (params as any) ?? {};
-          const utxos = keyringService.getUtxoSum(address, chainId);
+          const utxos = assetService.getUtxoSum(address, chainId);
           if (!utxos?.length) return { address, balance: 0 };
-          const coinNames = keyringService.getCoinNames(utxos[0].tokenType);
+          const coinNames = assetService.getCoinNames(utxos[0].tokenType);
           const decimals = coinNames[0]?.decimalpoint ?? 0;
           return {
             address,
@@ -205,7 +194,7 @@ browserRuntimeOnConnect((port: any) => {
 
         case 'getUtxos': {
           const { address } = (params as any) ?? {};
-          return keyringService.getUtxosByAddress(address);
+          return assetService.getUtxosByAddress(address);
         }
 
         case 'signTransaction': {
@@ -300,8 +289,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       (async () => {
         try {
           const accounts = await keyringService.getAccounts();
-          const currentAccountIndex =
-            preferenceService.store.currentAccountIndex;
+          const currentAccountIndex = preferenceService.store.currentAccountIndex;
           const currentAccount = accounts[currentAccountIndex] || accounts[0];
 
           sendResponse({
@@ -338,8 +326,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (method === 'GET_BALANCE') {
       try {
-        const utxos = keyringService.getUtxoSum(params.address, params.chainId);
-        const coinName = keyringService.getCoinNames(utxos[0].tokenType);
+        const utxos = assetService.getUtxoSum(params.address, params.chainId);
+        const coinName = assetService.getCoinNames(utxos[0].tokenType);
         const balance = utxos[0].value;
         const decimals = coinName[0].decimalpoint;
         const formatted = utxos[0].value / Math.pow(10, decimals);
@@ -378,10 +366,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           throw new Error(`Chain info not found for: ${chainType}`);
         }
 
-        if (
-          !currentChainInfo.endpoints ||
-          currentChainInfo.endpoints.length === 0
-        ) {
+        if (!currentChainInfo.endpoints || currentChainInfo.endpoints.length === 0) {
           throw new Error(`No endpoints found for chain: ${chainType}`);
         }
 
@@ -407,9 +392,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const targetChainId = params.chainId;
 
         // 优先从存储中查找网络，然后从常量中查找
-        let targetChainType = Object.entries(
-          preferenceService.getAllchainInfo()
-        ).find(
+        let targetChainType = Object.entries(preferenceService.getAllchainInfo()).find(
           ([_, chainInfo]) => chainInfo.chainId === targetChainId
         )?.[0] as string;
 
@@ -437,10 +420,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           throw new Error(`Chain info not found for: ${targetChainType}`);
         }
 
-        if (
-          !targetChainInfo.endpoints ||
-          targetChainInfo.endpoints.length === 0
-        ) {
+        if (!targetChainInfo.endpoints || targetChainInfo.endpoints.length === 0) {
           throw new Error(`No endpoints found for chain: ${targetChainType}`);
         }
 
@@ -534,7 +514,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     if (method === 'GET_UTXOS') {
-      const assets = keyringService.getUtxosByAddress(params.address);
+      const assets = assetService.getUtxosByAddress(params.address);
       console.log('----------assets', assets);
       sendResponse({
         success: true,
