@@ -8,6 +8,7 @@ export const translations = {
       network: '网络',
       address_copied: '地址已复制',
       language_changed: '语言已切换到',
+      lock_wallet: '锁定钱包',
     },
 
     // Account
@@ -248,6 +249,7 @@ export const translations = {
       network: 'Network',
       address_copied: 'Address copied',
       language_changed: 'Language switched to',
+      lock_wallet: 'Lock wallet',
     },
 
     // Account
@@ -491,6 +493,7 @@ export const translations = {
       network: 'ネットワーク',
       address_copied: 'アドレスがコピーされました',
       language_changed: '言語が切り替わりました',
+      lock_wallet: 'ウォレットをロック',
     },
 
     // Account
@@ -733,6 +736,7 @@ export const translations = {
       network: '네트워크',
       address_copied: '주소가 복사되었습니다',
       language_changed: '언어가 변경되었습니다',
+      lock_wallet: '지갑 잠금',
     },
 
     // Account
