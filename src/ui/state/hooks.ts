@@ -13,8 +13,7 @@ export const useCurrentAccount = () => accountsStore((state) => state.current);
 export const useAccountsList = () => accountsStore((state) => state.accounts);
 export const useBalanceMap = () => accountsStore((state) => state.balanceMap);
 export const useHistoryMap = () => accountsStore((state) => state.historyMap);
-export const useAddressSummary = () =>
-  accountsStore((state) => state.addressSummary);
+export const useAddressSummary = () => accountsStore((state) => state.addressSummary);
 
 //Global hooks
 export const useGlobal = () => globalStore();
@@ -26,22 +25,23 @@ export const useIsBooted = () => globalStore((state) => state.isBooted);
 export const useKeyrings = () => keyringsStore();
 export const useCurrentKeyring = () => keyringsStore((state) => state.current);
 export const useKeyringsList = () => keyringsStore((state) => state.keyrings);
-export const useAssetsLoading = () =>
-  keyringsStore((state) => state.assetsLoading);
+export const useAssetsLoading = () => keyringsStore((state) => state.assetsLoading);
 
 /**
- * 获取当前账户在当前链的资产列表（address + chainId 索引）。
- * 切换账户或网络后自动返回对应数据，无需额外刷新。
+ * 获取当前账户在当前链的资产列表。
+ * 从 keyringsStore 获取已经由 background 准备好并通过 SyncBridge 同步的最新资产数据。
  */
-export const useCurrentAssets = (address: string, chainId: number) =>
-  keyringsStore(
-    (state) => state.assetsMap[`${address}:${chainId}`] ?? EMPTY_ASSETS
-  );
+export const useActiveAssets = (): AssetItem[] =>
+  keyringsStore((state) => {
+    const key = `${state.currentAddress}:${state.currentChainId}`;
+    return state.assetsMap[key] ?? EMPTY_ASSETS;
+  });
 
-export const useCurrentChainName = (address: string, chainId: number) =>
-  keyringsStore(
-    (state) => state.chainNameMap[`${address}:${chainId}`] ?? EMPTY_STRING
-  );
+export const useActiveChainName = () =>
+  keyringsStore((state) => {
+    const key = `${state.currentAddress}:${state.currentChainId}`;
+    return state.chainNameMap[key] ?? EMPTY_STRING;
+  });
 
 //s
 export const useSettings = () => settingsStore();

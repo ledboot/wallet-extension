@@ -53,7 +53,9 @@ export class OpenapiService {
     console.log('httpPost', url, method, data);
     const headers = new Headers();
     headers.append('Content-Type', 'application/json');
-    headers.append('Authorization', 'Basic YWRtaW46RkZoNXJM');
+    const rpcUser = import.meta.env.VITE_RPC_USER;
+    const rpcPassword = import.meta.env.VITE_RPC_PASS;
+    headers.append('Authorization', `Basic ${btoa(`${rpcUser}:${rpcPassword}`)}`);
     let res: Response;
     const requestParams = {
       jsonrpc: '1.0',
@@ -80,8 +82,10 @@ export class OpenapiService {
   httpGet = async <T = any>(url: string): Promise<{ id: number; error: any; result: T }> => {
     console.log('httpGet', url);
     const headers = new Headers();
-    // headers.append('Content-Type', 'application/json');
-    headers.append('Authorization', 'Basic YWRtaW46RkZoNXJM');
+    headers.append('Content-Type', 'application/json');
+    const rpcUser = import.meta.env.VITE_RPC_USER;
+    const rpcPassword = import.meta.env.VITE_RPC_PASS;
+    headers.append('Authorization', `Basic ${btoa(`${rpcUser}:${rpcPassword}`)}`);
     let res: Response;
     try {
       res = await fetch(
@@ -99,7 +103,7 @@ export class OpenapiService {
   };
 
   getAddressHistory = async (account: Account, start: number, limit: number) => {
-    const res = await this.httpPost(this.getEndpoint(), 'schrt', [account.address, 0, start, limit, 0, true]);
+    const res = await this.httpPost(this.getEndpoint(), 'schrt', [account.address, 0, start, limit, 0, false]);
     if (res.result && Array.isArray(res.result)) {
       const { txHistory, utxoItems } = await this.analyzeResult(account, res.result);
       return { txHistory, utxoItems };

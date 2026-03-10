@@ -111,47 +111,26 @@ export class WalletController {
 
     const { utxoItems } = await openapiService.getAddressHistory(account, start, limit);
 
-    // 计算本次同步返回的最大区块高度
-    let syncedHeight = start;
     if (utxoItems.length > 0) {
-      syncedHeight = Math.max(...utxoItems.map((u) => u.blockHeight));
-    }
-
-    // Save UTXOs to preference store with block height check
-    if (utxoItems.length > 0) {
-      const existingUtxos = assetService.getUtxos().filter((utxo) => utxo.address === account.address);
+      const chainInfo = this.getCurrentChainInfo();
+      const existingUtxos = assetService.getUtxos().filter((u) => u.address === account.address);
       const shouldUpdate = existingUtxos.length === 0 || utxoItems[0].blockHeight >= existingUtxos[0].blockHeight;
 
       if (shouldUpdate) {
         assetService.updateUtxos(utxoItems);
-        const currentChainInfo = this.getCurrentChainInfo();
-        assetService.addUtxosMap(account.address, currentChainInfo.chainId, utxoItems);
-
-        // 聚合余额到 utxoSum（供 getAssetsPage 读取展示）
+        assetService.addUtxosMap(account.address, chainInfo.chainId, utxoItems);
         assetService.aggregateUtxoSums(account.address);
 
-        // 拉取代币名称（coinName），让 getAssetsPage 能合并显示代币信息
-        try {
-          await openapiService.fetchTokentype(utxoItems, String(currentChainInfo.chainId));
-        } catch (e) {
+        openapiService.fetchTokentype(utxoItems, String(chainInfo.chainId)).catch((e) => {
           console.error('fetchTokentype failed:', e);
-        }
-
-        // 数据已更新，通知 UI 刷新
-        eventBus.emit(EVENTS.broadcastToUI, {
-          method: 'refreshAssets',
-          params: null,
         });
+
+        eventBus.emit(EVENTS.broadcastToUI, { method: 'refreshAssets', params: null });
       } else {
         console.log('Skipping UTXO update: New UTXOs are from an older block');
       }
-    }
 
-    // 更新单独的同步区块高度
-    const currentInfo = this.getCurrentChainInfo();
-    const networkType = currentInfo.networkType;
-    if (syncedHeight > start) {
-      assetService.setSyncBlockHeight(account.address, currentInfo.chainId, networkType, syncedHeight);
+      assetService.setSyncBlockHeight(account.address, chainInfo.chainId, chainInfo.networkType, start + limit + 1);
     }
   };
 

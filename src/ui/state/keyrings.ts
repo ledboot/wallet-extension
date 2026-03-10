@@ -1,20 +1,13 @@
-import {
-  Account,
-  CoinNames,
-  UtxoAddressSumInfo,
-  WalletKeyring,
-} from '@shared/types';
+import { Account, CoinNames, UtxoAddressSumInfo, WalletKeyring } from '@shared/types';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 // 资产条目 = UTXO 聚合 + 可选的 CoinNames 元数据 + 链标签
-export type AssetItem = UtxoAddressSumInfo &
-  Partial<CoinNames> & { chainLabel?: string };
+export type AssetItem = UtxoAddressSumInfo & Partial<CoinNames> & { chainLabel?: string };
 
 // 资产索引键：`${address}:${chainId}`
 type AssetKey = string;
-const makeAssetKey = (address: string, chainId: number): AssetKey =>
-  `${address}:${chainId}`;
+const makeAssetKey = (address: string, chainId: number): AssetKey => `${address}:${chainId}`;
 
 export interface AssetsSlice {
   // address:chainId → 该账户在该链的资产列表
@@ -22,12 +15,9 @@ export interface AssetsSlice {
   // address:chainId → 该链的显示名称
   chainNameMap: Record<AssetKey, string>;
   assetsLoading: boolean;
-  setCurrentAssets: (
-    address: string,
-    chainId: number,
-    assets: AssetItem[],
-    chainName: string
-  ) => void;
+  currentAddress: string;
+  currentChainId: number;
+  setCurrentAssets: (address: string, chainId: number, assets: AssetItem[], chainName: string) => void;
   setAssetsLoading: (loading: boolean) => void;
   clearAssets: () => void;
 }
@@ -56,6 +46,8 @@ const initialState = {
   assetsMap: {} as Record<AssetKey, AssetItem[]>,
   chainNameMap: {} as Record<AssetKey, string>,
   assetsLoading: true,
+  currentAddress: '',
+  currentChainId: 0,
 };
 
 export const keyringsStore = create<KeyringsState>()(
@@ -65,8 +57,7 @@ export const keyringsStore = create<KeyringsState>()(
 
       reset: () => set(initialState),
 
-      setCurrent: (payload: WalletKeyring) =>
-        set({ current: payload || initialKeyring }),
+      setCurrent: (payload: WalletKeyring) => set({ current: payload || initialKeyring }),
 
       setKeyrings: (payload: WalletKeyring[]) => set({ keyrings: payload }),
 
@@ -74,9 +65,7 @@ export const keyringsStore = create<KeyringsState>()(
         const keyring = payload;
         set((state) => {
           const updatedCurrent =
-            state.current.key === keyring.key
-              ? { ...state.current, alianName: keyring.alianName }
-              : state.current;
+            state.current.key === keyring.key ? { ...state.current, alianName: keyring.alianName } : state.current;
 
           const updatedKeyrings = state.keyrings.map((v) =>
             v.key === keyring.key ? { ...v, alianName: keyring.alianName } : v
@@ -98,9 +87,7 @@ export const keyringsStore = create<KeyringsState>()(
 
           const updatedKeyrings = state.keyrings.map((v) => ({
             ...v,
-            accounts: v.accounts.map((w) =>
-              w.key === account.key ? { ...w, alianName: account.alianName } : w
-            ),
+            accounts: v.accounts.map((w) => (w.key === account.key ? { ...w, alianName: account.alianName } : w)),
           }));
 
           return { current: updatedCurrent, keyrings: updatedKeyrings };
@@ -113,6 +100,8 @@ export const keyringsStore = create<KeyringsState>()(
         set((state) => ({
           assetsMap: { ...state.assetsMap, [key]: assets },
           chainNameMap: { ...state.chainNameMap, [key]: chainName },
+          currentAddress: address,
+          currentChainId: chainId,
           assetsLoading: false,
         }));
       },
@@ -120,7 +109,13 @@ export const keyringsStore = create<KeyringsState>()(
       setAssetsLoading: (loading) => set({ assetsLoading: loading }),
 
       clearAssets: () =>
-        set({ assetsMap: {}, chainNameMap: {}, assetsLoading: true }),
+        set({
+          assetsMap: {},
+          chainNameMap: {},
+          assetsLoading: true,
+          currentAddress: '',
+          currentChainId: 0,
+        }),
     }),
     {
       name: 'keyrings-state',

@@ -1,15 +1,8 @@
 import { useState } from 'react';
 import { Wallet } from 'lucide-react';
 
-import { CHAIN_INFO } from '@/shared/constants';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
-import {
-  useAssetsLoading,
-  useChainType,
-  useCurrentAccount,
-  useCurrentAssets,
-  useCurrentChainName,
-} from '@/ui/state/hooks';
+import { useActiveAssets, useActiveChainName, useAssetsLoading } from '@/ui/state/hooks';
 
 // NFT tab is a placeholder until real NFT data is available
 const nfts = [
@@ -43,17 +36,13 @@ export function AssetList() {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'crypto' | 'nft'>('crypto');
 
-  // 当前账户 address + 当前链 chainId，用于从 keyringsStore 索引正确的资产
-  const currentAccount = useCurrentAccount();
-  const chainType = useChainType();
-  const chainId = CHAIN_INFO[chainType]?.chainId ?? 0;
-  const address = currentAccount?.address ?? '';
-
-  // 直接订阅 keyringsStore 中对应 address:chainId 的资产数据
-  // 切换账户或网络后自动响应，无需监听任何事件
-  const assets = useCurrentAssets(address, chainId);
-  const chainName = useCurrentChainName(address, chainId);
+  // 直接订阅 keyringsStore 中全局当前生效的数据
+  // 由 background 刷新并同步到 store，不需要前端再主动通过 chainType -> chainId 换算
+  const assets = useActiveAssets();
+  const chainName = useActiveChainName();
   const loading = useAssetsLoading();
+
+  console.log('AssetList render:', { assets, chainName, loading });
 
   if (loading) {
     return <div className='p-4 text-center'>{t('assets.loading')}</div>;
@@ -65,9 +54,7 @@ export function AssetList() {
         <div className='flex w-full space-x-1 rounded-full bg-gray-100 p-1'>
           <button
             className={`flex-1 rounded-full py-2 text-sm font-medium transition-all ${
-              activeTab === 'crypto'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-900'
+              activeTab === 'crypto' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
             }`}
             onClick={() => setActiveTab('crypto')}
           >
@@ -75,9 +62,7 @@ export function AssetList() {
           </button>
           <button
             className={`flex-1 rounded-full py-2 text-sm font-medium transition-all ${
-              activeTab === 'nft'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-900'
+              activeTab === 'nft' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
             }`}
             onClick={() => setActiveTab('nft')}
           >
@@ -96,12 +81,8 @@ export function AssetList() {
                   <div className='mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-50'>
                     <Wallet className='h-8 w-8 text-gray-400' />
                   </div>
-                  <div className='mb-2 text-lg font-medium text-gray-900'>
-                    {t('assets.no_tokens_found')}
-                  </div>
-                  <div className='text-sm text-gray-500'>
-                    {t('assets.no_tokens_description')}
-                  </div>
+                  <div className='mb-2 text-lg font-medium text-gray-900'>{t('assets.no_tokens_found')}</div>
+                  <div className='text-sm text-gray-500'>{t('assets.no_tokens_description')}</div>
                 </div>
               ) : (
                 assets.map((asset) => (
@@ -117,24 +98,17 @@ export function AssetList() {
                             alt={asset.name || t('assets.token_icon')}
                             className='h-full w-full object-cover'
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                '/images/default-token.png';
+                              (e.target as HTMLImageElement).src = '/images/default-token.png';
                             }}
                           />
                         </div>
                         <div>
-                          <div className='text-base font-semibold text-gray-900'>
-                            {asset.name}
-                          </div>
-                          <div className='text-xs font-medium text-gray-500'>
-                            {chainName}
-                          </div>
+                          <div className='text-base font-semibold text-gray-900'>{asset.name}</div>
+                          <div className='text-xs font-medium text-gray-500'>{chainName}</div>
                         </div>
                       </div>
                       <div className='text-right'>
-                        <div className='text-base font-semibold text-gray-900'>
-                          {(asset.value / 1e8).toFixed(8)}
-                        </div>
+                        <div className='text-base font-semibold text-gray-900'>{(asset.value / 1e8).toFixed(8)}</div>
                       </div>
                     </div>
                   </div>
@@ -159,21 +133,13 @@ export function AssetList() {
                         {nft.image}
                       </div>
                       <div>
-                        <div className='text-sm font-semibold text-gray-900'>
-                          {nft.name}
-                        </div>
-                        <div className='text-xs font-medium text-gray-500'>
-                          {nft.collection}
-                        </div>
+                        <div className='text-sm font-semibold text-gray-900'>{nft.name}</div>
+                        <div className='text-xs font-medium text-gray-500'>{nft.collection}</div>
                       </div>
                     </div>
                     <div className='text-right'>
-                      <div className='text-sm font-semibold text-gray-900'>
-                        Floor: {nft.floorPrice}
-                      </div>
-                      <div className='text-xs font-medium text-gray-500'>
-                        Last: {nft.lastSale}
-                      </div>
+                      <div className='text-sm font-semibold text-gray-900'>Floor: {nft.floorPrice}</div>
+                      <div className='text-xs font-medium text-gray-500'>Last: {nft.lastSale}</div>
                     </div>
                   </div>
                 </div>

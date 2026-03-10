@@ -7,9 +7,7 @@ const isDev = process.env.NODE_ENV === 'development';
 
 export default defineManifest({
   manifest_version: 3,
-  name: `${packageData.displayName || packageData.name}${
-    isDev ? ` ➡️ Dev` : ''
-  }`,
+  name: `${packageData.displayName || packageData.name}${isDev ? ` ➡️ Dev` : ''}`,
   version: packageData.version,
   description: packageData.description,
   minimum_chrome_version: '89',
@@ -43,7 +41,6 @@ export default defineManifest({
       js: ['src/content_scripts/inpage.ts'],
       matches: ['<all_urls>'],
       run_at: 'document_start',
-      // @ts-expect-error world is valid in MV3 Chrome ≥ 111 but missing from crxjs types
       world: 'MAIN',
     },
   ],
