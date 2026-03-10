@@ -53,12 +53,10 @@ export default function SyncBridge(props: PropsWithChildren) {
     const refreshAssets = async () => {
       keyringsStore.getState().setAssetsLoading(true);
       try {
-        const { assetsData, chainName } = await wallet.assetsListsPage();
-        if (assetsData.length > 0) {
-          const { address, chainId } = assetsData[0];
-          keyringsStore
-            .getState()
-            .setCurrentAssets(address, chainId, assetsData, chainName);
+        const { assetsData, chainName, address, chainId } = await wallet.assetsListsPage();
+        console.log('refreshAssets', assetsData, chainName, address, chainId);
+        if (address) {
+          keyringsStore.getState().setCurrentAssets(address, chainId, assetsData, chainName);
         }
         keyringsStore.getState().setAssetsLoading(false);
       } catch (e) {
@@ -92,6 +90,7 @@ export default function SyncBridge(props: PropsWithChildren) {
     const onBroadcastToUI = async (payload: any) => {
       if (!payload?.method) return;
       const { method, params } = payload;
+      console.log('received onBroadcastToUI', method, params);
 
       switch (method) {
         case 'lock': {

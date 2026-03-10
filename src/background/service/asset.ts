@@ -1,4 +1,4 @@
-import { CHAIN_INFO } from '@/shared/constants';
+import { CHAIN_INFO, NetworkType } from '@/shared/constants';
 import { CoinNames, transferAddressHistory, Utxo, UtxoAddressSumInfo } from '@/shared/types';
 
 import createPersistStore from '../utils/persisitStore';
@@ -10,6 +10,7 @@ interface AssetStore {
   utxoMap: { [key: string]: Utxo[] }; // key: "address_chainId"
   coinName: CoinNames[];
   transferAddressHistory: transferAddressHistory[];
+  syncBlockHeightMap: { [key: string]: number }; // key: "address_chainId_networkType"
 }
 
 class AssetService {
@@ -24,6 +25,7 @@ class AssetService {
         utxoMap: {},
         coinName: [],
         transferAddressHistory: [],
+        syncBlockHeightMap: {},
       },
     });
   };
@@ -160,6 +162,19 @@ class AssetService {
 
   getTransferAddressHistory = (): transferAddressHistory[] => {
     return this.store.transferAddressHistory || [];
+  };
+
+  // ─── Sync Block Height ────────────────────────────────────────────────
+
+  getSyncBlockHeight = (address: string, chainId: number, networkType: NetworkType): number => {
+    const key = `${address}_${chainId}_${networkType}`;
+    return this.store.syncBlockHeightMap?.[key] || 0;
+  };
+
+  setSyncBlockHeight = (address: string, chainId: number, networkType: NetworkType, height: number) => {
+    const key = `${address}_${chainId}_${networkType}`;
+    const current = this.store.syncBlockHeightMap || {};
+    this.store.syncBlockHeightMap = { ...current, [key]: height };
   };
 
   // ─── Aggregation / Display ─────────────────────────────────────────────

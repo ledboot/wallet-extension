@@ -48,11 +48,7 @@ export interface WalletController {
   // createKeyringWithPrivateKey(privateKey: string, compressed: boolean, alianName?: string): Promise<void>;
   importPrivateKey(wif: string): Promise<void>;
 
-  getAddressHistory(
-    account: Account,
-    start: number,
-    limit: number
-  ): Promise<any>;
+  getAddressHistory(account: Account, start: number, limit: number): Promise<any>;
 
   updateAccountAlianName(accountKey: string, newName: string): Promise<void>;
   updateKeyringAlianName(keyringKey: string, newName: string): Promise<void>;
@@ -62,6 +58,8 @@ export interface WalletController {
   assetsListsPage(): Promise<{
     assetsData: Array<UtxoAddressSumInfo & Partial<CoinNames>>;
     chainName: string;
+    address: string;
+    chainId: number;
   }>;
   getTransferAddressHistory(): Promise<transferAddressHistory[]>;
   updateTransferAddressesHistory(newAddress: string): Promise<void>;
@@ -87,16 +85,8 @@ export interface WalletController {
 
 const WalletContext = createContext<WalletController | null>(null);
 
-export const WalletProvider = ({
-  children,
-  wallet,
-}: {
-  children?: React.ReactNode;
-  wallet: WalletController;
-}) => {
-  return (
-    <WalletContext.Provider value={wallet}>{children}</WalletContext.Provider>
-  );
+export const WalletProvider = ({ children, wallet }: { children?: React.ReactNode; wallet: WalletController }) => {
+  return <WalletContext.Provider value={wallet}>{children}</WalletContext.Provider>;
 };
 
 export const useWallet = () => {

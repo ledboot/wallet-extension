@@ -9,6 +9,7 @@ import {
   EVENTS,
   KEYRING_TYPE,
   KEYRING_TYPES,
+  NetworkType,
 } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
 import { Account, ChainInfo, WalletKeyring } from '@/shared/types';
@@ -110,36 +111,61 @@ export class WalletController {
 
     const { utxoItems } = await openapiService.getAddressHistory(account, start, limit);
 
+    // 计算本次同步返回的最大区块高度
+    let syncedHeight = start;
+    if (utxoItems.length > 0) {
+      syncedHeight = Math.max(...utxoItems.map((u) => u.blockHeight));
+    }
+
     // Save UTXOs to preference store with block height check
     if (utxoItems.length > 0) {
       const existingUtxos = assetService.getUtxos().filter((utxo) => utxo.address === account.address);
-      // const existingUtxos = preferenceService.getUtxos();
       const shouldUpdate = existingUtxos.length === 0 || utxoItems[0].blockHeight >= existingUtxos[0].blockHeight;
 
-      console.log('shouldUpdate', shouldUpdate);
       if (shouldUpdate) {
-        const changed = JSON.stringify(existingUtxos) !== JSON.stringify(utxoItems);
-
         assetService.updateUtxos(utxoItems);
         const currentChainInfo = this.getCurrentChainInfo();
         assetService.addUtxosMap(account.address, currentChainInfo.chainId, utxoItems);
-        if (changed) {
-          eventBus.emit(EVENTS.broadcastToUI, {
-            method: 'refreshAssets',
-            params: null,
-          });
+
+        // 聚合余额到 utxoSum（供 getAssetsPage 读取展示）
+        assetService.aggregateUtxoSums(account.address);
+
+        // 拉取代币名称（coinName），让 getAssetsPage 能合并显示代币信息
+        try {
+          await openapiService.fetchTokentype(utxoItems, String(currentChainInfo.chainId));
+        } catch (e) {
+          console.error('fetchTokentype failed:', e);
         }
+
+        // 数据已更新，通知 UI 刷新
+        eventBus.emit(EVENTS.broadcastToUI, {
+          method: 'refreshAssets',
+          params: null,
+        });
       } else {
         console.log('Skipping UTXO update: New UTXOs are from an older block');
       }
+    }
+
+    // 更新单独的同步区块高度
+    const currentInfo = this.getCurrentChainInfo();
+    const networkType = currentInfo.networkType;
+    if (syncedHeight > start) {
+      assetService.setSyncBlockHeight(account.address, currentInfo.chainId, networkType, syncedHeight);
     }
   };
 
   assetsListsPage = async () => {
     const account = await this.getCurrentAccount();
     const currentChainInfo = this.getCurrentChainInfo();
-    const assetsData = assetService.getAssetsPage(account?.address ?? '');
-    return { assetsData, chainName: currentChainInfo.iconLabel };
+    const address = account?.address ?? '';
+    const assetsData = assetService.getAssetsPage(address);
+    return {
+      assetsData,
+      chainName: currentChainInfo.iconLabel,
+      address,
+      chainId: currentChainInfo.chainId,
+    };
   };
 
   /**
@@ -392,25 +418,32 @@ export class WalletController {
     if (this.utxoPollingInterval) {
       clearInterval(this.utxoPollingInterval);
     }
-    this.utxoPollingInterval = setInterval(async () => {
-      const isUnlocked = await this.isUnlocked();
-      if (!isUnlocked || this.isPollingUtxos) return;
 
-      this.isPollingUtxos = true;
-      try {
-        const account = await this.getCurrentAccount();
-        if (!account) return;
+    // 立即执行一次同步，不等第一个 interval
+    this._runUtxoPoll();
 
-        const sums = await this.getUtxoSum();
-        const latest = (Array.isArray(sums) ? sums.find((s) => s.address === account.address)?.blockHeight : 0) || 0;
+    this.utxoPollingInterval = setInterval(() => this._runUtxoPoll(), 15000);
+  }
 
-        await this.syncAccountUtxos(latest, 2048, true);
-      } catch (e) {
-        console.error('UTXO polling error:', e);
-      } finally {
-        this.isPollingUtxos = false;
-      }
-    }, 15000); // 15秒轮询
+  private async _runUtxoPoll() {
+    const isUnlocked = await this.isUnlocked();
+    if (!isUnlocked || this.isPollingUtxos) return;
+
+    this.isPollingUtxos = true;
+    try {
+      const account = await this.getCurrentAccount();
+      if (!account) return;
+
+      const currentChainInfo = this.getCurrentChainInfo();
+      const networkType = currentChainInfo.networkType;
+      const latest = assetService.getSyncBlockHeight(account.address, currentChainInfo.chainId, networkType);
+
+      await this.syncAccountUtxos(latest, 2048, true);
+    } catch (e) {
+      console.error('UTXO polling error:', e);
+    } finally {
+      this.isPollingUtxos = false;
+    }
   }
 
   private _stopUtxoPolling() {

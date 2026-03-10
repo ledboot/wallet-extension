@@ -8,7 +8,7 @@ import { WalletHeader } from '@/ui/components/WalletHeader';
  * 数据刷新策略：
  * - Background 定时轮询最新区块高度，发现差异后写入 store 并
  *   广播 `refreshAssets` 事件。
- * - UI 只负责监听事件被动更新，无需在这里主动 call syncAccountUtxos。
+ * - UI 只负责监听事件被动更新
  */
 export default function MainScreen() {
   return (

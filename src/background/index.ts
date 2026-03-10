@@ -63,7 +63,6 @@ browserRuntimeOnConnect((port: any) => {
                 null,
                 data.args
               );
-              console.log('result-----', result);
               return result;
             }
             return;

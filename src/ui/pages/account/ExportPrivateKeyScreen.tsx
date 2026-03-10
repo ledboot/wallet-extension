@@ -74,7 +74,7 @@ export default function ExportPrivateKeyScreen() {
           <div className='flex flex-col items-center pt-10'>
             <div className='w-full max-w-sm space-y-6 rounded-2xl bg-white p-6 shadow-sm'>
               <h2 className='text-center text-xl font-bold text-gray-900'>
-                {t('password.enter_password', 'Enter Password')}
+                {t('password.enter_password')}
               </h2>
               <input
                 type='password'
