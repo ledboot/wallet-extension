@@ -3,7 +3,7 @@ import eventBus from '@/shared/eventBus';
 import PortMessage from '@/shared/utils/message/portMessage';
 
 import { walletController } from './controller';
-import { assetService, keyringService, openapiService, preferenceService } from './service';
+import { assetService, keyringService, openapiService, preferenceService, approvalService, sessionService } from './service';
 import { signTransaction } from './utils/transactionTools';
 import { storage } from './webapi';
 import { browserRuntimeOnConnect, browserRuntimeOnInstalled } from './webapi/browser';
@@ -102,9 +102,17 @@ browserRuntimeOnConnect((port: any) => {
       const { method, params } = data;
 
       switch (method) {
-        case 'tabCheckin':
-          // Optionally store tab icon/name for approval UI
+        case 'tabCheckin': {
+          const { icon, name } = params as any;
+          const origin = (port.sender as any)?.origin;
+          if (origin) {
+            const session = sessionService.getOrCreateSession(origin);
+            if (session) {
+              session.setProp({ origin, icon, name });
+            }
+          }
           return;
+        }
 
         case 'keepAlive':
           return true;
@@ -125,10 +133,15 @@ browserRuntimeOnConnect((port: any) => {
         }
 
         case 'requestAccounts': {
-          // Open popup so the user can approve the connection
-          await chrome.action.openPopup().catch(() => null);
-          const accounts = await keyringService.getAccounts();
-          return accounts.map((a: any) => a.address);
+          const origin = (port.sender as any)?.origin;
+          const session = sessionService.getSession(origin);
+          const accounts = await approvalService.requestApproval({
+            origin: origin || 'Unknown',
+            name: session?.data?.name || origin || 'Unknown DApp',
+            icon: session?.data?.icon || '',
+            type: 'connect',
+          });
+          return accounts;
         }
 
         case 'disconnect':
@@ -146,18 +159,22 @@ browserRuntimeOnConnect((port: any) => {
         }
 
         case 'getNetwork': {
-          const chainType = preferenceService.store.chainType;
-          const chainInfo = CHAIN_INFO[chainType];
+          const chainInfo = preferenceService.store.currentChainInfo;
           return {
-            id: chainType,
-            name: chainInfo?.label ?? chainType,
-            rpcUrl: chainInfo?.endpoints?.[0] ?? '',
-            chainId: chainInfo?.chainId ?? 0,
+            id: chainInfo.id,
+            name: chainInfo.label,
+            rpcUrl: chainInfo.endpoints[0],
+            chainId: chainInfo.chainId,
+            icon: chainInfo.icon,
           };
         }
 
         case 'switchNetwork': {
           const targetChainId = (params as any)?.chainId;
+          const origin = (port.sender as any)?.origin;
+          const session = sessionService.getSession(origin);
+
+          // Get target chain details
           let targetChainType = Object.entries(preferenceService.getAllchainInfo()).find(
             ([_, ci]) => ci.chainId === targetChainId
           )?.[0];
@@ -166,8 +183,20 @@ browserRuntimeOnConnect((port: any) => {
           }
           if (!targetChainType) throw new Error(`Unsupported chainId: ${targetChainId}`);
           const targetChainInfo = preferenceService.getchainInfo(targetChainType) || CHAIN_INFO[targetChainType];
-          preferenceService.store.chainType = targetChainType as ChainType;
-          preferenceService.store.networkType = targetChainInfo.networkType;
+
+          // Request user approval
+          await approvalService.requestApproval({
+            origin: origin || 'Unknown',
+            name: session?.data?.name || origin || 'Unknown DApp',
+            icon: session?.data?.icon || '',
+            type: 'switchNetwork',
+            params: {
+              chainId: targetChainId,
+              name: targetChainInfo.label,
+            },
+          });
+
+          preferenceService.store.currentChainInfo = targetChainInfo;
           keyringService.changeNetwork();
           // Broadcast to all active content-script ports
           broadcastToContentScripts('networkChanged', {
@@ -199,6 +228,18 @@ browserRuntimeOnConnect((port: any) => {
         case 'signTransaction': {
           const { tx } = (params as any) ?? {};
           if (!tx) throw new Error('Missing transaction data');
+          const origin = (port.sender as any)?.origin;
+          const session = sessionService.getSession(origin);
+
+          // Request user approval
+          await approvalService.requestApproval({
+            origin: origin || 'Unknown',
+            name: session?.data?.name || origin || 'Unknown DApp',
+            icon: session?.data?.icon || '',
+            type: 'signTransaction',
+            params: { tx },
+          });
+
           const signedTx = await signTransaction(tx, 1);
           return { signedTransaction: signedTx };
         }
@@ -206,6 +247,18 @@ browserRuntimeOnConnect((port: any) => {
         case 'sendTransaction': {
           const { tx } = (params as any) ?? {};
           if (!tx) throw new Error('Missing transaction data');
+          const origin = (port.sender as any)?.origin;
+          const session = sessionService.getSession(origin);
+
+          // Request user approval
+          await approvalService.requestApproval({
+            origin: origin || 'Unknown',
+            name: session?.data?.name || origin || 'Unknown DApp',
+            icon: session?.data?.icon || '',
+            type: 'sendTransaction',
+            params: { tx },
+          });
+
           const txHash = await openapiService.sendRawTransaction(tx, 0);
           return { txHash };
         }
@@ -359,7 +412,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       try {
         const networkType = preferenceService.store.networkType;
         const chainType = preferenceService.store.chainType;
-        const currentChainInfo = CHAIN_INFO[chainType];
+        const currentChainInfo = preferenceService.store.currentChainInfo || CHAIN_INFO[chainType];
 
         if (!currentChainInfo) {
           throw new Error(`Chain info not found for: ${chainType}`);
@@ -423,8 +476,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           throw new Error(`No endpoints found for chain: ${targetChainType}`);
         }
 
-        preferenceService.store.networkType = targetChainInfo.networkType;
-        preferenceService.store.chainType = targetChainType as ChainType;
+        preferenceService.store.currentChainInfo = targetChainInfo;
 
         keyringService.changeNetwork();
         // Broadcast network change to UI
@@ -463,6 +515,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
             return;
           }
+
+          // Request user approval
+          await approvalService.requestApproval({
+            origin: sender?.origin || 'Unknown',
+            name: 'IDE', // Message listener usually comes from extension UI or tabs
+            icon: '',
+            type: 'signTransaction',
+            params: { tx: params.tx },
+          });
+
           const signedTx = await signTransaction(params.tx, 1);
           sendResponse({
             success: true,
@@ -493,6 +555,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
             return;
           }
+
+          // Request user approval
+          await approvalService.requestApproval({
+            origin: sender?.origin || 'Unknown',
+            name: 'IDE',
+            icon: '',
+            type: 'sendTransaction',
+            params: { tx: params.tx },
+          });
+
           const txHash = await openapiService.sendRawTransaction(params.tx, 0);
           sendResponse({
             success: true,
@@ -522,132 +594,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
     }
 
-    // if (method === 'SIGN_MESSAGE') {
-    //   // Open popup for message signing
-    //   chrome.action.openPopup().then(() => {
-    //     sendResponse({
-    //       success: true,
-    //       result: {
-    //         signed: false,
-    //         requiresPopup: true
-    //       }
-    //     });
-    //   }).catch((error) => {
-    //     sendResponse({
-    //       success: false,
-    //       error: 'Failed to open signing popup'
-    //     });
-    //   });
-    //   return true;
-    // }
-
-    // if (method === 'SIGN_TYPED_DATA') {
-    //   // Open popup for typed data signing
-    //   chrome.action.openPopup().then(() => {
-    //     sendResponse({
-    //       success: true,
-    //       result: {
-    //         signed: false,
-    //         requiresPopup: true
-    //       }
-    //     });
-    //   }).catch((error) => {
-    //     sendResponse({
-    //       success: false,
-    //       error: 'Failed to open signing popup'
-    //     });
-    //   });
-    //   return true;
-    // }
-
-    // // Handle EIP-1193 standard requests
-    // if (method === 'eth_requestAccounts') {
-    //   // EIP-1193: Request accounts
-    //   try {
-    //     const accounts = keyringService.getAccounts();
-    //     sendResponse({
-    //       success: true,
-    //       result: accounts
-    //     });
-    //   } catch (error) {
-    //     sendResponse({
-    //       success: false,
-    //       error: 'Failed to request accounts'
-    //     });
-    //   }
-    //   return true;
-    // }
-
-    // if (method === 'eth_accounts') {
-    //   // EIP-1193: Get accounts
-    //   try {
-    //     const accounts = keyringService.getAccounts();
-    //     sendResponse({
-    //       success: true,
-    //       result: accounts
-    //     });
-    //   } catch (error) {
-    //     sendResponse({
-    //       success: false,
-    //       error: 'Failed to get accounts'
-    //     });
-    //   }
-    //   return true;
-    // }
-
-    // if (method === 'eth_chainId') {
-    //   // EIP-1193: Get chain ID
-    //   try {
-    //     const networkType = preferenceService.store.networkType;
-    //     const chainType = preferenceService.store.chainType;
-    //     sendResponse({
-    //       success: true,
-    //       result: chainType
-    //     });
-    //   } catch (error) {
-    //     sendResponse({
-    //       success: false,
-    //       error: 'Failed to get chain ID'
-    //     });
-    //   }
-    //   return true;
-    // }
-
-    // if (method === 'wallet_switchEthereumChain') {
-    //   // EIP-1193: Switch chain
-    //   try {
-    //     preferenceService.store.networkType = params[0].chainId;
-    //     preferenceService.store.chainType = params[0].chainId;
-    //     sendResponse({
-    //       success: true,
-    //       result: { chainId: params[0].chainId }
-    //     });
-    //   } catch (error) {
-    //     sendResponse({
-    //       success: false,
-    //       error: 'Failed to switch chain'
-    //     });
-    //   }
-    //   return true;
-    // }
-
-    // if (method === 'eth_sendTransaction') {
-    //   // EIP-1193: Send transaction
-    //   try {
-    //     // This would need actual transaction implementation
-    //     const txHash = '0x' + Math.random().toString(16).substr(2, 64);
-    //     sendResponse({
-    //       success: true,
-    //       result: { txHash }
-    //     });
-    //   } catch (error) {
-    //     sendResponse({
-    //       success: false,
-    //       error: 'Failed to send transaction'
-    //     });
-    //   }
-    //   return true;
-    // }
   }
 
   // Default response

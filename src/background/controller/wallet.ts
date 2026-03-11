@@ -14,11 +14,8 @@ import {
 import eventBus from '@/shared/eventBus';
 import { Account, ChainInfo, WalletKeyring } from '@/shared/types';
 
-import { openapiService } from '../service';
-import assetService from '../service/asset';
-import keyringService from '../service/keyring';
+import { assetService, keyringService, openapiService, preferenceService, approvalService } from '../service';
 import { DisplayedKeyring } from '../service/keyring/index';
-import preferenceService from '../service/preference';
 
 export class WalletController {
   timer: any = null;
@@ -605,6 +602,26 @@ export class WalletController {
       // background 轮询到区块高度变化时会自动广播 refreshAssets，届时 UI 才真正刷新。
     }
     return result;
+  };
+
+  getApproval = async (id: string) => {
+    return approvalService.getPendingRequest(id);
+  };
+
+  resolveApproval = async (id: string, data: any) => {
+    approvalService.resolveRequest(id, data);
+    // Close the window
+    chrome.windows.getCurrent((win) => {
+      if (win.id) chrome.windows.remove(win.id);
+    });
+  };
+
+  rejectApproval = async (id: string) => {
+    approvalService.rejectRequest(id);
+    // Close the window
+    chrome.windows.getCurrent((win) => {
+      if (win.id) chrome.windows.remove(win.id);
+    });
   };
 }
 

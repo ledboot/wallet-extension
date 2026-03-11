@@ -81,6 +81,9 @@ export interface WalletController {
   ): Promise<any>;
   getStoredChainInfo(): Promise<{ [key: string]: ChainInfo }>;
   addchainInfo(chainType: string, chainInfo: ChainInfo): Promise<void>;
+  getApproval(id: string): Promise<any>;
+  resolveApproval(id: string, data: any): Promise<void>;
+  rejectApproval(id: string): Promise<void>;
 }
 
 const WalletContext = createContext<WalletController | null>(null);

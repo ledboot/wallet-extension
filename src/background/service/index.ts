@@ -3,3 +3,4 @@ export { default as keyringService } from './keyring';
 export { default as sessionService } from './session';
 export { default as openapiService } from './openapi';
 export { default as assetService } from './asset';
+export { default as approvalService } from './approval';

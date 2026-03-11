@@ -1,11 +1,6 @@
 import { compareVersions } from 'compare-versions';
 
-import {
-  CHAIN_INFO,
-  ChainType,
-  DEFAULT_LOCKTIME_ID,
-  NetworkType,
-} from '@/shared/constants';
+import { CHAIN_INFO, ChainType, DEFAULT_LOCKTIME_ID, NetworkType } from '@/shared/constants';
 import { ChainInfo } from '@/shared/types';
 
 import createPersistStore from '../utils/persisitStore';
@@ -29,6 +24,7 @@ export interface PreferenceStore {
     [key: string]: string;
   };
   chainInfo: { [key: string]: ChainInfo }; // 添加动态网络配置存储
+  currentChainInfo: ChainInfo; // 当前网络信息
 }
 
 // const SUPPORTED_LOCALES = ['en', 'zh_CN'];
@@ -48,8 +44,6 @@ class PreferenceService {
         locale: 'en',
         networkType: NetworkType.MAINNET,
         chainType: ChainType.ZENT_MAINNET,
-        // networkType: NetworkType.TESTNET,
-        // chainType: ChainType.ZENT_TESTNET,
         currentVersion: '0',
         firstOpen: false,
         enableSignData: false,
@@ -59,6 +53,7 @@ class PreferenceService {
         addressFlags: {},
         keyringAlianNames: {},
         chainInfo: { ...CHAIN_INFO }, // 初始化内置网络
+        currentChainInfo: CHAIN_INFO[ChainType.ZENT_MAINNET], // 默认网络信息
       },
     });
 
@@ -72,10 +67,7 @@ class PreferenceService {
     } else {
       let needsUpdate = false;
       for (const [key, info] of Object.entries(CHAIN_INFO)) {
-        if (
-          !this.store.chainInfo[key] ||
-          this.store.chainInfo[key].updated < info.updated
-        ) {
+        if (!this.store.chainInfo[key] || this.store.chainInfo[key].updated < info.updated) {
           this.store.chainInfo[key] = info;
           needsUpdate = true;
         }
@@ -87,10 +79,7 @@ class PreferenceService {
   };
 
   getIsFirstOpen = () => {
-    if (
-      !this.store.currentVersion ||
-      compareVersions(version, this.store.currentVersion)
-    ) {
+    if (!this.store.currentVersion || compareVersions(version, this.store.currentVersion)) {
       this.store.currentVersion = version;
       this.store.firstOpen = true;
     }
@@ -111,11 +100,7 @@ class PreferenceService {
 
   // accountAlianNames
   setAccountAlianName = (accountKey: string, name: string) => {
-    this.store.accountAlianNames = Object.assign(
-      {},
-      this.store.accountAlianNames,
-      { [accountKey]: name }
-    );
+    this.store.accountAlianNames = Object.assign({}, this.store.accountAlianNames, { [accountKey]: name });
   };
 
   getAccountAlianName = (accountKey: string, defaultName?: string) => {
@@ -138,11 +123,7 @@ class PreferenceService {
 
   // keyringAlianNames
   setKeyringAlianName = (keyringKey: string, name: string) => {
-    this.store.keyringAlianNames = Object.assign(
-      {},
-      this.store.keyringAlianNames,
-      { [keyringKey]: name }
-    );
+    this.store.keyringAlianNames = Object.assign({}, this.store.keyringAlianNames, { [keyringKey]: name });
   };
 
   getKeyringAlianName = (keyringKey: string, defaultName?: string) => {
@@ -197,6 +178,14 @@ class PreferenceService {
 
   setChainType = (chainTyp: ChainType) => {
     this.store.chainType = chainTyp;
+  };
+
+  getCurrentChainInfo = () => {
+    return this.store.currentChainInfo;
+  };
+
+  setCurrentChainInfo = (chainInfo: ChainInfo) => {
+    this.store.currentChainInfo = chainInfo;
   };
 
   // ChainInfo 管理方法

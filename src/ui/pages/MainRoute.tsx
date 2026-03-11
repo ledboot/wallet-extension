@@ -2,6 +2,10 @@ import { useCallback, useRef } from 'react';
 import { HashRouter, Route, Routes, useNavigate as useNavigateOrigin } from 'react-router';
 
 import SyncBridge from '@/ui/components/SyncBridge';
+import ApprovalConnect from './approval/ApprovalConnect';
+import ApprovalSwitchNetwork from './approval/ApprovalSwitchNetwork';
+import ApprovalSignTransaction from './approval/ApprovalSignTransaction';
+import ApprovalSendTransaction from './approval/ApprovalSendTransaction';
 
 import AccountDetailScreen from './account/AccountDetailScreen';
 import AccountSelection from './account/AccountSelection';
@@ -112,6 +116,23 @@ const routes = {
     path: '/wallet/receive',
     element: <Receive />,
   },
+  ApprovalConnect: {
+    path: '/approval/connect',
+    element: <ApprovalConnect />,
+  },
+  ApprovalSwitchNetwork: {
+    path: '/approval/switch-network',
+    element: <ApprovalSwitchNetwork />,
+  },
+  ApprovalSignTransaction: {
+    path: '/approval/sign-transaction',
+    element: <ApprovalSignTransaction />,
+  },
+  ApprovalSendTransaction: {
+    path: '/approval/send-transaction',
+    element: <ApprovalSendTransaction />,
+  },
+
 };
 
 type RouteTypes = keyof typeof routes;
