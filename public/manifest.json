@@ -23,7 +23,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["js/sql-wasm.js", "js/sql-wasm.wasm", "js/*.js", "src/content_scripts/inpage.ts"],
+      "resources": ["js/sql-wasm.js", "js/sql-wasm.wasm", "js/*.js", "src/content_scripts/inpage.ts", "images/artifacts/*"],
       "matches": ["<all_urls>"]
     }
   ],

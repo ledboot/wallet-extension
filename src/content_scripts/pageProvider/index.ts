@@ -239,6 +239,11 @@ export class ZentProvider extends EventEmitter {
     return this[requestMethodKey]({ method: 'getNetwork' });
   };
 
+  /** Get all available networks. */
+  getNetworks = async () => {
+    return this[requestMethodKey]({ method: 'getNetworks' });
+  };
+
   /**
    * Switch to a different network.
    * @param chainId - The chain ID of the target network

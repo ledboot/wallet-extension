@@ -9,6 +9,15 @@ import { storage } from './webapi';
 import { browserRuntimeOnConnect, browserRuntimeOnInstalled } from './webapi/browser';
 import { openExtensionInTab } from './webapi/tab';
 
+const expandIcon = (path: string) => {
+  if (!path) return '';
+  if (path.startsWith('http') || path.startsWith('data:') || path.startsWith('chrome-extension:')) {
+    return path;
+  }
+  const cleaned = path.startsWith('./') ? path.slice(2) : path;
+  return chrome.runtime.getURL(cleaned);
+};
+
 let appStoreLoaded = false;
 
 async function start() {
@@ -158,6 +167,7 @@ browserRuntimeOnConnect((port: any) => {
           return accounts[idx] || accounts[0] || null;
         }
 
+
         case 'getNetwork': {
           const chainInfo = preferenceService.store.currentChainInfo;
           return {
@@ -165,10 +175,22 @@ browserRuntimeOnConnect((port: any) => {
             name: chainInfo.label,
             rpcUrl: chainInfo.endpoints[0],
             chainId: chainInfo.chainId,
-            icon: chainInfo.icon,
+            icon: expandIcon(chainInfo.icon),
           };
         }
 
+        case 'getNetworks': {
+          const networks = preferenceService.getAllchainInfo();
+          const result: any = {};
+          for (const [key, ci] of Object.entries(networks)) {
+            result[key] = {
+              ...ci,
+              name: (ci as any).label, // Support both label and name
+              icon: expandIcon((ci as any).icon),
+            };
+          }
+          return result;
+        }
         case 'switchNetwork': {
           const targetChainId = (params as any)?.chainId;
           const origin = (port.sender as any)?.origin;
