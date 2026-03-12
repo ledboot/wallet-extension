@@ -74,7 +74,6 @@ export interface WalletController {
     amount: string,
     tokenType: string,
     receivedAddress: string,
-    password: string,
     senderAddress: string,
     crosschain: number,
     timeLimit: number

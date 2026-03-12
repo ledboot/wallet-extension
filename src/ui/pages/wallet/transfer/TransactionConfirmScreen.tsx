@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from '@/ui/pages/MainRoute';
 import { AlertCircle, Check, ChevronLeft, Copy, X } from 'lucide-react';
 import { useLocation } from 'react-router';
 import { toast } from 'sonner';
 
 import { useLanguage } from '@/ui/contexts/LanguageContext';
+import { useNavigate } from '@/ui/pages/MainRoute';
 import { useCurrentAccount } from '@/ui/state/hooks';
 import { useWallet } from '@/ui/utils/walletContext';
 
@@ -20,8 +20,7 @@ export default function TransactionConfirmScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
-  const { token, recipientAddress, amount, fee, totalAmount } =
-    (location.state || {}) as LocationState;
+  const { token, recipientAddress, amount, fee, totalAmount } = (location.state || {}) as LocationState;
 
   const [password, setPassword] = useState('');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -63,15 +62,7 @@ export default function TransactionConfirmScreen() {
       });
 
       // Make the transfer
-      const result = await wallet.transfer(
-        amount,
-        token.tokenType,
-        recipientAddress,
-        password,
-        currentAccount.address,
-        0,
-        15
-      );
+      const result = await wallet.transfer(amount, token.tokenType, recipientAddress, currentAccount.address, 0, 15);
       console.log('Transfer result:', result);
       await new Promise((resolve) => setTimeout(resolve, 1500));
       await wallet.updateTransferAddressesHistory(recipientAddress);
@@ -121,25 +112,17 @@ export default function TransactionConfirmScreen() {
         <div className='mb-6'>
           <div className='mb-8 text-center'>
             <div className='text-4xl font-bold text-gray-900'>{amount}</div>
-            <div className='mt-1 text-sm font-medium text-gray-500'>
-              {token.name}
-            </div>
+            <div className='mt-1 text-sm font-medium text-gray-500'>{token.name}</div>
           </div>
 
           <div className='space-y-4 rounded-2xl bg-gray-50 p-5'>
             <div className='flex items-center justify-between'>
-              <span className='text-sm font-medium text-gray-500'>
-                {t('transfer.network')}
-              </span>
-              <span className='text-sm font-semibold text-gray-900'>
-                {token.chainLabel}
-              </span>
+              <span className='text-sm font-medium text-gray-500'>{t('transfer.network')}</span>
+              <span className='text-sm font-semibold text-gray-900'>{token.chainLabel}</span>
             </div>
 
             <div className='flex items-center justify-between'>
-              <span className='text-sm font-medium text-gray-500'>
-                {t('transfer.token_label')}
-              </span>
+              <span className='text-sm font-medium text-gray-500'>{t('transfer.token_label')}</span>
               <div className='flex items-center'>
                 <img
                   src={token.iconHtml}
@@ -150,9 +133,7 @@ export default function TransactionConfirmScreen() {
                     target.src = 'https://via.placeholder.com/20';
                   }}
                 />
-                <span className='text-sm font-semibold text-gray-900'>
-                  {token.name}
-                </span>
+                <span className='text-sm font-semibold text-gray-900'>{token.name}</span>
               </div>
             </div>
 
@@ -160,33 +141,23 @@ export default function TransactionConfirmScreen() {
 
             <div className='space-y-4'>
               <div className='flex justify-between'>
-                <span className='text-sm font-medium text-gray-500'>
-                  {t('transfer.send_from')}
-                </span>
+                <span className='text-sm font-medium text-gray-500'>{t('transfer.send_from')}</span>
                 <div className='flex items-center text-sm font-semibold text-gray-900'>
                   <span className='font-mono'>
                     {currentAccount?.address?.slice(0, 6)}...
                     {currentAccount?.address?.slice(-4)}
                   </span>
                   <button
-                    onClick={() =>
-                      copyToClipboard(currentAccount?.address || '', 'from')
-                    }
+                    onClick={() => copyToClipboard(currentAccount?.address || '', 'from')}
                     className='ml-2 text-gray-400 hover:text-gray-600'
                   >
-                    {copiedField === 'from' ? (
-                      <Check className='h-4 w-4' />
-                    ) : (
-                      <Copy className='h-4 w-4' />
-                    )}
+                    {copiedField === 'from' ? <Check className='h-4 w-4' /> : <Copy className='h-4 w-4' />}
                   </button>
                 </div>
               </div>
 
               <div className='flex justify-between'>
-                <span className='text-sm font-medium text-gray-500'>
-                  {t('transfer.send_to')}
-                </span>
+                <span className='text-sm font-medium text-gray-500'>{t('transfer.send_to')}</span>
                 <div className='flex items-center text-sm font-semibold text-gray-900'>
                   <span className='font-mono'>
                     {recipientAddress.slice(0, 6)}...
@@ -196,11 +167,7 @@ export default function TransactionConfirmScreen() {
                     onClick={() => copyToClipboard(recipientAddress, 'to')}
                     className='ml-2 text-gray-400 hover:text-gray-600'
                   >
-                    {copiedField === 'to' ? (
-                      <Check className='h-4 w-4' />
-                    ) : (
-                      <Copy className='h-4 w-4' />
-                    )}
+                    {copiedField === 'to' ? <Check className='h-4 w-4' /> : <Copy className='h-4 w-4' />}
                   </button>
                 </div>
               </div>
@@ -210,9 +177,7 @@ export default function TransactionConfirmScreen() {
 
             <div className='space-y-4'>
               <div className='flex justify-between'>
-                <span className='text-sm font-medium text-gray-500'>
-                  {t('transfer.network_fee')}
-                </span>
+                <span className='text-sm font-medium text-gray-500'>{t('transfer.network_fee')}</span>
                 <div className='text-right text-sm font-semibold text-gray-900'>
                   <div>
                     {fee} {token.name}
@@ -221,9 +186,7 @@ export default function TransactionConfirmScreen() {
               </div>
 
               <div className='flex justify-between'>
-                <span className='text-sm font-medium text-gray-500'>
-                  {t('transfer.total')}
-                </span>
+                <span className='text-sm font-medium text-gray-500'>{t('transfer.total')}</span>
                 <div className='text-right text-sm font-semibold text-gray-900'>
                   <div>
                     {totalAmount} {token.name}
@@ -235,9 +198,7 @@ export default function TransactionConfirmScreen() {
 
           <div className='mt-6 flex items-start rounded-2xl bg-orange-50 p-4'>
             <AlertCircle className='mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-orange-500' />
-            <p className='text-sm leading-relaxed text-orange-700'>
-              {t('transfer.warning_message')}
-            </p>
+            <p className='text-sm leading-relaxed text-orange-700'>{t('transfer.warning_message')}</p>
           </div>
         </div>
       </div>
@@ -247,9 +208,7 @@ export default function TransactionConfirmScreen() {
           onClick={handleConfirm}
           disabled={isSending}
           className={`w-full rounded-full py-3.5 font-medium transition-colors ${
-            isSending
-              ? 'cursor-wait bg-gray-100 text-gray-400'
-              : 'bg-gray-900 text-white hover:bg-gray-800'
+            isSending ? 'cursor-wait bg-gray-100 text-gray-400' : 'bg-gray-900 text-white hover:bg-gray-800'
           }`}
         >
           {isSending ? t('transfer.processing') : t('transfer.confirm_send')}
@@ -259,12 +218,8 @@ export default function TransactionConfirmScreen() {
       {/* Password Dialog (DaisyUI styled) */}
       <dialog className={`modal ${showPasswordDialog ? 'modal-open' : ''}`}>
         <div className='modal-box bg-white'>
-          <h3 className='text-lg font-bold text-gray-900'>
-            {t('transfer.enter_password')}
-          </h3>
-          <p className='py-4 text-sm text-gray-500'>
-            {t('transfer.password_description')}
-          </p>
+          <h3 className='text-lg font-bold text-gray-900'>{t('transfer.enter_password')}</h3>
+          <p className='py-4 text-sm text-gray-500'>{t('transfer.password_description')}</p>
 
           <input
             type='password'
@@ -285,9 +240,7 @@ export default function TransactionConfirmScreen() {
             </button>
             <button
               className={`btn flex-1 rounded-full border-none font-medium text-white transition-colors ${
-                !password || isSending
-                  ? 'bg-gray-300 hover:bg-gray-300'
-                  : 'bg-gray-900 hover:bg-gray-800'
+                !password || isSending ? 'bg-gray-300 hover:bg-gray-300' : 'bg-gray-900 hover:bg-gray-800'
               }`}
               onClick={handleSend}
               disabled={!password || isSending}

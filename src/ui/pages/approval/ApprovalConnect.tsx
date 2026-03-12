@@ -21,15 +21,19 @@ const ApprovalConnect = () => {
 
   useEffect(() => {
     const init = async () => {
-      if (id) {
-        const currentAcc = await wallet.getCurrentAccount();
-        if (currentAcc?.address) {
-          setSelectedAddresses([currentAcc.address]);
+      if (id && selectedAddresses.length === 0) {
+        try {
+          const currentAcc = await wallet.getCurrentAccount();
+          if (currentAcc?.address) {
+            setSelectedAddresses([currentAcc.address]);
+          }
+        } catch (e) {
+          // ignore, might still be locked
         }
       }
     };
     init();
-  }, [id, wallet]);
+  }, [id, wallet, selectedAddresses.length, keyringsList]);
 
   const selectAddress = (address: string) => {
     setSelectedAddresses([address]);

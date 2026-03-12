@@ -429,7 +429,6 @@ export class OpenapiService {
     amount: bigint,
     tokenType: bigint,
     receivedAddress: string,
-    password: string,
     senderAddress: string,
     crosschain: number,
     timeLimit: number
@@ -451,7 +450,7 @@ export class OpenapiService {
       }
     }
 
-    const r = await signTransaction(tx, 1, password);
+    const r = await signTransaction(tx, 1);
 
     const hextx = await this.sendRawTransaction(r, 0);
 

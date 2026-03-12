@@ -177,25 +177,24 @@ function gatherCoins(
   return { sum: sum, txin: txin, inaddress: inaddress, minTxfee: minTxfee, fees: inclfee ? 0 : fees };
 }
 
-export async function signTransaction(tx: MsgT, mode: number, password?: string) {
+export async function signTransaction(tx: MsgT, mode: number) {
   const allUtxos = assetService.getUtxos();
-  for (let i = 0; i < tx.tIn.length; i++) {
-    const utxo = allUtxos.find(
-      (u) => u.txid === tx.tIn[i].previousOutPoint.hash && u.index === tx.tIn[i].previousOutPoint.index // 或者可能是 u.index 或 u.n，取决于 UTXO 结构
-    );
-    if (!utxo) continue;
-    const scriptPubKey = utxo.scriptPubKey;
-    const address = utxo.address;
+  
+  const utxoMap = new Map();
+  for (let k = 0; k < allUtxos.length; k++) {
+    const u = allUtxos[k];
+    utxoMap.set(`${u.txid}:${u.index}`, u);
+  }
 
-    const pks = scriptPubKey.substring(0, 42);
+  for (let i = 0; i < tx.tIn.length; i++) {
+    const outPoint = tx.tIn[i].previousOutPoint;
+    const utxo = utxoMap.get(`${outPoint.hash}:${outPoint.index}`);
+    if (!utxo) continue;
+    const address = utxo.address;
 
     const privateKey = keyringService.exportPrivateKeyHex(address);
 
-    const msgh = hexToBytes(tx.tIn[i].previousOutPoint.hash);
-    const msg = tx.encode(0);
-    const h = nobleSha256(msg);
-
-    const hash = genSigHash(tx, mode, i);
+    const hash = genSigHash(tx);
 
     const sig = await signAsync(hash, privateKey, { extraEntropy: true });
 
@@ -222,7 +221,7 @@ export async function signTransaction(tx: MsgT, mode: number, password?: string)
   return tx;
 }
 
-function genSigHash(tx: any, mode: number, index: number) {
+function genSigHash(tx: any) {
   const t = new MsgT();
   const hex = bytesToHex(Array.from(tx.encode(1)));
   t.rawDecode(hex);

@@ -14,7 +14,7 @@ import {
 import eventBus from '@/shared/eventBus';
 import { Account, ChainInfo, WalletKeyring } from '@/shared/types';
 
-import { assetService, keyringService, openapiService, preferenceService, approvalService } from '../service';
+import { approvalService, assetService, keyringService, openapiService, preferenceService } from '../service';
 import { DisplayedKeyring } from '../service/keyring/index';
 
 export class WalletController {
@@ -580,7 +580,6 @@ export class WalletController {
     amount: string,
     tokenType: string,
     receivedAddress: string,
-    password: string,
     senderAddress: string,
     crosschain: number,
     timeLimit: number
@@ -589,7 +588,6 @@ export class WalletController {
       BigInt(Number(amount) * 1e8),
       BigInt(Number(tokenType)),
       receivedAddress,
-      password,
       senderAddress,
       crosschain,
       timeLimit

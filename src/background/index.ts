@@ -5,9 +5,12 @@ import PortMessage from '@/shared/utils/message/portMessage';
 import { walletController } from './controller';
 import { assetService, keyringService, openapiService, preferenceService, approvalService, sessionService } from './service';
 import { signTransaction } from './utils/transactionTools';
+import { MsgT } from './utils/msgTools';
+import { bytesToHex } from './utils/index';
 import { storage } from './webapi';
 import { browserRuntimeOnConnect, browserRuntimeOnInstalled } from './webapi/browser';
 import { openExtensionInTab } from './webapi/tab';
+
 
 const expandIcon = (path: string) => {
   if (!path) return '';
@@ -250,6 +253,14 @@ browserRuntimeOnConnect((port: any) => {
         case 'signTransaction': {
           const { tx } = (params as any) ?? {};
           if (!tx) throw new Error('Missing transaction data');
+          
+          let msgT = new MsgT();
+          try {
+            msgT.rawDecode(tx);
+          } catch (e) {
+            throw new Error('Invalid transaction hex string format');
+          }
+
           const origin = (port.sender as any)?.origin;
           const session = sessionService.getSession(origin);
 
@@ -262,8 +273,9 @@ browserRuntimeOnConnect((port: any) => {
             params: { tx },
           });
 
-          const signedTx = await signTransaction(tx, 1);
-          return { signedTransaction: signedTx };
+          const signedTx = await signTransaction(msgT, 1);
+          const signedTxHex = bytesToHex(Array.from(signedTx.encode(1)));
+          return { signedTransaction: signedTxHex };
         }
 
         case 'sendTransaction': {
@@ -281,9 +293,11 @@ browserRuntimeOnConnect((port: any) => {
             params: { tx },
           });
 
-          const txHash = await openapiService.sendRawTransaction(tx, 0);
-          return { txHash };
+          const res = await openapiService.sendRawTransaction(tx, 0);
+          if (res.error) throw new Error(res.error.message || 'Transaction send failed');
+          return { txHash: res.result };
         }
+
 
         default:
           throw new Error(`Unknown method: ${method}`);
