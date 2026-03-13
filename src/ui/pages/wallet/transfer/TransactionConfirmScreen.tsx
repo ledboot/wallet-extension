@@ -20,7 +20,13 @@ export default function TransactionConfirmScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
-  const { token, recipientAddress, amount, fee, totalAmount } = (location.state || {}) as LocationState;
+  const {
+    token,
+    recipientAddress,
+    amount,
+    fee,
+    totalAmount,
+  } = (location.state || {}) as LocationState;
 
   const [password, setPassword] = useState('');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -62,7 +68,14 @@ export default function TransactionConfirmScreen() {
       });
 
       // Make the transfer
-      const result = await wallet.transfer(amount, token.tokenType, recipientAddress, currentAccount.address, 0, 15);
+      const result = await wallet.transfer(
+        amount,
+        token.tokenType,
+        recipientAddress,
+        currentAccount.address,
+        0,
+        15
+      );
       console.log('Transfer result:', result);
       await new Promise((resolve) => setTimeout(resolve, 1500));
       await wallet.updateTransferAddressesHistory(recipientAddress);
@@ -90,19 +103,35 @@ export default function TransactionConfirmScreen() {
 
   return (
     <div className='flex h-full w-full flex-col bg-white'>
-      <div className='absolute left-0 top-0 z-10 flex h-14 w-full items-center justify-between bg-white px-4'>
+      <div
+        className={
+          'absolute left-0 top-0 z-10 flex h-14 w-full items-center ' +
+          'justify-between bg-white px-4'
+        }
+      >
         <button
           onClick={() => navigate('#back')}
-          className='-ml-2 flex items-center justify-center rounded-full p-2 transition-colors hover:bg-gray-100'
+          className={
+            '-ml-2 flex items-center justify-center rounded-full p-2 ' +
+            'transition-colors hover:bg-gray-100'
+          }
         >
           <ChevronLeft className='h-5 w-5 text-gray-800' />
         </button>
-        <h1 className='absolute left-1/2 -translate-x-1/2 transform text-lg font-semibold text-gray-900'>
+        <h1
+          className={
+            'absolute left-1/2 -translate-x-1/2 transform text-lg ' +
+            'font-semibold text-gray-900'
+          }
+        >
           {t('transfer.confirm_transaction')}
         </h1>
         <button
           onClick={() => navigate('MainScreen')}
-          className='-mr-2 flex items-center justify-center rounded-full p-2 transition-colors hover:bg-gray-100'
+          className={
+            '-mr-2 flex items-center justify-center rounded-full p-2 ' +
+            'transition-colors hover:bg-gray-100'
+          }
         >
           <X className='h-5 w-5 text-gray-800' />
         </button>
@@ -141,33 +170,75 @@ export default function TransactionConfirmScreen() {
 
             <div className='space-y-4'>
               <div className='flex justify-between'>
-                <span className='text-sm font-medium text-gray-500'>{t('transfer.send_from')}</span>
-                <div className='flex items-center text-sm font-semibold text-gray-900'>
+                <span className='text-sm font-medium text-gray-500'>
+                  {t('transfer.send_from')}
+                </span>
+                <div
+                  className={
+                    'group relative flex items-center text-sm font-semibold ' +
+                    'text-gray-900'
+                  }
+                >
                   <span className='font-mono'>
                     {currentAccount?.address?.slice(0, 6)}...
                     {currentAccount?.address?.slice(-4)}
                   </span>
+                  {currentAccount?.address && (
+                    <div
+                      className={
+                        'pointer-events-none absolute -top-10 right-0 z-20 hidden ' +
+                        'whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs ' +
+                        'font-normal text-white shadow-lg group-hover:block'
+                      }
+                    >
+                      {currentAccount.address}
+                    </div>
+                  )}
                   <button
                     onClick={() => copyToClipboard(currentAccount?.address || '', 'from')}
                     className='ml-2 text-gray-400 hover:text-gray-600'
                   >
-                    {copiedField === 'from' ? <Check className='h-4 w-4' /> : <Copy className='h-4 w-4' />}
+                    {copiedField === 'from' ? (
+                      <Check className='h-4 w-4' />
+                    ) : (
+                      <Copy className='h-4 w-4' />
+                    )}
                   </button>
                 </div>
               </div>
 
               <div className='flex justify-between'>
                 <span className='text-sm font-medium text-gray-500'>{t('transfer.send_to')}</span>
-                <div className='flex items-center text-sm font-semibold text-gray-900'>
+                <div
+                  className={
+                    'group relative flex items-center text-sm font-semibold ' +
+                    'text-gray-900'
+                  }
+                >
                   <span className='font-mono'>
                     {recipientAddress.slice(0, 6)}...
                     {recipientAddress.slice(-4)}
                   </span>
+                  {recipientAddress && (
+                    <div
+                      className={
+                        'pointer-events-none absolute -top-10 right-0 z-20 hidden ' +
+                        'whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs ' +
+                        'font-normal text-white shadow-lg group-hover:block'
+                      }
+                    >
+                      {recipientAddress}
+                    </div>
+                  )}
                   <button
                     onClick={() => copyToClipboard(recipientAddress, 'to')}
                     className='ml-2 text-gray-400 hover:text-gray-600'
                   >
-                    {copiedField === 'to' ? <Check className='h-4 w-4' /> : <Copy className='h-4 w-4' />}
+                    {copiedField === 'to' ? (
+                      <Check className='h-4 w-4' />
+                    ) : (
+                      <Copy className='h-4 w-4' />
+                    )}
                   </button>
                 </div>
               </div>
@@ -177,7 +248,9 @@ export default function TransactionConfirmScreen() {
 
             <div className='space-y-4'>
               <div className='flex justify-between'>
-                <span className='text-sm font-medium text-gray-500'>{t('transfer.network_fee')}</span>
+                <span className='text-sm font-medium text-gray-500'>
+                  {t('transfer.network_fee')}
+                </span>
                 <div className='text-right text-sm font-semibold text-gray-900'>
                   <div>
                     {fee} {token.name}
@@ -198,7 +271,9 @@ export default function TransactionConfirmScreen() {
 
           <div className='mt-6 flex items-start rounded-2xl bg-orange-50 p-4'>
             <AlertCircle className='mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-orange-500' />
-            <p className='text-sm leading-relaxed text-orange-700'>{t('transfer.warning_message')}</p>
+            <p className='text-sm leading-relaxed text-orange-700'>
+              {t('transfer.warning_message')}
+            </p>
           </div>
         </div>
       </div>
@@ -208,7 +283,9 @@ export default function TransactionConfirmScreen() {
           onClick={handleConfirm}
           disabled={isSending}
           className={`w-full rounded-full py-3.5 font-medium transition-colors ${
-            isSending ? 'cursor-wait bg-gray-100 text-gray-400' : 'bg-gray-900 text-white hover:bg-gray-800'
+            isSending
+              ? 'cursor-wait bg-gray-100 text-gray-400'
+              : 'bg-gray-900 text-white hover:bg-gray-800'
           }`}
         >
           {isSending ? t('transfer.processing') : t('transfer.confirm_send')}
@@ -226,25 +303,34 @@ export default function TransactionConfirmScreen() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={t('transfer.wallet_password')}
-            className='w-full rounded-xl bg-gray-50 p-4 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300'
+            className={
+              'w-full rounded-xl bg-gray-50 p-4 text-sm text-gray-900 placeholder-gray-400 ' +
+              'focus:outline-none focus:ring-2 focus:ring-gray-300'
+            }
             autoFocus
-          />
+        />
 
-          <div className='modal-action mt-6 gap-3'>
-            <button
-              className='btn btn-ghost flex-1 rounded-full font-medium text-gray-600 hover:bg-gray-100'
-              onClick={() => setShowPasswordDialog(false)}
-              disabled={isSending}
-            >
-              {t('transfer.cancel')}
-            </button>
-            <button
-              className={`btn flex-1 rounded-full border-none font-medium text-white transition-colors ${
-                !password || isSending ? 'bg-gray-300 hover:bg-gray-300' : 'bg-gray-900 hover:bg-gray-800'
-              }`}
-              onClick={handleSend}
-              disabled={!password || isSending}
-            >
+        <div className='modal-action mt-6 gap-3'>
+          <button
+            className={
+              'btn btn-ghost flex-1 rounded-full font-medium text-gray-600 ' +
+              'hover:bg-gray-100'
+            }
+            onClick={() => setShowPasswordDialog(false)}
+            disabled={isSending}
+          >
+            {t('transfer.cancel')}
+          </button>
+          <button
+            className={
+              'btn flex-1 rounded-full border-none font-medium text-white transition-colors ' +
+              (!password || isSending
+                ? 'bg-gray-300 hover:bg-gray-300'
+                : 'bg-gray-900 hover:bg-gray-800')
+            }
+            onClick={handleSend}
+            disabled={!password || isSending}
+          >
               {isSending ? (
                 <>
                   <span className='loading loading-spinner loading-sm'></span>

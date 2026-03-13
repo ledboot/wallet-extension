@@ -16,13 +16,18 @@ import {
   SlidersHorizontal,
   Trash2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { useLanguage } from '@/ui/contexts/LanguageContext';
+import { useWallet } from '@/ui/utils';
+import { ConfirmModal } from '@/ui/components/ConfirmModal';
 
 export default function SettingsScreen() {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const wallet = useWallet();
   const [appVersion, setAppVersion] = useState<string>('1.0.0');
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
   useEffect(() => {
     // Get version from manifest if available (Chrome extension context)
@@ -63,6 +68,17 @@ export default function SettingsScreen() {
       {title}
     </h3>
   );
+
+  const handleClearCache = async () => {
+    setIsConfirmModalOpen(false);
+    try {
+      await wallet.clearAssetCache();
+      toast.success(t('settings.clear_cache_success'));
+    } catch (error) {
+      console.error('Failed to clear cache', error);
+      toast.error(t('settings.clear_cache_failed'));
+    }
+  };
 
   return (
     <div className='flex h-[600px] w-full flex-col bg-white pt-14 dark:bg-gray-900'>
@@ -118,7 +134,11 @@ export default function SettingsScreen() {
         <div className='border-b border-gray-100 px-4 py-5 dark:border-gray-800'>
           <SectionTitle title={t('settings.advanced')} />
           <div className='flex flex-wrap gap-y-6'>
-            <SettingItem icon={Trash2} label={t('settings.clear_cache')} />
+            <SettingItem
+              icon={Trash2}
+              label={t('settings.clear_cache')}
+              onClick={() => setIsConfirmModalOpen(true)}
+            />
             <SettingItem icon={Download} label={t('settings.download_logs')} />
           </div>
         </div>
@@ -145,6 +165,14 @@ export default function SettingsScreen() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={isConfirmModalOpen}
+        title={t('settings.clear_cache')}
+        message={t('settings.clear_cache_confirm')}
+        onConfirm={handleClearCache}
+        onCancel={() => setIsConfirmModalOpen(false)}
+      />
     </div>
   );
 }

@@ -450,9 +450,9 @@ export class OpenapiService {
       }
     }
 
-    const r = await signTransaction(tx, 1);
+    const signTx = await signTransaction(tx, 1);
 
-    const hextx = await this.sendRawTransaction(r, 0);
+    const hextx = await this.sendRawTransaction(signTx, 0);
 
     return hextx;
   };

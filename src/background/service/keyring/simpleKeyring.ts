@@ -170,13 +170,11 @@ export class SimpleKeyring {
 
   exportPrivateKeyHex(address: string): string {
     const wallet = this.getWalletForAccount(address);
-    console.log('exportPrivateKeyHex wallet pk', wallet.privateKey);
     return wallet.toHex();
   }
 
   exportPrivateKey(address: string): string {
     const wallet = this.getWalletForAccount(address);
-    console.log('exportPrivateKeyHex wallet pk', wallet.privateKey);
     return wallet.privateKey;
   }
 

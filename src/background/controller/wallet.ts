@@ -181,6 +181,14 @@ export class WalletController {
   };
 
   /**
+   * 清除资产相关缓存。
+   */
+  clearAssetCache = async () => {
+    await assetService.clearStore();
+    eventBus.emit(EVENTS.broadcastToUI, { method: 'refreshAssets', params: null });
+  };
+
+  /**
    * 获取是否首次打开
    */
   getIsFirstOpen = () => {
@@ -595,9 +603,6 @@ export class WalletController {
     let result = null;
     if (res && res.result) {
       result = res.result;
-      // 注意：不在此处广播 refreshAssets。
-      // 转账广播成功只代表交易进入 mempool，链上 UTXO 尚未变化。
-      // background 轮询到区块高度变化时会自动广播 refreshAssets，届时 UI 才真正刷新。
     }
     return result;
   };

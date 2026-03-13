@@ -3,6 +3,7 @@ import { CoinNames, transferAddressHistory, Utxo, UtxoAddressSumInfo } from '@/s
 
 import createPersistStore from '../utils/persisitStore';
 import preferenceService from './preference';
+import { storage } from '../webapi';
 
 interface AssetStore {
   utxos: Utxo[];
@@ -15,19 +16,35 @@ interface AssetStore {
 
 class AssetService {
   store!: AssetStore;
+  private readonly template: AssetStore = {
+    utxos: [],
+    utxoSum: [],
+    utxoMap: {},
+    coinName: [],
+    transferAddressHistory: [],
+    syncBlockHeightMap: {},
+  };
 
   init = async () => {
     this.store = await createPersistStore<AssetStore>({
       name: 'assetState',
-      template: {
-        utxos: [],
-        utxoSum: [],
-        utxoMap: {},
-        coinName: [],
-        transferAddressHistory: [],
-        syncBlockHeightMap: {},
-      },
+      template: this.template,
     });
+  };
+
+  /**
+   * 清空资产缓存并重置持久化存储。
+   */
+  clearStore = async () => {
+    this.store.utxos = [];
+    this.store.utxoSum = [];
+    this.store.utxoMap = {};
+    this.store.coinName = [];
+    this.store.transferAddressHistory = [];
+    this.store.syncBlockHeightMap = {};
+
+    // 立即覆盖存储，避免旧缓存被 debounce 的持久化覆盖
+    await storage.set('assetState', { ...this.template });
   };
 
   // ─── UTXOs ───────────────────────────────────────────────────────────
