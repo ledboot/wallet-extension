@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from '@/ui/pages/MainRoute';
 import {
   BookOpen,
   ChevronLeft,
@@ -18,9 +17,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { useLanguage } from '@/ui/contexts/LanguageContext';
-import { useWallet } from '@/ui/utils';
 import { ConfirmModal } from '@/ui/components/ConfirmModal';
+import { useLanguage } from '@/ui/contexts/LanguageContext';
+import { useNavigate } from '@/ui/pages/MainRoute';
+import { useWallet } from '@/ui/utils';
 
 export default function SettingsScreen() {
   const navigate = useNavigate();
@@ -31,42 +31,23 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     // Get version from manifest if available (Chrome extension context)
-    if (
-      typeof chrome !== 'undefined' &&
-      chrome.runtime &&
-      chrome.runtime.getManifest
-    ) {
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest) {
       setAppVersion(chrome.runtime.getManifest().version);
     }
   }, []);
 
-  const SettingItem = ({
-    icon: Icon,
-    label,
-    onClick,
-  }: {
-    icon: any;
-    label: string;
-    onClick?: () => void;
-  }) => (
+  const SettingItem = ({ icon: Icon, label, onClick }: { icon: any; label: string; onClick?: () => void }) => (
     <div
       className='flex w-[25%] cursor-pointer flex-col items-center justify-start gap-2 rounded-lg p-2 text-center transition-colors hover:bg-gray-50 dark:hover:bg-gray-800'
       onClick={onClick}
     >
-      <Icon
-        className='h-6 w-6 text-gray-800 dark:text-gray-200'
-        strokeWidth={2}
-      />
-      <span className='break-words text-xs leading-tight text-gray-700 dark:text-gray-300'>
-        {label}
-      </span>
+      <Icon className='h-6 w-6 text-gray-800 dark:text-gray-200' strokeWidth={2} />
+      <span className='break-words text-xs leading-tight text-gray-700 dark:text-gray-300'>{label}</span>
     </div>
   );
 
   const SectionTitle = ({ title }: { title: string }) => (
-    <h3 className='mb-4 px-2 text-sm font-bold text-gray-900 dark:text-white'>
-      {title}
-    </h3>
+    <h3 className='mb-4 px-2 text-sm font-bold text-gray-900 dark:text-white'>{title}</h3>
   );
 
   const handleClearCache = async () => {
@@ -103,8 +84,12 @@ export default function SettingsScreen() {
           <SectionTitle title={t('settings.wallet_security')} />
           <div className='flex flex-wrap gap-y-6'>
             <SettingItem icon={PenLine} label={t('settings.backups')} />
-            <SettingItem icon={ShoppingBag} label={t('settings.password')} />
-            <SettingItem icon={Clock} label={t('settings.wallet_lock')} />
+            <SettingItem
+              icon={ShoppingBag}
+              label={t('settings.password')}
+              onClick={() => navigate('ChangePasswordScreen')}
+            />
+            <SettingItem icon={Clock} label={t('settings.wallet_lock')} onClick={() => navigate('WalletLockScreen')} />
           </div>
         </div>
 
@@ -112,10 +97,7 @@ export default function SettingsScreen() {
         <div className='border-b border-gray-100 px-4 py-5 dark:border-gray-800'>
           <SectionTitle title={t('settings.basic')} />
           <div className='flex flex-wrap gap-y-6'>
-            <SettingItem
-              icon={CreditCard}
-              label={t('settings.wallet_management')}
-            />
+            <SettingItem icon={CreditCard} label={t('settings.wallet_management')} />
             <SettingItem icon={Contact} label={t('settings.address_book')} />
             <SettingItem
               icon={SlidersHorizontal}
@@ -134,11 +116,7 @@ export default function SettingsScreen() {
         <div className='border-b border-gray-100 px-4 py-5 dark:border-gray-800'>
           <SectionTitle title={t('settings.advanced')} />
           <div className='flex flex-wrap gap-y-6'>
-            <SettingItem
-              icon={Trash2}
-              label={t('settings.clear_cache')}
-              onClick={() => setIsConfirmModalOpen(true)}
-            />
+            <SettingItem icon={Trash2} label={t('settings.clear_cache')} onClick={() => setIsConfirmModalOpen(true)} />
             <SettingItem icon={Download} label={t('settings.download_logs')} />
           </div>
         </div>
@@ -147,10 +125,7 @@ export default function SettingsScreen() {
         <div className='mb-8 px-4 py-5'>
           <SectionTitle title={t('settings.more')} />
           <div className='flex flex-wrap gap-y-6'>
-            <SettingItem
-              icon={FileText}
-              label={t('settings.terms_of_service')}
-            />
+            <SettingItem icon={FileText} label={t('settings.terms_of_service')} />
             <SettingItem icon={BookOpen} label={t('settings.privacy_notice')} />
             <SettingItem icon={HeadphonesIcon} label={t('settings.get_help')} />
             <SettingItem icon={MessageCircle} label={t('settings.community')} />

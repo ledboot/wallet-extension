@@ -23,6 +23,8 @@ export interface WalletController {
   isUnlocked(): Promise<boolean>;
 
   lockWallet(): Promise<void>;
+  setAutoLockTimeId(timeId: number): Promise<void>;
+  getAutoLockTimeId(): Promise<number>;
   setPopupOpen(isOpen: boolean): void;
   isReady(): Promise<boolean>;
 

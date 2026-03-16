@@ -2,10 +2,6 @@ import { useCallback, useRef } from 'react';
 import { HashRouter, Route, Routes, useNavigate as useNavigateOrigin } from 'react-router';
 
 import SyncBridge from '@/ui/components/SyncBridge';
-import ApprovalConnect from './approval/ApprovalConnect';
-import ApprovalSwitchNetwork from './approval/ApprovalSwitchNetwork';
-import ApprovalSignTransaction from './approval/ApprovalSignTransaction';
-import ApprovalSendTransaction from './approval/ApprovalSendTransaction';
 
 import AccountDetailScreen from './account/AccountDetailScreen';
 import AccountSelection from './account/AccountSelection';
@@ -13,15 +9,21 @@ import CreateOrImportWalletScreen from './account/CreateOrImportWalletScreen';
 import CreatePasswordScreen from './account/CreatePasswordScreen';
 import ExportPrivateKeyScreen from './account/ExportPrivateKeyScreen';
 import UnlockScreen from './account/UnlockScreen';
+import ApprovalConnect from './approval/ApprovalConnect';
+import ApprovalSendTransaction from './approval/ApprovalSendTransaction';
+import ApprovalSignTransaction from './approval/ApprovalSignTransaction';
+import ApprovalSwitchNetwork from './approval/ApprovalSwitchNetwork';
 import BoostScreen from './main/BoostScreen';
 import MainScreen from './main/MainScreen';
 import WelcomeScreen from './main/WelcomeScreen';
 import AddCustomNetwork from './network/AddCustomNetwork';
 import NetworkDetailScreen from './network/NetworkDetailScreen';
 import NetworkSelection from './network/NetworkSelection';
+import ChangePasswordScreen from './settings/ChangePasswordScreen';
 import LanguageScreen from './settings/LanguageScreen';
 import PreferencesScreen from './settings/PreferencesScreen';
 import SettingsScreen from './settings/SettingsScreen';
+import WalletLockScreen from './settings/WalletLockScreen';
 import History from './wallet/History';
 import Receive from './wallet/Receive';
 import AmountInputScreen from './wallet/transfer/AmountInputScreen';
@@ -54,6 +56,14 @@ const routes = {
   LanguageScreen: {
     path: '/settings/language',
     element: <LanguageScreen />,
+  },
+  ChangePasswordScreen: {
+    path: '/settings/change-password',
+    element: <ChangePasswordScreen />,
+  },
+  WalletLockScreen: {
+    path: '/settings/wallet-lock',
+    element: <WalletLockScreen />,
   },
   CreateOrImportWalletScreen: {
     path: '/account/create-or-import-wallet',
@@ -132,7 +142,6 @@ const routes = {
     path: '/approval/send-transaction',
     element: <ApprovalSendTransaction />,
   },
-
 };
 
 type RouteTypes = keyof typeof routes;

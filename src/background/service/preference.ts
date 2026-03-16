@@ -94,6 +94,10 @@ class PreferenceService {
     return this.store.autoLockTimeId;
   };
 
+  setAutoLockTimeId = (timeId: number) => {
+    this.store.autoLockTimeId = timeId;
+  };
+
   setPopupOpen = (isOpen: boolean) => {
     this.popupOpen = isOpen;
   };

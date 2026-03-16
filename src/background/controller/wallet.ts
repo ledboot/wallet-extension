@@ -147,14 +147,29 @@ export class WalletController {
   /**
    * 检查钱包是否已解锁
    */
-  async isUnlocked(): Promise<boolean> {
+  isUnlocked = async (): Promise<boolean> => {
     return keyringService.memStore.getState().isUnlocked;
-  }
+  };
+
+  /**
+   * 设置自动锁定时间
+   * @param timeId 自动锁定时间ID
+   */
+  setAutoLockTimeId = (timeId: number) => {
+    preferenceService.setAutoLockTimeId(timeId);
+  };
+
+  /**
+   * 获取自动锁定时间ID
+   */
+  getAutoLockTimeId = () => {
+    return preferenceService.getAutoLockTimeId();
+  };
 
   /**
    * 锁定钱包
    */
-  async lockWallet(): Promise<void> {
+  lockWallet = async (): Promise<void> => {
     await keyringService.setLocked();
     // 上锁后停止心跳监控
     if (this.heartbeatInterval) {
@@ -162,7 +177,7 @@ export class WalletController {
       this.heartbeatInterval = null;
     }
     this._stopUtxoPolling();
-  }
+  };
 
   /**
    * 设置弹窗状态
