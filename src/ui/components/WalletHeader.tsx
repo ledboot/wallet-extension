@@ -70,12 +70,7 @@ export function WalletHeader() {
               </button>
               <button
                 onClick={async () => {
-                  try {
-                    await wallet.lockWallet();
-                    navigate('UnlockScreen');
-                  } catch (e) {
-                    console.error('Failed to lock wallet:', e);
-                  }
+                  await wallet.lockWallet();
                 }}
                 className='flex w-full items-center justify-start space-x-3 rounded-xl px-4 py-3 text-[15px] font-medium text-black transition-colors hover:bg-[#F5F5F5]'
               >

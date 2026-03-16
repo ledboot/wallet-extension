@@ -224,17 +224,20 @@ class KeyringService extends EventEmitter {
     }
     this.isUnlocking = true;
 
-    await this.verifyPassword(oldPassword);
-    await this.unlockKeyrings(oldPassword);
-    this.password = newPassword;
+    try {
+      await this.verifyPassword(oldPassword);
+      await this.unlockKeyrings(oldPassword);
+      this.password = newPassword;
 
-    const encryptBooted = await this.encryptor.encrypt(newPassword, 'true');
-    this.store.updateState({ booted: encryptBooted });
+      const encryptBooted = await this.encryptor.encrypt(newPassword, 'true');
+      this.store.updateState({ booted: encryptBooted });
 
-    await this.persistAllKeyrings();
-    this.updateMemStoreKeyrings();
-    this.fullUpdate();
-    this.isUnlocking = false;
+      await this.persistAllKeyrings();
+      this.updateMemStoreKeyrings();
+      this.fullUpdate();
+    } finally {
+      this.isUnlocking = false;
+    }
   };
 
   /**
@@ -501,7 +504,6 @@ class KeyringService extends EventEmitter {
       });
       return [];
     }
-    // TODO: 从preferenceService中获取上次激活的keyring index，如果获取不到，则默认激活第一个keyring
 
     this.clearKeyrings();
     const vault = await this.encryptor.decrypt(password, encryptedVault);

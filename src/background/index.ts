@@ -71,8 +71,8 @@ browserRuntimeOnConnect((port: any) => {
           case 'controller':
             console.log('received controller', data);
             if (data.method) {
-              const result = await walletController[data.method as keyof typeof walletController].apply(
-                null,
+              const result = await (walletController as any)[data.method].apply(
+                walletController,
                 data.args
               );
               return result;

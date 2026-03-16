@@ -1,6 +1,6 @@
 {
   "name": "wallet-extension",
-  "displayName": "Wallet Extension",
+  "displayName": "Zent Wallet Extension",
   "description": "Wallet Extension",
   "private": true,
   "version": "1.0.0",
