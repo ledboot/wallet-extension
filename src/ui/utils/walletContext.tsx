@@ -95,6 +95,7 @@ export const WalletProvider = ({ children, wallet }: { children?: React.ReactNod
   return <WalletContext.Provider value={wallet}>{children}</WalletContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useWallet = () => {
   const wallet = useContext(WalletContext) as unknown as WalletController;
   if (!wallet) {

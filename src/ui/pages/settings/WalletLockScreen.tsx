@@ -12,7 +12,6 @@ export default function WalletLockScreen() {
   const { t } = useLanguage();
   const wallet = useWallet();
 
-  const [selectedTimeId, setSelectedTimeId] = useState<number>(5);
   const [pendingTimeId, setPendingTimeId] = useState<number>(5);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -22,7 +21,6 @@ export default function WalletLockScreen() {
     const loadCurrentSetting = async () => {
       try {
         const currentTimeId = await wallet.getAutoLockTimeId();
-        setSelectedTimeId(currentTimeId);
         setPendingTimeId(currentTimeId);
       } catch (error) {
         console.error('Failed to load auto lock time:', error);
@@ -39,7 +37,6 @@ export default function WalletLockScreen() {
     setIsLoading(true);
     try {
       await wallet.setAutoLockTimeId(pendingTimeId);
-      setSelectedTimeId(pendingTimeId);
       navigate('MainScreen');
     } catch (error) {
       console.error('Failed to set auto lock time:', error);

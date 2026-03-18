@@ -1,4 +1,4 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
+ 
 import { defineManifest } from '@crxjs/vite-plugin';
 
 import packageData from '../package.json';

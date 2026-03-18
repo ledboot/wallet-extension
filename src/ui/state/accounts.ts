@@ -58,7 +58,7 @@ const initialState = {
 
 export const accountsStore = create<AccountsState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       ...initialState,
 
       pendingLogin: () => {

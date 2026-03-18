@@ -8,6 +8,8 @@ import ReadyPromise from './readyPromise';
 import { $, domReadyCall } from './utils';
 
 const log = (event: string, ...args: unknown[]) => {
+  void event;
+  void args;
   if (process.env.NODE_ENV !== 'production') {
     // console.log(`%c [zent] ${event}`, 'font-weight:600;background:#7d6ef9;color:#fff;', ...args)
   }
@@ -143,8 +145,9 @@ export class ZentProvider extends EventEmitter {
 
   private _handleBackgroundMessage = ({ event, data }: { event: string; data: unknown }) => {
     log('[push event]', event, data);
-    if (_zentProviderPrivate._pushEventHandlers?.[event as keyof PushEventHandlers]) {
-      return (_zentProviderPrivate._pushEventHandlers[event as keyof PushEventHandlers] as Function)(data);
+    const handler = _zentProviderPrivate._pushEventHandlers?.[event as keyof PushEventHandlers];
+    if (typeof handler === 'function') {
+      return (handler as (payload: unknown) => unknown)(data);
     }
 
     this.emit(event, data);

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { getUiType } from '@/ui/utils';
@@ -10,7 +10,7 @@ export default function BoostScreen() {
   const navigate = useNavigate();
   const wallet = useWallet();
   const { t } = useLanguage();
-  const loadView = async () => {
+  const loadView = useCallback(async () => {
     const uiType = getUiType();
     console.log('uiType', uiType);
     const isBooted = await wallet.isBooted();
@@ -43,9 +43,9 @@ export default function BoostScreen() {
     }
 
     navigate('MainScreen');
-  };
+  }, [navigate, wallet]);
 
-  const init = async () => {
+  const init = useCallback(async () => {
     const ready = await wallet.isReady();
 
     if (ready) {
@@ -55,11 +55,11 @@ export default function BoostScreen() {
         init();
       }, 1000);
     }
-  };
+  }, [loadView, wallet]);
 
   useEffect(() => {
     init();
-  }, []);
+  }, [init]);
 
   return <div>{t('boost.boosting')}</div>;
 }

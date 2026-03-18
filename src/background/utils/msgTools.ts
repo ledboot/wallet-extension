@@ -255,7 +255,7 @@ export class MsgT {
     return m;
   }
 
-  lockInput(v: any) {
+  lockInput() {
     // omegaDB.transaction(function (dbtx) {
     //   if (v == undefined) v = 1;
     //   for (var i = 0; i < T.TIn.length; i++) {
@@ -267,7 +267,7 @@ export class MsgT {
     // });
   }
 
-  inputOf(tokenType: any) {
+  inputOf() {
 
   }
 

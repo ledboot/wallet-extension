@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Check, ChevronLeft, Copy, Globe, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Check, ChevronLeft, Copy, X } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { toast } from 'sonner';
 
@@ -20,10 +20,6 @@ export default function Receive() {
     () => CHAIN_INFO[chainType]?.label ?? '',
     [chainType]
   );
-
-  useEffect(() => {
-    if (!address) return;
-  }, [address]);
 
   const copyAddress = () => {
     if (!address) return;

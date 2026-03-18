@@ -4,7 +4,7 @@
  * Minimal typing (any) is used to keep parity with prototype-based API.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 declare const navigator: any;
 
@@ -290,8 +290,8 @@ function nbits(x: any) {
 // (protected) r = this - a
 (BigInteger as any).prototype.subTo = function (a: any, r: any) {
   let i = 0,
-    c = 0,
-    m = Math.min(a.t, this.t);
+    c = 0;
+  const m = Math.min(a.t, this.t);
   while (i < m) {
     c += this[i] - a[i];
     r[i++] = c & this.DM;
@@ -384,8 +384,8 @@ function nbits(x: any) {
     d2 = (1 << this.F1) / yt,
     e = 1 << this.F2;
   let i = r.t,
-    j = i - ys,
-    t = q == null ? nbi() : q;
+    j = i - ys;
+  const t = q == null ? nbi() : q;
   y.dlShiftTo(j, t);
   if (r.compareTo(t) >= 0) {
     r[r.t++] = 1;
@@ -434,8 +434,8 @@ function nbits(x: any) {
 (BigInteger as any).prototype.exp = function (e: any, z: any) {
   if (e > 0xffffffff || e < 1) return (BigInteger as any).ONE;
   let r = nbi(),
-    r2 = nbi(),
-    g = z.convert(this);
+    r2 = nbi();
+  const g = z.convert(this);
   let i = nbits(e) - 1;
   g.copyTo(r);
   while (--i >= 0) {
@@ -460,8 +460,8 @@ function nbits(x: any) {
   else if (b === 32) k = 5;
   else if (b === 4) k = 2;
   else return this.toRadix(b);
-  let km = (1 << k) - 1,
-    d,
+  const km = (1 << k) - 1;
+  let d,
     m = false,
     r = '',
     i = this.t;
@@ -646,8 +646,8 @@ const lplim = (1 << 26) / lowprimes[lowprimes.length - 1];
 };
 (BigInteger as any).prototype.bitwiseTo = function (a: any, op: any, r: any) {
   let i,
-    f,
-    m = Math.min(a.t, this.t);
+    f;
+  const m = Math.min(a.t, this.t);
   for (i = 0; i < m; ++i) r[i] = op(this[i], a[i]);
   if (a.t < this.t) {
     f = a.s & this.DM;
@@ -668,8 +668,8 @@ const lplim = (1 << 26) / lowprimes[lowprimes.length - 1];
 };
 (BigInteger as any).prototype.addTo = function (a: any, r: any) {
   let i = 0,
-    c = 0,
-    m = Math.min(a.t, this.t);
+    c = 0;
+  const m = Math.min(a.t, this.t);
   while (i < m) {
     c += this[i] + a[i];
     r[i++] = c & this.DM;
@@ -804,15 +804,15 @@ const lplim = (1 << 26) / lowprimes[lowprimes.length - 1];
 (BigInteger as any).prototype.modInv = function (m: any) {
   return this.modInverse(m);
 };
-(BigInteger as any).prototype.toArray = function (radix: any) {
+(BigInteger as any).prototype.toArray = function () {
   return { value: this.toByteArray() };
 };
 (BigInteger as any).prototype.isNegative = function () {
   return this.s < 0;
 };
 (BigInteger as any).prototype.toByteArray = function () {
-  let i = this.t,
-    r: any[] = [];
+  let i = this.t;
+  const r: any[] = [];
   r[0] = this.s;
   let p = this.DB - ((i * this.DB) % 8),
     d,
@@ -905,8 +905,8 @@ function op_andnot(x: any, y: any) {
   return -1;
 };
 (BigInteger as any).prototype.bitCount = function () {
-  let r = 0,
-    x = this.s & this.DM;
+  let r = 0;
+  const x = this.s & this.DM;
   for (let i = 0; i < this.t; ++i) r += cbit(this[i] ^ x);
   return r;
 };
@@ -1118,8 +1118,8 @@ function op_andnot(x: any, y: any) {
   return y;
 };
 (BigInteger as any).prototype.isProbablePrime = function (t: any) {
-  let i,
-    x = this.abs();
+  let i;
+  const x = this.abs();
   if (x.t === 1 && x[0] <= lowprimes[lowprimes.length - 1]) {
     for (i = 0; i < lowprimes.length; ++i)
       if (x[0] === lowprimes[i]) return true;

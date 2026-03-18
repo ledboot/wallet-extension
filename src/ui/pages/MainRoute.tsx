@@ -146,6 +146,7 @@ const routes = {
 
 type RouteTypes = keyof typeof routes;
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useNavigate() {
   const navigate = useNavigateOrigin();
   const navigatingRef = useRef(false);

@@ -12,7 +12,7 @@ export type AppState = {
   settings: ReturnType<typeof settingsStore.getState>;
 };
 
-export const useRootStore = create<AppState>()((set, get) => ({
+export const useRootStore = create<AppState>()(() => ({
   accounts: accountsStore.getState(),
   global: globalStore.getState(),
   keyrings: keyringsStore.getState(),

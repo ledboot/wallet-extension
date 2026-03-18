@@ -72,6 +72,7 @@ export default function AmountInputScreen() {
     wallet,
     isMax,
     recipientAddress,
+    t,
   ]);
 
   // Calculate total amount including fee

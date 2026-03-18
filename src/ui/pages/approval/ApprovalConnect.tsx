@@ -6,7 +6,6 @@ import { useSearchParams } from 'react-router-dom';
 import { PixelAvatar } from '@/ui/components/PixelAvatar';
 import { useKeyringsList } from '@/ui/state/hooks';
 import { useWallet } from '@/ui/utils/walletContext';
-import { useLanguage } from '@/ui/contexts/LanguageContext';
 import ApprovalLayout from './ApprovalLayout';
 
 const ApprovalConnect = () => {

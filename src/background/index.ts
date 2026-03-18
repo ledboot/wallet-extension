@@ -1,4 +1,4 @@
-import { CHAIN_INFO, ChainType, EVENTS } from '@/shared/constants';
+import { CHAIN_INFO, EVENTS } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
 import PortMessage from '@/shared/utils/message/portMessage';
 
@@ -203,10 +203,10 @@ browserRuntimeOnConnect((port: any) => {
 
           // Get target chain details
           let targetChainType = Object.entries(preferenceService.getAllchainInfo()).find(
-            ([_, ci]) => ci.chainId === targetChainId
+            ([, ci]) => ci.chainId === targetChainId
           )?.[0];
           if (!targetChainType) {
-            targetChainType = Object.entries(CHAIN_INFO).find(([_, ci]) => ci.chainId === targetChainId)?.[0];
+            targetChainType = Object.entries(CHAIN_INFO).find(([, ci]) => ci.chainId === targetChainId)?.[0];
           }
           if (!targetChainType) throw new Error(`Unsupported chainId: ${targetChainId}`);
           const targetChainInfo = preferenceService.getchainInfo(targetChainType) || CHAIN_INFO[targetChainType];
@@ -259,7 +259,7 @@ browserRuntimeOnConnect((port: any) => {
           const { tx } = (params as any) ?? {};
           if (!tx) throw new Error('Missing transaction data');
 
-          let msgT = new MsgT();
+          const msgT = new MsgT();
           try {
             msgT.rawDecode(tx);
           } catch (e) {
@@ -438,7 +438,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const formatted = utxos[0].value / Math.pow(10, decimals);
         const symbol = coinName[0].name;
 
-        const networkType = preferenceService.getNetworkType();
         const chainType = preferenceService.getChainType();
 
         sendResponse({
@@ -498,12 +497,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         // 优先从存储中查找网络，然后从常量中查找
         let targetChainType = Object.entries(preferenceService.getAllchainInfo()).find(
-          ([_, chainInfo]) => chainInfo.chainId === targetChainId
+          ([, chainInfo]) => chainInfo.chainId === targetChainId
         )?.[0] as string;
 
         if (!targetChainType) {
           targetChainType = Object.entries(CHAIN_INFO).find(
-            ([_, chainInfo]) => chainInfo.chainId === targetChainId
+            ([, chainInfo]) => chainInfo.chainId === targetChainId
           )?.[0] as string;
         }
 

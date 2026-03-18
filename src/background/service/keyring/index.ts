@@ -2,7 +2,7 @@
 import encryptor from 'browser-passworder';
 import { EventEmitter } from 'eventemitter3';
 
-import { CHAIN_INFO, EVENTS, KEYRING_TYPE } from '@/shared/constants';
+import { EVENTS, KEYRING_TYPE } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
 import { ObservableStore } from '@/shared/observableStore';
 import { Account } from '@/shared/types';
@@ -429,9 +429,6 @@ class KeyringService extends EventEmitter {
       throw new Error(`keyring_not_found: ${keyringKey}`);
     }
 
-    // Get the keyring reference before removing it
-    const keyringToRemove = this.keyrings[index];
-
     // Clean up UTXO data for all accounts in this keyring FIRST
     const tmpKeyring = this.keyrings[index];
     if (tmpKeyring) {
@@ -689,7 +686,7 @@ class KeyringService extends EventEmitter {
    * Deallocates all currently managed keyrings and accounts.
    * Used before initializing a new vault.
    */
-  /* eslint-disable require-await */
+   
   clearKeyrings = (): void => {
     // clear keyrings from memory
 

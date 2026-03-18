@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Account } from '@shared/types';
-import { ChevronLeft, Copy, EyeOff, ShieldCheck, X } from 'lucide-react';
+import { ChevronLeft, Copy, EyeOff, X } from 'lucide-react';
 import { useLocation } from 'react-router';
 import { toast } from 'sonner';
 

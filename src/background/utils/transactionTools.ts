@@ -5,7 +5,7 @@ import { keyringService } from '../service';
 import assetService from '../service/asset';
 import Address from './address';
 import { TinDef, ToutDef } from './defs';
-import { bytesToHex, hexToBytes } from './index';
+import { bytesToHex } from './index';
 import { MsgT } from './msgTools';
 import { Packer } from './packer';
 
@@ -32,7 +32,9 @@ export function buildTx(
   merge: boolean,
   crosschain: number
 ) {
-  var condition: ConditionType = {
+  void merge;
+  void crosschain;
+  const condition: ConditionType = {
     level: 0,
     bytype: tokenType,
     order: 'amount asc',
@@ -42,12 +44,11 @@ export function buildTx(
     nocontract: true,
   };
   if (senderAddress) condition.sendAddress = senderAddress;
-  var tx = new MsgT();
-  var fees = 1200 + (receivedPks ? receivedPks.length : 0);
-  const xch = { result: { Fees: [] } };
+  const tx = new MsgT();
+  let fees = 1200 + (receivedPks ? receivedPks.length : 0);
   const rights = null;
-  var txout: any[] = [];
-  var txin: any[] = [];
+  const txout: any[] = [];
+  let txin: any[] = [];
 
   if (receivedPks) {
     if ((tokenType & 2n) == 2n && rights) {
@@ -55,11 +56,10 @@ export function buildTx(
     } else txout.push({ tokenType: tokenType, value: amount, pkScript: receivedPks });
   }
 
-  const r = gatherCoins(condition, amount, fees, rights, notxfee, checkutxo, crosschain);
+  const r = gatherCoins(condition, amount, fees, rights, notxfee);
   // if(r === null) return false;
   const sum = r.sum;
   const inaddress = r.inaddress;
-  const minTxfee = r.minTxfee;
   if (tokenType !== 0n) r.minTxfee = 0n;
   txin = txin.concat(r.txin);
   fees = r.fees;
@@ -118,9 +118,7 @@ function gatherCoins(
   amount: bigint,
   fees: number,
   rights: any,
-  notxfee: boolean,
-  checkutxo: boolean,
-  crosschain: number
+  notxfee: boolean
 ) {
   let sum = 0n;
   const txin: any[] = [];
@@ -128,13 +126,9 @@ function gatherCoins(
   let minTxfee = notxfee ? 0n : 1000n;
   const tokenType = condition.bytype;
   const inclfee = !notxfee && tokenType == 0n;
-  let more = true;
-  let skip = 0;
-  const difff = false;
   let assets: any[] = [];
 
-  const min = amount / 900n,
-    max = 0n;
+  const min = amount / 900n;
   condition.min = min;
   condition.max = 0n;
 
@@ -142,10 +136,8 @@ function gatherCoins(
   // if(assets != null && assets.length  == 0){
 
   // }
-  condition.skip = skip;
+  condition.skip = 0;
   assets = assetService.getUtxosByAddress(condition.sendAddress || '');
-  skip += assets.length;
-  more = assets.length > 0 || min > 0n;
 
   for (let i = 0; i < assets.length; i++) {
     const asset = assets[i];
@@ -226,7 +218,7 @@ function genSigHash(tx: any) {
   const hex = bytesToHex(Array.from(tx.encode(1)));
   t.rawDecode(hex);
   t.txDef = [];
-  let text = t.encode(0);
+  const text = t.encode(0);
   const w = new Packer();
   w.PackV(text.length);
   const bytes = new Uint8Array([...w.Bytes(), ...text]);
@@ -239,7 +231,7 @@ function rawToDer(raw: any) {
   function trim(buf: any) {
     let i = 0;
     while (i < buf.length - 1 && buf[i] === 0) i++;
-    let out = buf.slice(i);
+    const out = buf.slice(i);
     if (out[0] & 0x80) {
       return Uint8Array.from([0, ...out]);
     }

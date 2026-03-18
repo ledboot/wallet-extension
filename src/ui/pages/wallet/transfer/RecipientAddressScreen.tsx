@@ -6,7 +6,6 @@ import { useLocation } from 'react-router';
 import { toast } from 'sonner';
 
 import { useLanguage } from '@/ui/contexts/LanguageContext';
-import { useCurrentAccount } from '@/ui/state/hooks';
 import { useWallet } from '@/ui/utils/walletContext';
 
 interface LocationState {
@@ -16,7 +15,6 @@ interface LocationState {
 export default function RecipientAddressScreen() {
   const navigate = useNavigate();
   const location = useLocation();
-  const currentAccount = useCurrentAccount();
   const { t } = useLanguage();
   const { token } = (location.state || {}) as LocationState;
 
@@ -46,11 +44,6 @@ export default function RecipientAddressScreen() {
     };
     fetchRecentAddresses();
   }, [wallet]);
-
-  const formatAddress = (address: string): string => {
-    if (!address || address.length <= 10) return address;
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
 
   const handlePaste = async () => {
     try {

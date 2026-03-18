@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 import { WalletKeyring } from '@/shared/types';
 import { useLanguage } from '@/ui/contexts/LanguageContext';

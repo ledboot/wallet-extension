@@ -112,11 +112,13 @@ export class OpenapiService {
   };
 
   fetchTokentype = async (utxos: Utxo[] = [], chainId?: string): Promise<{ CoinNames: CoinNames[] }> => {
-    const CoinNames = assetService.getCoinNames();
+    const existingCoinNames = assetService.getCoinNames();
     const tokenTypes = utxos.map((u) => u.tokenType).filter((t) => t !== undefined && t !== null && t !== '');
     const tokenTypesStr = [...new Set(tokenTypes)].join(',');
     let updated: number = 0;
-    if (CoinNames.length > 0) updated = Math.max(0, ...CoinNames.map((c) => Number(c.updated || 0)));
+    if (existingCoinNames.length > 0) {
+      updated = Math.max(0, ...existingCoinNames.map((c) => Number(c.updated || 0)));
+    }
     const { serverEndpoint, chainclass } = ServerConfiguration;
 
     const url =
@@ -176,19 +178,18 @@ export class OpenapiService {
       console.log(`Processing ${res.length} remote networks...`);
       res.forEach((apiData) => {
         try {
-          let rpcEndpoint: string;
           const meta = JSON.parse(apiData.meta);
-          rpcEndpoint = `http://${meta.dns}:${meta.rpcport}`;
+          const resolvedRpcEndpoint = `http://${meta.dns}:${meta.rpcport}`;
 
           const networkConfig: ChainInfo = {
             label: apiData.name,
             iconLabel: apiData.name,
             chainId: parseInt(apiData.chainid, 16),
-            endpoints: apiData.endpoints
-              ? Array.isArray(apiData.endpoints)
-                ? apiData.endpoints
-                : ([apiData.endpoints] as string[])
-              : [rpcEndpoint],
+              endpoints: apiData.endpoints
+                ? Array.isArray(apiData.endpoints)
+                  ? apiData.endpoints
+                  : ([apiData.endpoints] as string[])
+              : [resolvedRpcEndpoint],
             icon: apiData.icon || './images/artifacts/bitcoin-mainnet.svg',
             unit: apiData.name,
             networkType: Number(apiData.testnet) ? NetworkType.TESTNET : NetworkType.MAINNET,
@@ -441,13 +442,13 @@ export class OpenapiService {
     crosschain: number,
     timeLimit: number
   ) => {
-    var adb = Array.from(Address.decodeString(receivedAddress));
+    let adb = Array.from(Address.decodeString(receivedAddress));
     const op = adb[0] === 0 || adb[0] === 0x6f ? 0x41 : adb[0] === 0x78 ? 0x43 : 0x42;
     adb = adb.concat([op, 0, 0, 0]);
     const pks = bytesToHex(adb);
     const merge = receivedAddress === senderAddress;
 
-    let tx = await buildTx(tokenType, amount, pks, senderAddress, false, false, merge, crosschain);
+    const tx = await buildTx(tokenType, amount, pks, senderAddress, false, false, merge, crosschain);
 
     if (timeLimit) {
       const height = await this.gbc();
@@ -481,17 +482,17 @@ export class OpenapiService {
   };
 
   computeTransactioFees = async (tokenType: number, senderAddress: string, amount: number, receivedAddress: string) => {
-    var adb = Array.from(Address.decodeString(receivedAddress));
+    let adb = Array.from(Address.decodeString(receivedAddress));
     const op = adb[0] === 0 || adb[0] === 0x6f ? 0x41 : adb[0] === 0x78 ? 0x43 : 0x42;
     adb = adb.concat([op, 0, 0, 0]);
     const receivedPks = bytesToHex(adb);
-    var fees = 1200 + (receivedPks ? receivedPks.length : 0);
+    let fees = 1200 + (receivedPks ? receivedPks.length : 0);
 
     const inclfee = tokenType === 0;
     const assets = assetService.getUtxosByAddress(senderAddress || '');
     const addrs: string[] = [];
     let sum = 0;
-    var minTxfee = 0;
+    let minTxfee = 0;
     for (let i = 0; i < assets.length; i++) {
       sum += assets[i].value;
       fees += 356;

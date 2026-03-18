@@ -6,7 +6,7 @@ declare global {
   // 为 window 对象添加 myWallet 属性
   interface Window {
     myWallet: {
-      request: (method: string, params: {}) => Promise<any>;
+      request: (method: string, params: Record<string, unknown>) => Promise<any>;
       connect: () => Promise<any>;
     };
   }

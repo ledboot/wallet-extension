@@ -21,7 +21,7 @@ export default function TokenSelectionScreen() {
       try {
         // TODO: Replace with actual token fetching logic
         // This is a mock implementation
-        const { assetsData, chainName } = await wallet.assetsListsPage();
+        const { assetsData } = await wallet.assetsListsPage();
         setTokens(assetsData);
       } catch (error) {
         console.error('Failed to load tokens:', error);
@@ -31,7 +31,7 @@ export default function TokenSelectionScreen() {
     };
 
     loadTokens();
-  }, [currentAccount?.address, chainType]);
+  }, [currentAccount?.address, chainType, wallet]);
 
   const handleTokenSelect = (token: any) => {
     navigate('RecipientAddressScreen', { token });

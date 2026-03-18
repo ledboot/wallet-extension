@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, Info, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info, X } from 'lucide-react';
 
 import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useNavigate } from '@/ui/pages/MainRoute';

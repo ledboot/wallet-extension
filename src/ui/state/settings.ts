@@ -37,7 +37,7 @@ const initialState = {
 };
 
 export const settingsStore = create<SettingsState>()(
-  persist((set, get) => ({
+  persist((set) => ({
     ...initialState,
 
     reset: () => set(initialState),

@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable no-param-reassign */
+ 
+ 
 import fs from 'fs';
 import { resolve } from 'path';
 import { crx } from '@crxjs/vite-plugin';

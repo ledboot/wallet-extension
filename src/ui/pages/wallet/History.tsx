@@ -1,12 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
-  AlertCircle,
   ArrowLeft,
-  CheckCircle,
-  Clock,
   Filter,
   RefreshCw,
-  XCircle,
 } from 'lucide-react';
 
 import { Account, TxHistoryItem, TxType } from '@/shared/types';
@@ -38,8 +34,7 @@ export default function History() {
   const [filter, setFilter] = useState<'all' | 'send' | 'receive' | 'unknown'>(
     'all'
   );
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+  const hasMore = true;
 
   // const wif = wallet.getWIF(currentAccount.address); 获取私钥
   const filterOptions = [
@@ -75,27 +70,6 @@ export default function History() {
     if (tx.txType === TxType.RECEIVE) return 'receive';
     if (tx.txType === TxType.SEND) return 'send';
     return 'unknown';
-  };
-
-  const getTransactionStatus = (
-    tx: TxHistoryItem
-  ): 'completed' | 'pending' | 'failed' => {
-    if (tx.confirmations >= 6) return 'completed';
-    if (tx.confirmations > 0) return 'pending';
-    return 'failed';
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className='h-4 w-4 text-success' />;
-      case 'pending':
-        return <Clock className='h-4 w-4 text-warning' />;
-      case 'failed':
-        return <XCircle className='h-4 w-4 text-error' />;
-      default:
-        return <AlertCircle className='text-muted-foreground h-4 w-4' />;
-    }
   };
 
   const getTransactionIcon = (type: string) => {

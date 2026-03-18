@@ -1,4 +1,4 @@
-import type { CoinNames, transferAddressHistory, Utxo, UtxoAddressSumInfo } from '@/shared/types';
+import type { transferAddressHistory, UtxoAddressSumInfo } from '@/shared/types';
 
 import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
 import {
@@ -9,7 +9,6 @@ import {
   EVENTS,
   KEYRING_TYPE,
   KEYRING_TYPES,
-  NetworkType,
 } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
 import { Account, ChainInfo, WalletKeyring } from '@/shared/types';
