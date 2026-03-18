@@ -3,14 +3,20 @@ import eventBus from '@/shared/eventBus';
 import PortMessage from '@/shared/utils/message/portMessage';
 
 import { walletController } from './controller';
-import { assetService, keyringService, openapiService, preferenceService, approvalService, sessionService } from './service';
-import { signTransaction } from './utils/transactionTools';
-import { MsgT } from './utils/msgTools';
+import {
+  approvalService,
+  assetService,
+  keyringService,
+  openapiService,
+  preferenceService,
+  sessionService,
+} from './service';
 import { bytesToHex } from './utils/index';
+import { MsgT } from './utils/msgTools';
+import { signTransaction } from './utils/transactionTools';
 import { storage } from './webapi';
 import { browserRuntimeOnConnect, browserRuntimeOnInstalled } from './webapi/browser';
 import { openExtensionInTab } from './webapi/tab';
-
 
 const expandIcon = (path: string) => {
   if (!path) return '';
@@ -71,10 +77,7 @@ browserRuntimeOnConnect((port: any) => {
           case 'controller':
             console.log('received controller', data);
             if (data.method) {
-              const result = await (walletController as any)[data.method].apply(
-                walletController,
-                data.args
-              );
+              const result = await (walletController as any)[data.method].apply(walletController, data.args);
               return result;
             }
             return;
@@ -170,7 +173,6 @@ browserRuntimeOnConnect((port: any) => {
           return accounts[idx] || accounts[0] || null;
         }
 
-
         case 'getNetwork': {
           const chainInfo = preferenceService.store.currentChainInfo;
           return {
@@ -245,15 +247,18 @@ browserRuntimeOnConnect((port: any) => {
           };
         }
 
-        case 'getUtxos': {
-          const { address } = (params as any) ?? {};
+        case 'getCurrentAccountUtxos': {
+          const accounts = await keyringService.getAccounts();
+          const idx = preferenceService.store.currentAccountIndex;
+          const address = accounts[idx]?.address;
+          if (!address) throw new Error('No current account');
           return assetService.getUtxosByAddress(address);
         }
 
         case 'signTransaction': {
           const { tx } = (params as any) ?? {};
           if (!tx) throw new Error('Missing transaction data');
-          
+
           let msgT = new MsgT();
           try {
             msgT.rawDecode(tx);
@@ -298,6 +303,18 @@ browserRuntimeOnConnect((port: any) => {
           return { txHash: res.result };
         }
 
+        case 'tryContract': {
+          const { tx } = (params as any) ?? {};
+          if (!tx) throw new Error('Missing transaction data');
+          return openapiService.tryContract(tx);
+        }
+
+        case 'contractCall': {
+          const { contractAddress, params: contractParams } = (params as any) ?? {};
+          if (!contractAddress) throw new Error('Missing contract address');
+          if (!contractParams) throw new Error('Missing contract call params');
+          return openapiService.contractCall(contractAddress, contractParams);
+        }
 
         default:
           throw new Error(`Unknown method: ${method}`);
@@ -629,7 +646,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
       return true;
     }
-
   }
 
   // Default response

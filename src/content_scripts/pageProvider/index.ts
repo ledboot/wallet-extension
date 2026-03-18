@@ -59,10 +59,7 @@ export class ZentProvider extends EventEmitter {
   constructor() {
     super();
     this.initialize();
-    _zentProviderPrivate._pushEventHandlers = new PushEventHandlers(
-      this,
-      _zentProviderPrivate
-    );
+    _zentProviderPrivate._pushEventHandlers = new PushEventHandlers(this, _zentProviderPrivate);
   }
 
   private tryDetectTab = async () => {
@@ -73,10 +70,7 @@ export class ZentProvider extends EventEmitter {
         ($('head > link[rel~="icon"]') as HTMLLinkElement)?.href ||
         ($('head > meta[itemprop="image"]') as HTMLMetaElement)?.content;
 
-      const name =
-        document.title ||
-        ($('head > meta[name="title"]') as HTMLMetaElement)?.content ||
-        origin;
+      const name = document.title || ($('head > meta[name="title"]') as HTMLMetaElement)?.content || origin;
 
       _zentProviderPrivate._bcm.request({
         method: 'tabCheckin',
@@ -86,14 +80,9 @@ export class ZentProvider extends EventEmitter {
   };
 
   initialize = async () => {
-    document.addEventListener(
-      'visibilitychange',
-      this._requestPromiseCheckVisibility
-    );
+    document.addEventListener('visibilitychange', this._requestPromiseCheckVisibility);
 
-    _zentProviderPrivate._bcm
-      .connect()
-      .on('message', this._handleBackgroundMessage);
+    _zentProviderPrivate._bcm.connect().on('message', this._handleBackgroundMessage);
 
     this.tryDetectTab();
     domReadyCall(() => {
@@ -116,9 +105,7 @@ export class ZentProvider extends EventEmitter {
         });
       }
       if (result?.accounts) {
-        _zentProviderPrivate._pushEventHandlers?.accountsChanged(
-          result.accounts
-        );
+        _zentProviderPrivate._pushEventHandlers?.accountsChanged(result.accounts);
       }
     } catch {
       // Ignore initialization errors — background may not be ready yet
@@ -154,34 +141,17 @@ export class ZentProvider extends EventEmitter {
     }
   };
 
-  private _handleBackgroundMessage = ({
-    event,
-    data,
-  }: {
-    event: string;
-    data: unknown;
-  }) => {
+  private _handleBackgroundMessage = ({ event, data }: { event: string; data: unknown }) => {
     log('[push event]', event, data);
-    if (
-      _zentProviderPrivate._pushEventHandlers?.[
-        event as keyof PushEventHandlers
-      ]
-    ) {
-      return (
-        _zentProviderPrivate._pushEventHandlers[
-          event as keyof PushEventHandlers
-        ] as Function
-      )(data);
+    if (_zentProviderPrivate._pushEventHandlers?.[event as keyof PushEventHandlers]) {
+      return (_zentProviderPrivate._pushEventHandlers[event as keyof PushEventHandlers] as Function)(data);
     }
 
     this.emit(event, data);
   };
 
   // Truly private via Symbol — external code cannot call this
-  private [requestMethodKey] = async (data: {
-    method: string;
-    params?: unknown;
-  }) => {
+  private [requestMethodKey] = async (data: { method: string; params?: unknown }) => {
     if (!data) {
       throw new Error('Invalid request');
     }
@@ -210,9 +180,7 @@ export class ZentProvider extends EventEmitter {
    * Opens the extension popup and returns the list of connected accounts.
    */
   requestAccounts = async (): Promise<string[]> => {
-    return this[requestMethodKey]({ method: 'requestAccounts' }) as Promise<
-      string[]
-    >;
+    return this[requestMethodKey]({ method: 'requestAccounts' }) as Promise<string[]>;
   };
 
   /** Disconnect the wallet from the current site. */
@@ -224,9 +192,7 @@ export class ZentProvider extends EventEmitter {
    * Get the list of accounts that are accessible to this page.
    */
   getAccounts = async (): Promise<string[]> => {
-    return this[requestMethodKey]({ method: 'getAccounts' }) as Promise<
-      string[]
-    >;
+    return this[requestMethodKey]({ method: 'getAccounts' }) as Promise<string[]>;
   };
 
   /** Get the currently selected/active account. */
@@ -268,14 +234,10 @@ export class ZentProvider extends EventEmitter {
   };
 
   /**
-   * Get UTXOs for the given address.
-   * @param address - The address to query
+   * Get current account UTXOs
    */
-  getUtxos = async (address: string) => {
-    return this[requestMethodKey]({
-      method: 'getUtxos',
-      params: { address },
-    });
+  getCurrentAccountUtxos = async () => {
+    return this[requestMethodKey]({ method: 'getCurrentAccountUtxos' });
   };
 
   /**
@@ -299,6 +261,27 @@ export class ZentProvider extends EventEmitter {
       params: { tx },
     });
   };
+
+  /**
+   * Simulate a contract tx without broadcasting.
+   * @param tx - The raw transaction bytes/hex
+   */
+  tryContract = async (tx: string) => {
+    return this[requestMethodKey]({
+      method: 'tryContract',
+      params: { tx },
+    });
+  };
+
+  /**
+   * Call contract method by contract address and encoded params.
+   */
+  contractCall = async (contractAddress: string, params: string) => {
+    return this[requestMethodKey]({
+      method: 'contractCall',
+      params: { contractAddress, params },
+    });
+  };
 }
 
 declare global {
@@ -307,11 +290,7 @@ declare global {
   }
 }
 
-function defineUnwritablePropertyIfPossible(
-  o: Record<string, unknown>,
-  p: string,
-  value: unknown
-) {
+function defineUnwritablePropertyIfPossible(o: Record<string, unknown>, p: string, value: unknown) {
   const descriptor = Object.getOwnPropertyDescriptor(o, p);
   if (!descriptor || descriptor.writable) {
     if (!descriptor || descriptor.configurable) {
@@ -323,9 +302,7 @@ function defineUnwritablePropertyIfPossible(
       o[p] = value;
     }
   } else {
-    console.warn(
-      `[Zent] Failed to inject ${p}. Another wallet may be intercepting the namespace.`
-    );
+    console.warn(`[Zent] Failed to inject ${p}. Another wallet may be intercepting the namespace.`);
   }
 }
 
@@ -334,21 +311,12 @@ const providerProxy = new Proxy(provider, {
   deleteProperty: () => true,
   get: (target, prop) => {
     // Allow EventEmitter internals
-    if (
-      prop === '_events' ||
-      prop === '_eventsCount' ||
-      prop === '_maxListeners'
-    ) {
+    if (prop === '_events' || prop === '_eventsCount' || prop === '_maxListeners') {
       return (target as any)[prop];
     }
     // Block private method access
-    if (
-      (typeof prop === 'string' && prop.startsWith('_')) ||
-      prop === requestMethodKey
-    ) {
-      console.warn(
-        `[Zent] Access to private member "${String(prop)}" is not allowed.`
-      );
+    if ((typeof prop === 'string' && prop.startsWith('_')) || prop === requestMethodKey) {
+      console.warn(`[Zent] Access to private member "${String(prop)}" is not allowed.`);
       return undefined;
     }
     return (target as any)[prop];

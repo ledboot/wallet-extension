@@ -101,7 +101,7 @@
   },
   "packageManager": "bun@1.1.10",
   "engines": {
-    "node": ">=20.x",
+    "node": "22.x",
     "bun": ">=1.1.10"
   }
 }

@@ -425,6 +425,14 @@ export class OpenapiService {
     return res;
   };
 
+  tryContract = async (txhex: string) => {
+    return this.httpPost(this.getEndpoint(), 'trycontract', [txhex]);
+  };
+
+  contractCall = async (contractAddress: string, params: string) => {
+    return this.httpPost(this.getEndpoint(), 'contractcall', [contractAddress, params]);
+  };
+
   transfer = async (
     amount: bigint,
     tokenType: bigint,
