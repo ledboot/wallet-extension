@@ -204,6 +204,20 @@ export class WalletController {
   };
 
   /**
+   * 获取语言设置
+   */
+  getLocale = () => {
+    return preferenceService.getLocale();
+  };
+
+  /**
+   * 设置语言
+   */
+  setLocale = (locale: string) => {
+    preferenceService.setLocale(locale);
+  };
+
+  /**
    * 获取是否首次打开
    */
   getIsFirstOpen = () => {

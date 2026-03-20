@@ -156,6 +156,14 @@ class PreferenceService {
     this.store.currentAccountIndex = accountIndex;
   };
 
+  getLocale = () => {
+    return this.store.locale;
+  };
+
+  setLocale = (locale: string) => {
+    this.store.locale = locale;
+  };
+
   getCurrentChainInfo = () => {
     return this.store.currentChainInfo;
   };

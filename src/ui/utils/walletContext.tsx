@@ -84,9 +84,11 @@ export interface WalletController {
   addchainInfo(chainType: string, chainInfo: ChainInfo): Promise<void>;
   getApproval(id: string): Promise<any>;
   resolveApproval(id: string, data: any): Promise<void>;
-  rejectApproval(id: string): Promise<void>;
+  rejectApproval(id: string, data?: any): Promise<void>;
 
   clearCache(): Promise<void>;
+  getLocale(): Promise<string>;
+  setLocale(locale: string): void;
 }
 
 const WalletContext = createContext<WalletController | null>(null);
