@@ -18,32 +18,22 @@ const AccountSelection = () => {
   const wallet = useWallet();
   const location = useLocation();
   const { t } = useLanguage();
-  const currentAccountFromState = (location.state as any)?.currentAccount as
-    | Account
-    | undefined;
+  const currentAccountFromState = (location.state as any)?.currentAccount as Account | undefined;
   const [selectedKeyringIndex, setSelectedKeyringIndex] = useState(0);
   const [selectedAccountIndex, setSelectedAccountIndex] = useState(0);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-  const [editingKeyring, setEditingKeyring] = useState<WalletKeyring | null>(
-    null
-  );
+  const [editingKeyring, setEditingKeyring] = useState<WalletKeyring | null>(null);
   const [isEditingMode, setIsEditingMode] = useState(false);
 
-  type DeleteCtx =
-    | { type: 'account'; account: Account }
-    | { type: 'keyring'; keyring: WalletKeyring };
+  type DeleteCtx = { type: 'account'; account: Account } | { type: 'keyring'; keyring: WalletKeyring };
 
-  const [deleteModalState, setDeleteModalState] = useState<DeleteCtx | null>(
-    null
-  );
+  const [deleteModalState, setDeleteModalState] = useState<DeleteCtx | null>(null);
   const keyringsList = useKeyringsList();
   const currentKeyring = useCurrentKeyring();
   useEffect(() => {
     if (currentAccountFromState && keyringsList && keyringsList.length > 0) {
       for (let k = 0; k < keyringsList.length; k++) {
-        const accIdx = keyringsList[k].accounts.findIndex(
-          (a) => a.address === currentAccountFromState.address
-        );
+        const accIdx = keyringsList[k].accounts.findIndex((a) => a.address === currentAccountFromState.address);
         if (accIdx >= 0) {
           setSelectedKeyringIndex(k);
           setSelectedAccountIndex(accIdx);
@@ -53,10 +43,7 @@ const AccountSelection = () => {
     }
   }, [keyringsList, currentAccountFromState]);
 
-  const handleAccountSelect = (
-    keyring: WalletKeyring,
-    accountIndex: number
-  ) => {
+  const handleAccountSelect = (keyring: WalletKeyring, accountIndex: number) => {
     if (keyring.key === currentKeyring.key) {
       navigate('MainScreen');
       return;
@@ -73,11 +60,7 @@ const AccountSelection = () => {
     setEditingAccount(account);
   };
 
-  const handleViewAccountDetail = (
-    account: Account,
-    keyring: WalletKeyring,
-    e: React.MouseEvent
-  ) => {
+  const handleViewAccountDetail = (account: Account, keyring: WalletKeyring, e: React.MouseEvent) => {
     e.stopPropagation();
     navigate('AccountDetailScreen', {
       account,
@@ -91,11 +74,7 @@ const AccountSelection = () => {
     setEditingKeyring(keyring);
   };
 
-  const handleDeleteAccount = (
-    account: Account,
-    keyring: WalletKeyring,
-    e: React.MouseEvent
-  ) => {
+  const handleDeleteAccount = (account: Account, keyring: WalletKeyring, e: React.MouseEvent) => {
     e.stopPropagation();
     setDeleteModalState({ type: 'account', account });
   };
@@ -115,12 +94,7 @@ const AccountSelection = () => {
         toast.success(t('account.delete_account_success'));
       } catch (error: any) {
         console.error('Failed to delete account:', error);
-        toast.error(
-          t('account.delete_account_failed').replace(
-            '{error}',
-            error.message || t('common.error')
-          )
-        );
+        toast.error(t('account.delete_account_failed').replace('{error}', error.message || t('common.error')));
       }
     } else if (deleteModalState.type === 'keyring') {
       const { keyring } = deleteModalState;
@@ -129,12 +103,7 @@ const AccountSelection = () => {
         toast.success(t('account.delete_wallet_success'));
       } catch (error: any) {
         console.error('Failed to delete keyring:', error);
-        toast.error(
-          t('account.delete_wallet_failed').replace(
-            '{error}',
-            error.message || t('common.error')
-          )
-        );
+        toast.error(t('account.delete_wallet_failed').replace('{error}', error.message || t('common.error')));
       }
     }
     setDeleteModalState(null);
@@ -190,27 +159,18 @@ const AccountSelection = () => {
 
             <div className='flex flex-col space-y-3'>
               {kr.accounts.map((account: Account, aIndex: number) => {
-                const isSelected =
-                  !isEditingMode &&
-                  selectedKeyringIndex === kIndex &&
-                  selectedAccountIndex === aIndex;
+                const isSelected = !isEditingMode && selectedKeyringIndex === kIndex && selectedAccountIndex === aIndex;
                 return (
                   <button
                     key={account.key || aIndex}
                     onClick={() => handleAccountSelect(kr, aIndex)}
                     className={`flex w-full items-center justify-between rounded-2xl p-4 transition-colors ${
-                      isSelected
-                        ? 'bg-gray-100/80 ring-1 ring-gray-200'
-                        : 'bg-gray-50 hover:bg-gray-100'
+                      isSelected ? 'bg-gray-100/80 ring-1 ring-gray-200' : 'bg-gray-50 hover:bg-gray-100'
                     }`}
                   >
                     <div className='flex items-center space-x-3 overflow-hidden'>
                       <div className='shrink-0 rounded-xl bg-white p-0.5 shadow-sm ring-1 ring-gray-100'>
-                        <PixelAvatar
-                          seed={account.address || account.key || 'default'}
-                          size={36}
-                          borderRadius={10}
-                        />
+                        <PixelAvatar seed={account.address || account.key || 'default'} size={36} borderRadius={10} />
                       </div>
                       <div className='min-w-0 pr-2 text-left'>
                         <div
@@ -235,9 +195,7 @@ const AccountSelection = () => {
                             <Edit3 className='h-4 w-4' />
                           </div>
                           <div
-                            onClick={(e) =>
-                              handleViewAccountDetail(account, kr, e)
-                            }
+                            onClick={(e) => handleViewAccountDetail(account, kr, e)}
                             className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-900'
                             title={t('account.about_account')}
                           >
@@ -245,9 +203,7 @@ const AccountSelection = () => {
                           </div>
                           {kr.accounts.length > 1 && (
                             <div
-                              onClick={(e) =>
-                                handleDeleteAccount(account, kr, e)
-                              }
+                              onClick={(e) => handleDeleteAccount(account, kr, e)}
                               className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-red-400 transition-colors hover:bg-red-50 hover:text-red-600'
                               title={t('account.delete_account')}
                             >
@@ -284,7 +240,7 @@ const AccountSelection = () => {
           </button>
           <button
             className='flex items-center justify-center rounded-full bg-gray-900 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800'
-            onClick={() => navigate('WelcomeScreen')}
+            onClick={() => navigate('WelcomeScreen', { fromWalletSelection: true })}
           >
             {t('account.add_wallet')}
           </button>
@@ -327,18 +283,13 @@ const AccountSelection = () => {
             : deleteModalState?.type === 'keyring'
               ? t('account.confirm_delete_keyring_specific').replace(
                   '{name}',
-                  deleteModalState.keyring.alianName ||
-                    `Keyring ${deleteModalState.keyring.index + 1}`
+                  deleteModalState.keyring.alianName || `Keyring ${deleteModalState.keyring.index + 1}`
                 )
               : ''
         }
         onConfirm={confirmDelete}
         onCancel={() => setDeleteModalState(null)}
-        confirmText={
-          deleteModalState?.type === 'account'
-            ? t('account.delete_account')
-            : t('account.delete_wallet')
-        }
+        confirmText={deleteModalState?.type === 'account' ? t('account.delete_account') : t('account.delete_wallet')}
       />
     </div>
   );

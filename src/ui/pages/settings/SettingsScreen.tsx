@@ -3,15 +3,11 @@ import {
   BookOpen,
   ChevronLeft,
   Clock,
-  Contact,
   CreditCard,
-  Download,
   FileText,
   HeadphonesIcon,
   Hexagon,
   MessageCircle,
-  PenLine,
-  ShoppingBag,
   SlidersHorizontal,
   Trash2,
 } from 'lucide-react';
@@ -30,7 +26,6 @@ export default function SettingsScreen() {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
   useEffect(() => {
-    // Get version from manifest if available (Chrome extension context)
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest) {
       setAppVersion(chrome.runtime.getManifest().version);
     }
@@ -63,7 +58,7 @@ export default function SettingsScreen() {
 
   return (
     <div className='flex h-[600px] w-full flex-col bg-white pt-14 dark:bg-gray-900'>
-      {/* Header (Absolute/Fixed Position to Match Other Screens) */}
+      {/* Header */}
       <div className='absolute left-0 top-0 z-10 flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-4 dark:border-gray-800 dark:bg-gray-900'>
         <button
           onClick={() => navigate('#back')}
@@ -74,7 +69,7 @@ export default function SettingsScreen() {
         <h1 className='absolute left-1/2 -translate-x-1/2 transform text-lg font-semibold text-gray-900 dark:text-white'>
           {t('settings.settings')}
         </h1>
-        <div className='w-9'></div> {/* Spacer to center title */}
+        <div className='w-9'></div>
       </div>
 
       {/* Scrollable Content */}
@@ -83,13 +78,12 @@ export default function SettingsScreen() {
         <div className='border-b border-gray-100 px-4 py-5 dark:border-gray-800'>
           <SectionTitle title={t('settings.wallet_security')} />
           <div className='flex flex-wrap gap-y-6'>
-            <SettingItem icon={PenLine} label={t('settings.backups')} />
+            <SettingItem icon={Clock} label={t('settings.wallet_lock')} onClick={() => navigate('WalletLockScreen')} />
             <SettingItem
-              icon={ShoppingBag}
+              icon={SlidersHorizontal}
               label={t('settings.password')}
               onClick={() => navigate('ChangePasswordScreen')}
             />
-            <SettingItem icon={Clock} label={t('settings.wallet_lock')} onClick={() => navigate('WalletLockScreen')} />
           </div>
         </div>
 
@@ -97,27 +91,24 @@ export default function SettingsScreen() {
         <div className='border-b border-gray-100 px-4 py-5 dark:border-gray-800'>
           <SectionTitle title={t('settings.basic')} />
           <div className='flex flex-wrap gap-y-6'>
-            <SettingItem icon={CreditCard} label={t('settings.wallet_management')} />
-            <SettingItem icon={Contact} label={t('settings.address_book')} />
-            <SettingItem
-              icon={SlidersHorizontal}
-              label={t('settings.custom_network')}
-              onClick={() => navigate('AddCustomNetwork')}
-            />
             <SettingItem
               icon={Hexagon}
               label={t('settings.preferences')}
               onClick={() => navigate('PreferencesScreen')}
             />
+            <SettingItem
+              icon={CreditCard}
+              label={t('settings.custom_network')}
+              onClick={() => navigate('AddCustomNetwork')}
+            />
           </div>
         </div>
 
         {/* Advanced section */}
-        <div className='border-b border-gray-100 px-4 py-5 dark:border-gray-800'>
+        <div className='mb-8 border-b border-gray-100 px-4 py-5 dark:border-gray-800'>
           <SectionTitle title={t('settings.advanced')} />
           <div className='flex flex-wrap gap-y-6'>
             <SettingItem icon={Trash2} label={t('settings.clear_cache')} onClick={() => setIsConfirmModalOpen(true)} />
-            <SettingItem icon={Download} label={t('settings.download_logs')} />
           </div>
         </div>
 

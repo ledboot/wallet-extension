@@ -83,6 +83,8 @@ export const translations = {
     // Welcome
     welcome: {
       title: '欢迎使用Zent钱包',
+      subtitle: '安全、简单、强大的加密货币钱包',
+      footer: '你的密钥，你的加密资产',
     },
 
     // Password
@@ -340,7 +342,9 @@ export const translations = {
 
     // Welcome
     welcome: {
-      title: 'Welcome to the ZENT extension',
+      title: 'Welcome to ZENT Wallet',
+      subtitle: 'Secure, simple, and powerful cryptocurrency wallet in your browser',
+      footer: 'Your keys, your crypto',
     },
 
     // Password
@@ -598,7 +602,9 @@ export const translations = {
 
     // Welcome
     welcome: {
-      title: 'ZENT拡張機能へようこそ',
+      title: 'ZENTwalletへようこそ',
+      subtitle: '安全でシンプル、強力な暗号通貨ウォレット',
+      footer: 'あなたの鍵、あなたの暗号資産',
     },
 
     // Password
@@ -856,7 +862,9 @@ export const translations = {
 
     // Welcome
     welcome: {
-      title: 'ZENT 확장 프로그램에 오신 것을 환영합니다',
+      title: 'ZENT 지갑에 오신 것을 환영합니다',
+      subtitle: '안전하고 단순하며 강력한 암호화폐 지갑',
+      footer: '당신의 키, 당신의 암호 자산',
     },
 
     // Password

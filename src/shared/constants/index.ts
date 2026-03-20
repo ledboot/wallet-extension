@@ -21,8 +21,6 @@ export const KEYRING_TYPE = {
   Empty: 'Empty',
 };
 
-export const INTERNAL_REQUEST_ORIGIN = 'https://astronexus.io';
-
 export const BRAND_ALIAN_TYPE_TEXT = {
   [KEYRING_TYPE.HdKeyring]: 'Account',
   [KEYRING_TYPE.SimpleKeyring]: 'Private Key',
@@ -65,7 +63,7 @@ export const CHAIN_INFO: { [key: string]: ChainInfo } = {
     iconLabel: 'ZENT',
     chainId: 0x1,
     endpoints: ['http://omegasuite.org:7789'],
-    icon: './images/artifacts/bitcoin-mainnet.svg',
+    icon: './public/zentlogo.png',
     unit: 'ZENT',
     networkType: NetworkType.TESTNET,
     updated: 0,
@@ -77,7 +75,7 @@ export const CHAIN_INFO: { [key: string]: ChainInfo } = {
     iconLabel: 'ZENT',
     chainId: 0x1,
     endpoints: ['http://omegasuite.org:9789'],
-    icon: './images/artifacts/bitcoin-mainnet.svg',
+    icon: './public/zentlogo.png',
     unit: 'ZENT',
     networkType: NetworkType.MAINNET,
     updated: 0,
@@ -121,15 +119,5 @@ export const ServerConfiguration = {
 };
 
 export const addChainType = (name: string, value: string): void => {
-  console.log('Adding to ChainType:', name, value);
   (ChainType as any)[name] = value;
-  console.log('ChainType after adding:', Object.keys(ChainType));
 };
-
-// 获取所有 ChainType 值（包括动态的）
-// export const getAllChainTypeValues = (): string[] => {
-//   const values = Object.values(ChainType);
-//   console.log('ChainType enum keys:', Object.keys(ChainType));
-//   console.log('ChainType enum values:', values);
-//   return values;
-// };

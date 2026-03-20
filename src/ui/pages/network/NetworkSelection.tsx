@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, Check, Globe, MoreHorizontal } from 'lucide-react';
 
 import { CHAIN_INFO, ChainType } from '@/shared/constants';
 import { ChainInfo } from '@/shared/types';
@@ -31,15 +31,9 @@ export default function NetworkSelection() {
     load();
   }, [wallet]);
 
-  const rpcChains = useMemo(
-    () => allChains.filter(([, info]) => !info.isCustom),
-    [allChains]
-  );
+  const rpcChains = useMemo(() => allChains.filter(([, info]) => !info.isCustom), [allChains]);
 
-  const customChains = useMemo(
-    () => allChains.filter(([, info]) => !!info.isCustom),
-    [allChains]
-  );
+  const customChains = useMemo(() => allChains.filter(([, info]) => !!info.isCustom), [allChains]);
 
   const displayed = activeTab === 'rpc' ? rpcChains : customChains;
 
@@ -82,9 +76,7 @@ export default function NetworkSelection() {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`flex-1 rounded-xl text-sm font-medium transition-all ${
-                  activeTab === tab
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                  activeTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
                 {tab === 'rpc' ? 'RPC' : 'Custom'}
@@ -99,10 +91,8 @@ export default function NetworkSelection() {
       <div className='hide-scrollbar flex-1 overflow-y-auto bg-white px-4 pb-6 pt-[104px]'>
         {displayed.length === 0 ? (
           <div className='flex h-64 flex-col items-center justify-center text-gray-400'>
-            <div className='mb-3 text-4xl opacity-50'>🌐</div>
-            <div className='text-sm text-gray-500'>
-              {t('network.no_custom_networks')}
-            </div>
+            <Globe className='mb-3 h-12 w-12 opacity-50' />
+            <div className='text-sm text-gray-500'>{t('network.no_custom_networks')}</div>
           </div>
         ) : (
           <div className='flex flex-col space-y-3 pt-2'>
@@ -114,20 +104,18 @@ export default function NetworkSelection() {
                 <div
                   key={key}
                   className={`flex cursor-pointer items-center rounded-2xl p-4 transition-colors ${
-                    isActive
-                      ? 'bg-gray-100/80 ring-1 ring-gray-200'
-                      : 'bg-gray-50 hover:bg-gray-100'
+                    isActive ? 'bg-gray-100/80 ring-1 ring-gray-200' : 'bg-gray-50 hover:bg-gray-100'
                   }`}
                   onClick={() => handleSelect(key)}
                 >
                   {/* Icon */}
                   <div className='mr-4 flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-gray-100'>
                     <img
-                      src={info.icon}
+                      src={info.icon || '/images/default-chain.svg'}
                       alt={info.label}
-                      className='h-7 w-7 object-contain'
+                      className='h-10 w-10 object-contain'
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
+                        (e.target as HTMLImageElement).src = '/images/default-chain.svg';
                       }}
                     />
                   </div>
@@ -135,15 +123,9 @@ export default function NetworkSelection() {
                   {/* Name + RPC URL */}
                   <div className='min-w-0 flex-1'>
                     <div className='flex items-center gap-2'>
-                      <span className='truncate text-base font-semibold text-gray-900'>
-                        {info.label}
-                      </span>
+                      <span className='truncate text-base font-semibold text-gray-900'>{info.label}</span>
                     </div>
-                    {rpcUrl ? (
-                      <div className='mt-1 truncate text-xs font-medium text-gray-500'>
-                        {rpcUrl}
-                      </div>
-                    ) : null}
+                    {rpcUrl ? <div className='mt-1 truncate text-xs font-medium text-gray-500'>{rpcUrl}</div> : null}
                   </div>
 
                   {isActive && (

@@ -30,9 +30,7 @@ export default function NetworkDetailScreen() {
   const [chainId, setChainId] = useState(String(chainInfo?.chainId ?? ''));
   const [symbol, setSymbol] = useState(chainInfo?.iconLabel ?? '');
   const [explorerUrl, setExplorerUrl] = useState(chainInfo?.explorerUrl ?? '');
-  const [isTestnet, setIsTestnet] = useState(
-    chainInfo?.networkType === NetworkType.TESTNET
-  );
+  const [isTestnet, setIsTestnet] = useState(chainInfo?.networkType === NetworkType.TESTNET);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -41,11 +39,7 @@ export default function NetworkDetailScreen() {
 
   if (!chainInfo) return null;
 
-  const isFormValid =
-    name.trim() !== '' &&
-    rpcUrl.trim() !== '' &&
-    chainId.trim() !== '' &&
-    symbol.trim() !== '';
+  const isFormValid = name.trim() !== '' && rpcUrl.trim() !== '' && chainId.trim() !== '' && symbol.trim() !== '';
 
   const handleSave = async () => {
     if (!isFormValid || saving) return;
@@ -71,13 +65,7 @@ export default function NetworkDetailScreen() {
     }
   };
 
-  const field = (
-    label: string,
-    value: string,
-    onChange?: (v: string) => void,
-    placeholder = '',
-    showInfo = false
-  ) => (
+  const field = (label: string, value: string, onChange?: (v: string) => void, placeholder = '', showInfo = false) => (
     <div>
       <label className='mb-2 flex items-center text-sm font-semibold text-gray-900'>
         {label}
@@ -119,46 +107,23 @@ export default function NetworkDetailScreen() {
         <div className='mb-8 flex flex-col items-center'>
           <div className='mb-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-50'>
             <img
-              src={chainInfo.icon}
+              src={chainInfo.icon || '/images/default-chain.svg'}
               alt={chainInfo.label}
               className='h-10 w-10 object-contain'
               onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
+                (e.target as HTMLImageElement).src = '/images/default-chain.svg';
               }}
             />
           </div>
-          <h1 className='text-2xl font-bold text-gray-900'>
-            {chainInfo.label}
-          </h1>
+          <h1 className='text-2xl font-bold text-gray-900'>{chainInfo.label}</h1>
         </div>
 
         {/* Fields */}
         <div className='space-y-4 rounded-2xl bg-white'>
-          {field(
-            t('network.network_name'),
-            name,
-            isCustom ? setName : undefined,
-            'e.g., Ethereum'
-          )}
-          {field(
-            t('network.rpc_url'),
-            rpcUrl,
-            isCustom ? setRpcUrl : undefined,
-            'https://...'
-          )}
-          {field(
-            t('network.chain_id'),
-            chainId,
-            isCustom ? (v) => setChainId(v) : undefined,
-            '0',
-            true
-          )}
-          {field(
-            t('network.symbol'),
-            symbol,
-            isCustom ? setSymbol : undefined,
-            'e.g., ETH'
-          )}
+          {field(t('network.network_name'), name, isCustom ? setName : undefined, 'e.g., Ethereum')}
+          {field(t('network.rpc_url'), rpcUrl, isCustom ? setRpcUrl : undefined, 'https://...')}
+          {field(t('network.chain_id'), chainId, isCustom ? (v) => setChainId(v) : undefined, '0', true)}
+          {field(t('network.symbol'), symbol, isCustom ? setSymbol : undefined, 'e.g., ETH')}
           {field(
             t('network.block_explorer_url_optional'),
             explorerUrl,
@@ -178,9 +143,7 @@ export default function NetworkDetailScreen() {
                 />
                 <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] focus:outline-none peer-checked:bg-gray-900 peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-gray-600 dark:bg-gray-700"></div>
               </label>
-              <span className='text-sm font-semibold text-gray-900'>
-                {t('network.is_test_network')}
-              </span>
+              <span className='text-sm font-semibold text-gray-900'>{t('network.is_test_network')}</span>
             </div>
           )}
         </div>

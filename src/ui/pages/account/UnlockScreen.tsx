@@ -9,7 +9,7 @@ import { useNavigate } from '../MainRoute';
 export default function UnlockScreen() {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const [password, setPassword] = useState('12345678');
+  const [password, setPassword] = useState('');
   const wallet = useWallet();
   const handleUnlock = async () => {
     try {
@@ -22,22 +22,15 @@ export default function UnlockScreen() {
         navigate('WelcomeScreen');
       }
     } catch (error: any) {
-      const errorMessage = t('password.unlock_failed').replace(
-        '{error}',
-        error.message || t('common.error')
-      );
+      const errorMessage = t('password.unlock_failed').replace('{error}', error.message || t('common.error'));
       toast.error(errorMessage);
     }
   };
   return (
     <div className='flex h-full w-full flex-col items-center justify-center bg-white px-6 pb-20 pt-10'>
       <div className='mb-8 text-center'>
-        <h1 className='text-3xl font-bold text-gray-900'>
-          {t('password.unlock_title')}
-        </h1>
-        <p className='mt-2 text-sm text-gray-500'>
-          {t('password.unlock_subtitle')}
-        </p>
+        <h1 className='text-3xl font-bold text-gray-900'>{t('password.unlock_title')}</h1>
+        <p className='mt-2 text-sm text-gray-500'>{t('password.unlock_subtitle')}</p>
       </div>
 
       <div className='w-full space-y-6'>

@@ -117,9 +117,7 @@ export class WalletController {
         assetService.addUtxosMap(account.address, chainInfo.chainId, utxoItems);
         assetService.aggregateUtxoSums(account.address);
 
-        openapiService.fetchTokentype(utxoItems, String(chainInfo.chainId)).catch((e) => {
-          console.error('fetchTokentype failed:', e);
-        });
+        openapiService.fetchTokentype(utxoItems, String(chainInfo.chainId));
 
         eventBus.emit(EVENTS.broadcastToUI, { method: 'refreshAssets', params: null });
       } else {
