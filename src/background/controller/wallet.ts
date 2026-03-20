@@ -199,6 +199,7 @@ export class WalletController {
     await assetService.clearStore();
     preferenceService.store.chainInfo = { ...CHAIN_INFO };
     preferenceService.store.currentChainInfo = CHAIN_INFO[ChainType.ZENT_MAINNET];
+    await openapiService.fetchBlockchains();
     eventBus.emit(EVENTS.broadcastToUI, { method: 'refreshAssets', params: null });
   };
 

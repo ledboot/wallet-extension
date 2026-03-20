@@ -189,7 +189,7 @@ export class OpenapiService {
                 ? apiData.endpoints
                 : ([apiData.endpoints] as string[])
               : [resolvedRpcEndpoint],
-            icon: apiData.icon || './images/artifacts/bitcoin-mainnet.svg',
+            icon: apiData.icon,
             unit: apiData.name,
             networkType: Number(apiData.testnet) ? NetworkType.TESTNET : NetworkType.MAINNET,
             updated: apiData.updated || 0,
