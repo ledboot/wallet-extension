@@ -48,7 +48,7 @@ export default function SettingsScreen() {
   const handleClearCache = async () => {
     setIsConfirmModalOpen(false);
     try {
-      await wallet.clearAssetCache();
+      await wallet.clearCache();
       toast.success(t('settings.clear_cache_success'));
     } catch (error) {
       console.error('Failed to clear cache', error);

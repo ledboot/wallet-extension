@@ -86,7 +86,7 @@ export interface WalletController {
   resolveApproval(id: string, data: any): Promise<void>;
   rejectApproval(id: string): Promise<void>;
 
-  clearAssetCache(): Promise<void>;
+  clearCache(): Promise<void>;
 }
 
 const WalletContext = createContext<WalletController | null>(null);

@@ -193,9 +193,9 @@ export class WalletController {
   };
 
   /**
-   * 清除资产相关缓存。
+   * 清除缓存并重置网络配置。
    */
-  clearAssetCache = async () => {
+  clearCache = async () => {
     await assetService.clearStore();
     preferenceService.store.chainInfo = { ...CHAIN_INFO };
     preferenceService.store.currentChainInfo = CHAIN_INFO[ChainType.ZENT_MAINNET];
