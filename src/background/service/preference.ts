@@ -1,6 +1,6 @@
 import { compareVersions } from 'compare-versions';
 
-import { CHAIN_INFO, ChainType, DEFAULT_LOCKTIME_ID, NetworkType } from '@/shared/constants';
+import { CHAIN_INFO, ChainType, DEFAULT_LOCKTIME_ID } from '@/shared/constants';
 import { ChainInfo } from '@/shared/types';
 
 import createPersistStore from '../utils/persisitStore';
@@ -9,8 +9,6 @@ export interface PreferenceStore {
   currentKeyringKey: string;
   currentAccountIndex: number;
   locale: string;
-  networkType: NetworkType;
-  chainType: ChainType;
   currentVersion: string;
   firstOpen: boolean;
   enableSignData: boolean;
@@ -23,11 +21,9 @@ export interface PreferenceStore {
   keyringAlianNames: {
     [key: string]: string;
   };
-  chainInfo: { [key: string]: ChainInfo }; // 添加动态网络配置存储
-  currentChainInfo: ChainInfo; // 当前网络信息
+  chainInfo: { [key: string]: ChainInfo };
+  currentChainInfo: ChainInfo;
 }
-
-// const SUPPORTED_LOCALES = ['en', 'zh_CN'];
 
 const version = chrome.runtime.getManifest().version;
 
@@ -42,8 +38,6 @@ class PreferenceService {
         currentKeyringKey: '',
         currentAccountIndex: 0,
         locale: 'en',
-        networkType: NetworkType.MAINNET,
-        chainType: ChainType.ZENT_MAINNET,
         currentVersion: '0',
         firstOpen: false,
         enableSignData: false,
@@ -52,8 +46,8 @@ class PreferenceService {
         accountAlianNames: {},
         addressFlags: {},
         keyringAlianNames: {},
-        chainInfo: { ...CHAIN_INFO }, // 初始化内置网络
-        currentChainInfo: CHAIN_INFO[ChainType.ZENT_MAINNET], // 默认网络信息
+        chainInfo: { ...CHAIN_INFO },
+        currentChainInfo: CHAIN_INFO[ChainType.ZENT_MAINNET],
       },
     });
 
@@ -61,7 +55,6 @@ class PreferenceService {
       this.store.autoLockTimeId = DEFAULT_LOCKTIME_ID;
     }
 
-    // 确保已有数据的 chainInfo 包含所有的 built-in CHAIN_INFO
     if (!this.store.chainInfo) {
       this.store.chainInfo = { ...CHAIN_INFO };
     } else {
@@ -102,7 +95,6 @@ class PreferenceService {
     this.popupOpen = isOpen;
   };
 
-  // accountAlianNames
   setAccountAlianName = (accountKey: string, name: string) => {
     this.store.accountAlianNames = Object.assign({}, this.store.accountAlianNames, { [accountKey]: name });
   };
@@ -115,7 +107,6 @@ class PreferenceService {
     return this.store.accountAlianNames[accountKey];
   };
 
-  // get address flag
   getAddressFlag = (address: string) => {
     return this.store.addressFlags[address] || 0;
   };
@@ -125,7 +116,6 @@ class PreferenceService {
     });
   };
 
-  // keyringAlianNames
   setKeyringAlianName = (keyringKey: string, name: string) => {
     this.store.keyringAlianNames = Object.assign({}, this.store.keyringAlianNames, { [keyringKey]: name });
   };
@@ -138,26 +128,16 @@ class PreferenceService {
     return this.store.keyringAlianNames[keyringKey];
   };
 
-  // Remove account alias name
   removeAccountAlianName = (accountKey: string) => {
     const newAccountAlianNames = { ...this.store.accountAlianNames };
     delete newAccountAlianNames[accountKey];
     this.store.accountAlianNames = newAccountAlianNames;
   };
 
-  // Remove keyring alias name
   removeKeyringAlianName = (keyringKey: string) => {
     const newKeyringAlianNames = { ...this.store.keyringAlianNames };
     delete newKeyringAlianNames[keyringKey];
     this.store.keyringAlianNames = newKeyringAlianNames;
-  };
-
-  setNetworkType = (networkType: NetworkType) => {
-    this.store.networkType = networkType;
-  };
-
-  getNetworkType = () => {
-    return this.store.networkType;
   };
 
   getCurrentKeyringKey = () => {
@@ -176,14 +156,6 @@ class PreferenceService {
     this.store.currentAccountIndex = accountIndex;
   };
 
-  getChainType = () => {
-    return this.store.chainType;
-  };
-
-  setChainType = (chainTyp: ChainType) => {
-    this.store.chainType = chainTyp;
-  };
-
   getCurrentChainInfo = () => {
     return this.store.currentChainInfo;
   };
@@ -192,15 +164,12 @@ class PreferenceService {
     this.store.currentChainInfo = chainInfo;
   };
 
-  // ChainInfo 管理方法
   addchainInfo = (chainType: string, chainInfo: ChainInfo) => {
     if (!this.store.chainInfo) {
       this.store.chainInfo = {};
     }
-    // 直接修改 store 对象以触发 Proxy 的 set
     this.store.chainInfo[chainType] = chainInfo;
 
-    // 强制触发存储更新
     const updatedChainInfo = { ...this.store.chainInfo };
     this.store.chainInfo = updatedChainInfo;
 

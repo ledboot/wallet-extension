@@ -2,8 +2,8 @@ import { CHAIN_INFO, NetworkType } from '@/shared/constants';
 import { CoinNames, transferAddressHistory, Utxo, UtxoAddressSumInfo } from '@/shared/types';
 
 import createPersistStore from '../utils/persisitStore';
-import preferenceService from './preference';
 import { storage } from '../webapi';
+import preferenceService from './preference';
 
 interface AssetStore {
   utxos: Utxo[];
@@ -200,17 +200,8 @@ class AssetService {
    * 按 address + tokenType 聚合 UTXOs，写入 utxoSum 并返回结果。
    */
   aggregateUtxoSums = (address: string): UtxoAddressSumInfo[] => {
-    const currentChainType = preferenceService.getChainType();
-    let currentChainId: number;
-    if (CHAIN_INFO[currentChainType]) {
-      currentChainId = CHAIN_INFO[currentChainType].chainId;
-    } else {
-      const storedChainInfo = preferenceService.getchainInfo(currentChainType);
-      if (!storedChainInfo) {
-        throw new Error(`Chain info not found for: ${currentChainType}`);
-      }
-      currentChainId = storedChainInfo.chainId;
-    }
+    const chainInfo = preferenceService.getCurrentChainInfo();
+    const currentChainId = chainInfo.chainId;
 
     const utxos = this.getUtxos().filter((u) => u.address === address);
     const sumsMap = new Map<string, UtxoAddressSumInfo>();

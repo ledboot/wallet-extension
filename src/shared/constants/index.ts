@@ -62,7 +62,7 @@ export const CHAIN_INFO: { [key: string]: ChainInfo } = {
     label: 'ZENT Testnet',
     iconLabel: 'ZENT',
     chainId: 0x1,
-    endpoints: ['http://omegasuite.org:7789'],
+    endpoints: ['http://207.246.106.17:7789'],
     icon: './public/zentlogo.png',
     unit: 'ZENT',
     networkType: NetworkType.TESTNET,

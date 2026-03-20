@@ -307,33 +307,20 @@ export class WalletController {
   };
 
   /**
-   * 获取当前网络配置（支持动态网络）
+   * 获取当前网络配置
    */
   private getCurrentChainInfo = (): ChainInfo => {
-    const currentChainType = preferenceService.getChainType();
-
-    // 优先从 CHAIN_INFO 获取，如果没有则从存储获取
-    if (CHAIN_INFO[currentChainType]) {
-      return CHAIN_INFO[currentChainType];
-    } else {
-      const storedChainInfo = preferenceService.getchainInfo(currentChainType);
-      if (storedChainInfo) {
-        return storedChainInfo;
-      } else {
-        throw new Error(`Chain info not found for: ${currentChainType}`);
-      }
-    }
+    return preferenceService.getCurrentChainInfo();
   };
 
   /**
    * 获取网络类型
    */
   getNetworkType = () => {
-    return preferenceService.getNetworkType();
+    return preferenceService.getCurrentChainInfo().networkType;
   };
 
   changeNetwork = async (chainType: ChainType) => {
-    // 优先从存储中获取网络配置，如果没有则从常量中获取
     let chainInfo = preferenceService.getchainInfo(chainType);
     if (!chainInfo) {
       chainInfo = CHAIN_INFO[chainType];
@@ -343,8 +330,7 @@ export class WalletController {
       throw new Error(`Chain info not found for: ${chainType}`);
     }
 
-    preferenceService.setNetworkType(chainInfo.networkType);
-    preferenceService.setChainType(chainType);
+    preferenceService.setCurrentChainInfo(chainInfo);
     keyringService.changeNetwork();
     eventBus.emit(EVENTS.broadcastToUI, {
       method: 'networkChanged',

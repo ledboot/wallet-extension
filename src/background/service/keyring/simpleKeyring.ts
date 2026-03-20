@@ -179,13 +179,9 @@ export class SimpleKeyring {
   }
 
   removeAccount(publicKey: string) {
-    const wallet = this.wallets.find(
-      (eckey) => eckey.getAddress() === publicKey
-    );
+    const wallet = this.wallets.find((eckey) => eckey.getAddress() === publicKey);
     if (wallet) {
-      this.wallets = this.wallets.filter(
-        (eckey) => eckey.privateKey !== wallet.privateKey
-      );
+      this.wallets = this.wallets.filter((eckey) => eckey.privateKey !== wallet.privateKey);
     }
   }
 
@@ -199,13 +195,13 @@ export class SimpleKeyring {
 }
 
 export function getPrivateKeyPrefix(): number {
-  return preferenceService.getNetworkType() === NetworkType.MAINNET
+  return preferenceService.getCurrentChainInfo().networkType === NetworkType.MAINNET
     ? MainnetPrivateKeyPrefix
     : TestnetPrivateKeyPrefix;
 }
 
 export function getAddressPrefix(): number {
-  return preferenceService.getNetworkType() === NetworkType.MAINNET
+  return preferenceService.getCurrentChainInfo().networkType === NetworkType.MAINNET
     ? MainnetAddressPrefix
     : TestnetAddressPrefix;
 }
@@ -234,21 +230,14 @@ export function decodeWalletImportFormat(wif: string): {
 }
 
 export function isCompressedWalletImportFormat(wif: string): boolean {
-  if (preferenceService.getNetworkType() === NetworkType.MAINNET) {
-    return /^[LK][123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{51}$/.test(
-      wif
-    );
+  if (preferenceService.getCurrentChainInfo().networkType === NetworkType.MAINNET) {
+    return /^[LK][123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{51}$/.test(wif);
   } else {
-    return /^c[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{51}$/.test(
-      wif
-    );
+    return /^c[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{51}$/.test(wif);
   }
 }
 
-export function verifyWalletImportFormat(
-  wif: string,
-  compressed: boolean
-): boolean {
+export function verifyWalletImportFormat(wif: string, compressed: boolean): boolean {
   const decoded = bs58check.decode(wif);
   let hash: Uint8Array;
   if (compressed) {

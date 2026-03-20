@@ -135,11 +135,11 @@ browserRuntimeOnConnect((port: any) => {
         case 'getProviderState': {
           try {
             const accounts = await keyringService.getAccounts();
-            const chainType = preferenceService.store.chainType;
+            const chainInfo = preferenceService.getCurrentChainInfo();
             const isUnlocked = accounts.length > 0;
             return {
               accounts: accounts.map((a: any) => a.address),
-              networkId: chainType,
+              networkId: chainInfo.id,
               isUnlocked,
             };
           } catch {
@@ -438,7 +438,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const formatted = utxos[0].value / Math.pow(10, decimals);
         const symbol = coinName[0].name;
 
-        const chainType = preferenceService.getChainType();
+        const chainInfo = preferenceService.getCurrentChainInfo();
 
         sendResponse({
           success: true,
@@ -448,7 +448,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             decimals: decimals,
             formatted: formatted,
             symbol: symbol,
-            network: chainType.toLowerCase(),
+            network: chainInfo.label.toLowerCase(),
           },
         });
       } catch (error) {
@@ -462,24 +462,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (method === 'GET_NETWORK') {
       try {
-        const networkType = preferenceService.store.networkType;
-        const chainType = preferenceService.store.chainType;
-        const currentChainInfo = preferenceService.store.currentChainInfo || CHAIN_INFO[chainType];
+        const chainInfo = preferenceService.getCurrentChainInfo();
 
-        if (!currentChainInfo) {
-          throw new Error(`Chain info not found for: ${chainType}`);
+        if (!chainInfo) {
+          throw new Error('No current chain info');
         }
 
-        if (!currentChainInfo.endpoints || currentChainInfo.endpoints.length === 0) {
-          throw new Error(`No endpoints found for chain: ${chainType}`);
+        if (!chainInfo.endpoints || chainInfo.endpoints.length === 0) {
+          throw new Error(`No endpoints found for chain: ${chainInfo.label}`);
         }
 
         sendResponse({
           success: true,
           result: {
-            id: chainType,
-            name: networkType,
-            rpcUrl: currentChainInfo.endpoints[0],
+            id: chainInfo.id,
+            name: chainInfo.networkType,
+            rpcUrl: chainInfo.endpoints[0],
           },
         });
       } catch (error) {

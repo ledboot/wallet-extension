@@ -15,15 +15,14 @@ export class OpenapiService {
   constructor() {}
 
   getEndpoint = () => {
-    const chainType = preferenceService.getChainType();
-    const chainInfo = preferenceService.getchainInfo(chainType) || CHAIN_INFO[chainType];
+    const chainInfo = preferenceService.getCurrentChainInfo();
 
     if (!chainInfo) {
-      throw new Error(`Chain info not found for: ${chainType}`);
+      throw new Error('No current chain info');
     }
 
     if (!chainInfo.endpoints || chainInfo.endpoints.length === 0) {
-      throw new Error(`No endpoints found for chain: ${chainType}`);
+      throw new Error(`No endpoints found for chain: ${chainInfo.label}`);
     }
 
     return chainInfo.endpoints[0];
@@ -185,10 +184,10 @@ export class OpenapiService {
             label: apiData.name,
             iconLabel: apiData.name,
             chainId: parseInt(apiData.chainid, 16),
-              endpoints: apiData.endpoints
-                ? Array.isArray(apiData.endpoints)
-                  ? apiData.endpoints
-                  : ([apiData.endpoints] as string[])
+            endpoints: apiData.endpoints
+              ? Array.isArray(apiData.endpoints)
+                ? apiData.endpoints
+                : ([apiData.endpoints] as string[])
               : [resolvedRpcEndpoint],
             icon: apiData.icon || './images/artifacts/bitcoin-mainnet.svg',
             unit: apiData.name,
@@ -213,21 +212,8 @@ export class OpenapiService {
     const msgtx = new MsgT();
     msgtx.rawDecode(hex);
 
-    // 获取当前网络配置
-    const currentChainType = preferenceService.getChainType();
-    let currentChainId: number;
-
-    // 优先从 CHAIN_INFO 获取，如果没有则从存储获取
-    if (CHAIN_INFO[currentChainType]) {
-      currentChainId = CHAIN_INFO[currentChainType].chainId;
-    } else {
-      const storedChainInfo = preferenceService.getchainInfo(currentChainType);
-      if (storedChainInfo) {
-        currentChainId = storedChainInfo.chainId;
-      } else {
-        throw new Error(`Chain info not found for: ${currentChainType}`);
-      }
-    }
+    const chainInfo = preferenceService.getCurrentChainInfo();
+    const currentChainId = chainInfo.chainId;
 
     const btc = currentChainId == 0x400002; // 假设这是比特币网络
     const txOUtLen = msgtx?.tOut.length || 0;
