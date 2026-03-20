@@ -197,6 +197,8 @@ export class WalletController {
    */
   clearAssetCache = async () => {
     await assetService.clearStore();
+    preferenceService.store.chainInfo = { ...CHAIN_INFO };
+    preferenceService.store.currentChainInfo = CHAIN_INFO[ChainType.ZENT_MAINNET];
     eventBus.emit(EVENTS.broadcastToUI, { method: 'refreshAssets', params: null });
   };
 
