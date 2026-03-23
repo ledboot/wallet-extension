@@ -80,10 +80,10 @@ export default function TransactionConfirmScreen() {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       await wallet.updateTransferAddressesHistory(recipientAddress);
 
-      if (result) {
-        toast.success(t('transfer.transaction_sent'));
-      } else {
+      if (result.error) {
         toast.error(t('transfer.transaction_failed'));
+      } else {
+        toast.success(t('transfer.transaction_sent'));
       }
       navigate('MainScreen');
     } catch (error) {

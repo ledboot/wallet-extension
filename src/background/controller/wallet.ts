@@ -607,7 +607,7 @@ export class WalletController {
     crosschain: number,
     timeLimit: number
   ) => {
-    const res = await openapiService.transfer(
+    return await openapiService.transfer(
       BigInt(Number(amount) * 1e8),
       BigInt(Number(tokenType)),
       receivedAddress,
@@ -615,11 +615,6 @@ export class WalletController {
       crosschain,
       timeLimit
     );
-    let result = null;
-    if (res && res.result) {
-      result = res.result;
-    }
-    return result;
   };
 
   getApproval = async (id: string) => {
