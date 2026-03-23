@@ -4,12 +4,12 @@ import {
   Filter,
   RefreshCw,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Account, TxHistoryItem, TxType } from '@/shared/types';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useCurrentAccount } from '@/ui/state/hooks';
 
-import { useRootStore } from '../../state';
 import { useWallet } from '../../utils/walletContext';
 import { useNavigate } from '../MainRoute';
 
@@ -25,7 +25,6 @@ export default function History() {
   const { t } = useLanguage();
   const wallet = useWallet();
   const currentAccount = useCurrentAccount();
-  const { networkType } = useRootStore((state) => state.settings);
 
   const [transactions, setTransactions] = useState<TransactionDisplayItem[]>(
     []
@@ -149,13 +148,24 @@ export default function History() {
     }
   };
 
-  const handleViewOnExplorer = (txid: string) => {
-    // 根据网络类型打开对应的区块浏览器
-    const explorerUrl =
-      networkType === 'mainnet'
-        ? `https://blockstream.info/tx/${txid}`
-        : `https://blockstream.info/testnet/tx/${txid}`;
-    window.open(explorerUrl, '_blank');
+  const handleViewOnExplorer = async (txid: string) => {
+    try {
+      const currentChainInfo = await wallet.getCurrentChainInfoData();
+      const baseExplorerUrl = currentChainInfo?.explorerUrl?.trim() || '';
+
+      if (!baseExplorerUrl) {
+        return;
+      }
+
+      const finalUrl = baseExplorerUrl.includes('{txid}')
+        ? baseExplorerUrl.replaceAll('{txid}', txid)
+        : `${baseExplorerUrl.replace(/\/+$/, '')}/tx/${txid}`;
+
+      window.open(finalUrl, '_blank');
+    } catch (error) {
+      console.error('[UI] Failed to open explorer:', error);
+      toast.error(t('common.error'));
+    }
   };
 
   const filteredTransactions = transactions.filter((tx) => {
@@ -170,7 +180,6 @@ export default function History() {
         try {
           setLoading(true);
 
-          // 真实 API 调用（暂时注释）
           const result = await wallet.getAddressHistory(account, 0, 20);
           if (result && Array.isArray(result)) {
             const displayTransactions: TransactionDisplayItem[] = result.map(

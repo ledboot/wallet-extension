@@ -107,7 +107,7 @@ export type CoinNames = {
   currency?: number;
 };
 
-export type transferAddressHistory = {
+export type TransferAddressHistory = {
   address: string;
   updated?: number; // Defaults to 0 if not provided
 };

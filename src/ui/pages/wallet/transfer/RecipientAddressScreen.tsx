@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { transferAddressHistory } from '@/shared/types';
+import type { TransferAddressHistory } from '@/shared/types';
 import { useNavigate } from '@/ui/pages/MainRoute';
 import { ChevronLeft, Clock, Copy, X } from 'lucide-react';
 import { useLocation } from 'react-router';
@@ -20,10 +20,35 @@ export default function RecipientAddressScreen() {
 
   const [recipientAddress, setRecipientAddress] = useState('');
   const [recentAddresses, setRecentAddresses] = useState<
-    transferAddressHistory[]
+    TransferAddressHistory[]
   >([]);
   const [isValidAddress, setIsValidAddress] = useState(false);
   const wallet = useWallet();
+
+  const readClipboardText = async (): Promise<string> => {
+    if (navigator.clipboard?.readText) {
+      return navigator.clipboard.readText();
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.setAttribute('aria-hidden', 'true');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.pointerEvents = 'none';
+    document.body.appendChild(textarea);
+    textarea.focus();
+
+    try {
+      const didPaste = document.execCommand('paste');
+      const pastedText = textarea.value;
+      if (didPaste && pastedText) {
+        return pastedText;
+      }
+      throw new Error('Clipboard read failed');
+    } finally {
+      document.body.removeChild(textarea);
+    }
+  };
 
   // Mock recent addresses - in a real app, this would come from a service
   useEffect(() => {
@@ -47,9 +72,13 @@ export default function RecipientAddressScreen() {
 
   const handlePaste = async () => {
     try {
-      const text = await navigator.clipboard.readText();
-      setRecipientAddress(text.trim());
-      validateAddress(text.trim());
+      const text = await readClipboardText();
+      const nextAddress = text.trim();
+      if (!nextAddress) {
+        throw new Error('Clipboard is empty');
+      }
+      setRecipientAddress(nextAddress);
+      validateAddress(nextAddress);
     } catch (err) {
       toast.error(t('transfer.clipboard_error'));
     }

@@ -1,4 +1,4 @@
-import type { transferAddressHistory, UtxoAddressSumInfo } from '@/shared/types';
+import type { TransferAddressHistory, UtxoAddressSumInfo } from '@/shared/types';
 
 import { decodeWalletImportFormat } from '@/background/service/keyring/simpleKeyring';
 import {
@@ -104,27 +104,44 @@ export class WalletController {
     const account = await this.getCurrentAccount();
     console.log('syncAccountUtxos', account?.address, 'start:', start, 'limit:', limit);
     if (!account) return { sums: [], CoinNames: [], utxoItems: [] };
+    const chainInfo = this.getCurrentChainInfo();
+    const chainId = chainInfo.chainId;
 
-    const { utxoItems } = await openapiService.getAddressHistory(account, start, limit);
+    const { utxoItems, hasHistory, latestHeight } = await openapiService.getAddressHistory(
+      account,
+      start,
+      limit,
+      chainId
+    );
 
-    if (utxoItems.length > 0) {
-      const chainInfo = this.getCurrentChainInfo();
-      const existingUtxos = assetService.getUtxos().filter((u) => u.address === account.address);
-      const shouldUpdate = existingUtxos.length === 0 || utxoItems[0].blockHeight >= existingUtxos[0].blockHeight;
+    if (hasHistory) {
+      const existingUtxos = assetService.getUtxosMap(account.address, chainId);
+      const latestExistingHeight =
+        existingUtxos.length > 0 ? Math.max(...existingUtxos.map((item) => item.blockHeight)) : 0;
+      const latestIncomingHeight =
+        utxoItems.length > 0 ? Math.max(...utxoItems.map((item) => item.blockHeight)) : latestExistingHeight;
+      const shouldUpdate =
+        existingUtxos.length === 0 || utxoItems.length === 0 || latestIncomingHeight >= latestExistingHeight;
 
       if (shouldUpdate) {
-        assetService.updateUtxos(utxoItems);
-        assetService.addUtxosMap(account.address, chainInfo.chainId, utxoItems);
-        assetService.aggregateUtxoSums(account.address);
+        await assetService.setUtxosMap(account.address, chainId, utxoItems);
+        assetService.aggregateUtxoSums(account.address, chainId);
 
-        openapiService.fetchTokentype(utxoItems, String(chainInfo.chainId));
+        if (utxoItems.length > 0) {
+          try {
+            await openapiService.fetchTokentype(utxoItems, String(chainId));
+          } catch (error) {
+            console.error('Failed to fetch token metadata:', error);
+          }
+        }
 
         eventBus.emit(EVENTS.broadcastToUI, { method: 'refreshAssets', params: null });
       } else {
         console.log('Skipping UTXO update: New UTXOs are from an older block');
       }
 
-      assetService.setSyncBlockHeight(account.address, chainInfo.chainId, chainInfo.networkType, start + limit + 1);
+      const nextSyncHeight = Number.isFinite(latestHeight) && latestHeight >= 0 ? latestHeight + 1 : start + limit + 1;
+      assetService.setSyncBlockHeight(account.address, chainId, chainInfo.networkType, nextSyncHeight);
     }
   };
 
@@ -505,10 +522,10 @@ export class WalletController {
     return keyring.generatePrePrivateKey();
   };
 
-  getAddressHistory = async (account: Account, start: number, limit: number) => {
+  getAddressHistory = async (account: Account, start: number, limit: number, chainId?: number) => {
     this.resetLockTime();
-    const { txHistory } = await openapiService.getAddressHistory(account, start, limit);
-    console.log('getAddressHistory', txHistory);
+    const activeChainId = typeof chainId === 'number' ? chainId : this.getCurrentChainInfo().chainId;
+    const { txHistory } = await openapiService.getAddressHistory(account, start, limit, activeChainId);
     return txHistory;
   };
 
@@ -547,7 +564,7 @@ export class WalletController {
     });
   };
 
-  getTransferAddressHistory = async (): Promise<transferAddressHistory[]> => {
+  getTransferAddressHistory = async (): Promise<TransferAddressHistory[]> => {
     return assetService.getTransferAddressHistory();
   };
 
@@ -558,7 +575,7 @@ export class WalletController {
           .map((addr) => addr.trim())
           .filter((addr) => addr.length > 0)
       : [newAddress];
-    const historyList: transferAddressHistory[] = addresses.map((address) => ({
+    const historyList: TransferAddressHistory[] = addresses.map((address) => ({
       address,
       updated: Date.now(),
     }));
@@ -585,6 +602,13 @@ export class WalletController {
     }
     return fees;
   };
+  /**
+   * 获取当前网络配置
+   */
+  getCurrentChainInfoData = async (): Promise<ChainInfo> => {
+    return preferenceService.getCurrentChainInfo();
+  };
+
   /**
    * 获取存储的网络配置
    */

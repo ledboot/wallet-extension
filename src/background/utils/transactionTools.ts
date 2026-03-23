@@ -1,7 +1,7 @@
 import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
 import { getPublicKey, signAsync } from '@noble/secp256k1';
 
-import { keyringService } from '../service';
+import { keyringService, preferenceService } from '../service';
 import assetService from '../service/asset';
 import Address from './address';
 import { TinDef, ToutDef } from './defs';
@@ -170,8 +170,9 @@ function gatherCoins(
 }
 
 export async function signTransaction(tx: MsgT, mode: number) {
-  const allUtxos = assetService.getUtxos();
-  
+  const currentChainId = preferenceService.getCurrentChainInfo().chainId;
+  const allUtxos = assetService.getUtxosByChain(currentChainId);
+
   const utxoMap = new Map();
   for (let k = 0; k < allUtxos.length; k++) {
     const u = allUtxos[k];

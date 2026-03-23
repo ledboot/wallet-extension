@@ -34,7 +34,6 @@ export class OpenapiService {
     if (!res) throw new Error('Network error, no response');
     if (res.status !== 200) throw new Error('Network error with status: ' + res.status);
     try {
-      // const clone = res.clone();
       jsonRes = await res.json();
       console.log('jsonRes', jsonRes);
     } catch (e) {
@@ -49,7 +48,6 @@ export class OpenapiService {
     method: string,
     data: any
   ): Promise<{ id: number; error: any; result: T }> => {
-    console.log('httpPost', url, method, data);
     const headers = new Headers();
     headers.append('Content-Type', 'application/json');
     const rpcUser = import.meta.env.VITE_RPC_USER;
@@ -79,7 +77,6 @@ export class OpenapiService {
   };
 
   httpGet = async <T = any>(url: string): Promise<{ id: number; error: any; result: T }> => {
-    console.log('httpGet', url);
     const headers = new Headers();
     headers.append('Content-Type', 'application/json');
     const rpcUser = import.meta.env.VITE_RPC_USER;
@@ -101,19 +98,22 @@ export class OpenapiService {
     }
   };
 
-  getAddressHistory = async (account: Account, start: number, limit: number) => {
+  getAddressHistory = async (account: Account, start: number, limit: number, chainId: number) => {
     const res = await this.httpPost(this.getEndpoint(), 'schrt', [account.address, 0, start, limit, 0, false]);
-    if (res.result && Array.isArray(res.result)) {
-      const { txHistory, utxoItems } = await this.analyzeResult(account, res.result);
-      return { txHistory, utxoItems };
+    if (res.result && Array.isArray(res.result) && res.result.length > 0) {
+      const { txHistory, utxoItems, latestHeight } = await this.analyzeResult(account, res.result, chainId);
+      return { txHistory, utxoItems, hasHistory: true, latestHeight };
     }
-    return { txHistory: [], utxoItems: [] };
+    return { txHistory: [], utxoItems: [], hasHistory: false, latestHeight: -1 };
   };
 
   fetchTokentype = async (utxos: Utxo[] = [], chainId?: string): Promise<{ CoinNames: CoinNames[] }> => {
     const existingCoinNames = assetService.getCoinNames();
     const tokenTypes = utxos.map((u) => u.tokenType).filter((t) => t !== undefined && t !== null && t !== '');
     const tokenTypesStr = [...new Set(tokenTypes)].join(',');
+    if (!tokenTypesStr) {
+      return { CoinNames: existingCoinNames };
+    }
     let updated: number = 0;
     if (existingCoinNames.length > 0) {
       updated = Math.max(0, ...existingCoinNames.map((c) => Number(c.updated || 0)));
@@ -125,7 +125,7 @@ export class OpenapiService {
       (chainId ? `&chainid=${chainId}` : '') +
       (updated ? `&updated=${updated}` : '');
     const res = await this.httpGet(url);
-    if (!res.result) return { CoinNames: [] };
+    if (!res.result) return { CoinNames: existingCoinNames };
 
     const newConames: CoinNames[] = [];
     for (let i = 0; i < res.result.length; i++) {
@@ -142,11 +142,16 @@ export class OpenapiService {
       newConames.push(coname);
     }
 
-    // Save to preference store
-    assetService.addCoinName(newConames);
-    const updatedConames = assetService.getCoinNames();
+    const mergedCoinNameMap = new Map(existingCoinNames.map((coin) => [`${coin.chainId}:${coin.tokenType}`, coin]));
+    for (const coin of newConames) {
+      mergedCoinNameMap.set(`${coin.chainId}:${coin.tokenType}`, coin);
+    }
+    const mergedCoinNames = [...mergedCoinNameMap.values()];
 
-    return { CoinNames: updatedConames };
+    // Save to asset store
+    assetService.addCoinName(mergedCoinNames);
+
+    return { CoinNames: mergedCoinNames };
   };
 
   fetchBlockchains = async () => {
@@ -269,33 +274,29 @@ export class OpenapiService {
     return { tIn, tOut };
   };
 
-  analyzeResult = async (account: Account, list: any[]) => {
+  analyzeResult = async (account: Account, list: any[], chainId: number) => {
     // 初始化变量
     const txHistory: TxHistoryItem[] = [];
-    const utxotype: Utxo[] = assetService.getUtxos();
-    const utxoItems = [];
+    let latestHeight = -1;
+    const syncedUtxos = assetService.getUtxosMap(account.address, chainId);
+    const utxoMap = new Map<string, Utxo>(syncedUtxos.map((utxo) => [`${utxo.txid}:${utxo.index}`, utxo]));
     // 处理交易输出（UTXO添加）
     for (let i = list.length - 1; i >= 0; i--) {
-      const { tIn, tOut } = this.decodeMsgHex(list[i].hex);
+      const item = list[i];
+      const currentHeight = Number(item?.height);
+      if (Number.isFinite(currentHeight)) {
+        latestHeight = Math.max(latestHeight, currentHeight);
+      }
+
+      const { tIn, tOut } = this.decodeMsgHex(item.hex);
 
       for (let j = 0; j < tIn.length; j++) {
         const previousOutPointHash = tIn[j].previousOutPointHash;
         const previousOutPointIndex = tIn[j].previousOutPointIndex;
-        // 从utxotype中查找并删除已消费的UTXO
-        const utxoIndex = utxotype.findIndex(
-          (utxo) => utxo.txid === previousOutPointHash && utxo.index === previousOutPointIndex
-        );
-        if (utxoIndex !== -1) {
+        const utxoKey = `${previousOutPointHash}:${previousOutPointIndex}`;
+        if (utxoMap.has(utxoKey)) {
           console.log(`Removing spent UTXO: ${previousOutPointHash}:${previousOutPointIndex}`);
-          utxotype.splice(utxoIndex, 1);
-        }
-
-        const utxoItemIndex = utxoItems.findIndex(
-          (item) => item.txid === previousOutPointHash && item.index === previousOutPointIndex
-        );
-        if (utxoItemIndex !== -1) {
-          console.log(`Removing from utxoItems: ${previousOutPointHash}:${previousOutPointIndex}`);
-          utxoItems.splice(utxoItemIndex, 1);
+          utxoMap.delete(utxoKey);
         }
       }
       for (let j = 0; j < tOut.length; j++) {
@@ -308,13 +309,13 @@ export class OpenapiService {
             sender = previousTxOut[0].address;
           }
           const txItemHistory = {
-            txid: list[i].txid,
+            txid: item.txid,
             index: output.outPointIndex,
             address: sender,
             txType: TxType.RECEIVE,
-            blockHeight: list[i].height,
-            blockHash: list[i].blockhash,
-            blockTime: list[i].blocktime,
+            blockHeight: item.height,
+            blockHash: item.blockhash,
+            blockTime: item.blocktime,
             tokenType: output.tokenType.toString(),
             value: Number(output.value),
             rights: output.rights,
@@ -323,23 +324,25 @@ export class OpenapiService {
             myaddress: account.address,
           };
           const txItemUtxo: Utxo = {
-            txid: list[i].txid,
+            txid: item.txid,
             index: output.outPointIndex,
             address: account.address,
             scriptPubKey: output.pkScript,
-            blockHeight: list[i].height,
-            blockHash: list[i].blockhash,
+            blockHeight: item.height,
+            blockHash: item.blockhash,
             tokenType: output.tokenType.toString(),
             value: Number(output.value),
             rights: output.rights || [],
           };
           txHistory.push(txItemHistory);
-          utxoItems.push(txItemUtxo);
+          utxoMap.set(`${txItemUtxo.txid}:${txItemUtxo.index}`, txItemUtxo);
         }
       }
     }
+
+    const utxoItems = Array.from(utxoMap.values());
     // 构建返回的交易历史数据
-    return { txHistory, utxoItems };
+    return { txHistory, utxoItems, latestHeight };
   };
 
   private isOurAddress(addrhex: string, targetAddress: string, pkScript: string, btc: boolean): boolean {

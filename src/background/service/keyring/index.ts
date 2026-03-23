@@ -395,7 +395,7 @@ class KeyringService extends EventEmitter {
     this.cachedDisplayedKeyring = null;
 
     // Clean up UTXO data for this account
-    assetService.removeAccountUtxoData(address);
+    await assetService.removeAccountUtxoData(address);
 
     // Clean up preference data for this account
     if (accountKey) {
@@ -433,7 +433,9 @@ class KeyringService extends EventEmitter {
     const tmpKeyring = this.keyrings[index];
     if (tmpKeyring) {
       const accounts = tmpKeyring.getAccounts();
-      accounts.forEach((account) => assetService.removeAccountUtxoData(account.address));
+      for (const account of accounts) {
+        await assetService.removeAccountUtxoData(account.address);
+      }
     }
 
     // Clean up preference data for this keyring

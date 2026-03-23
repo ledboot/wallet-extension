@@ -1,11 +1,11 @@
 import { createContext, useContext } from 'react';
 
 import { ChainType, NetworkType } from '@/shared/constants';
-import {
+import type {
   Account,
   ChainInfo,
   CoinNames,
-  transferAddressHistory,
+  TransferAddressHistory,
   UtxoAddressSumInfo,
   WalletKeyring,
 } from '@/shared/types';
@@ -50,7 +50,7 @@ export interface WalletController {
   // createKeyringWithPrivateKey(privateKey: string, compressed: boolean, alianName?: string): Promise<void>;
   importPrivateKey(wif: string): Promise<void>;
 
-  getAddressHistory(account: Account, start: number, limit: number): Promise<any>;
+  getAddressHistory(account: Account, start: number, limit: number, chainId?: number): Promise<any>;
 
   updateAccountAlianName(accountKey: string, newName: string): Promise<void>;
   updateKeyringAlianName(keyringKey: string, newName: string): Promise<void>;
@@ -63,7 +63,7 @@ export interface WalletController {
     address: string;
     chainId: number;
   }>;
-  getTransferAddressHistory(): Promise<transferAddressHistory[]>;
+  getTransferAddressHistory(): Promise<TransferAddressHistory[]>;
   updateTransferAddressesHistory(newAddress: string): Promise<void>;
   getTransferFees(
     tokenType: number,
@@ -80,6 +80,7 @@ export interface WalletController {
     crosschain: number,
     timeLimit: number
   ): Promise<any>;
+  getCurrentChainInfoData(): Promise<ChainInfo>;
   getStoredChainInfo(): Promise<{ [key: string]: ChainInfo }>;
   addchainInfo(chainType: string, chainInfo: ChainInfo): Promise<void>;
   getApproval(id: string): Promise<any>;

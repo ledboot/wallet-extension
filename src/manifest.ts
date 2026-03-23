@@ -30,7 +30,7 @@ export default defineManifest({
     48: 'icon48.png',
     128: 'icon128.png',
   },
-  permissions: ['activeTab', 'storage', 'unlimitedStorage'],
+  permissions: ['activeTab', 'storage', 'unlimitedStorage', 'clipboardRead'],
   content_scripts: [
     {
       js: ['src/content_scripts/index.ts'],
