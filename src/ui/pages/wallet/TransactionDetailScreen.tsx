@@ -4,6 +4,7 @@ import { useLocation } from 'react-router';
 import { toast } from 'sonner';
 
 import { TxHistoryItem } from '@/shared/types';
+import { capturePostHogEvent } from '@/shared/telemetry/posthog';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useNavigate } from '@/ui/pages/MainRoute';
 import { useWallet } from '@/ui/utils/walletContext';
@@ -79,10 +80,15 @@ export default function TransactionDetailScreen() {
   };
 
   const handleViewOnExplorer = async () => {
+    capturePostHogEvent('history_view_on_explorer_clicked');
+
     try {
       const currentChainInfo = await wallet.getCurrentChainInfoData();
       const baseExplorerUrl = currentChainInfo?.explorerUrl?.trim() || '';
       if (!baseExplorerUrl) {
+        capturePostHogEvent('history_view_on_explorer_skipped', {
+          reason: 'empty_explorer_url',
+        });
         return;
       }
 
@@ -90,9 +96,11 @@ export default function TransactionDetailScreen() {
         ? baseExplorerUrl.replaceAll('{txid}', transaction.txid)
         : `${baseExplorerUrl.replace(/\/+$/, '')}/tx/${transaction.txid}`;
       window.open(finalUrl, '_blank');
+      capturePostHogEvent('history_view_on_explorer_opened');
     } catch (error) {
       console.error('[UI] Failed to open explorer:', error);
       toast.error(t('common.error'));
+      capturePostHogEvent('history_view_on_explorer_failed');
     }
   };
 

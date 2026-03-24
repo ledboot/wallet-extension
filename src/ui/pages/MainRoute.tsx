@@ -1,7 +1,8 @@
-import { useCallback, useRef } from 'react';
-import { HashRouter, Route, Routes, useNavigate as useNavigateOrigin } from 'react-router';
+import { useCallback, useEffect, useRef } from 'react';
+import { HashRouter, Route, Routes, useLocation, useNavigate as useNavigateOrigin } from 'react-router';
 
 import SyncBridge from '@/ui/components/SyncBridge';
+import { capturePostHogEvent } from '@/shared/telemetry/posthog';
 
 import AccountDetailScreen from './account/AccountDetailScreen';
 import AccountSelection from './account/AccountSelection';
@@ -151,6 +152,18 @@ const routes = {
 
 type RouteTypes = keyof typeof routes;
 
+function TelemetryRouteTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    capturePostHogEvent('ui_route_viewed', {
+      path: location.pathname,
+    });
+  }, [location.pathname]);
+
+  return null;
+}
+
 // eslint-disable-next-line react-refresh/only-export-components
 export function useNavigate() {
   const navigate = useNavigateOrigin();
@@ -201,6 +214,7 @@ export default function MainRoute() {
   return (
     <HashRouter>
       <SyncBridge>
+        <TelemetryRouteTracker />
         <Routes>
           {Object.entries(routes).map(([key, value]) => (
             <Route key={key} path={value.path} element={value.element} />

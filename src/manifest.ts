@@ -1,7 +1,43 @@
- 
 import { defineManifest } from '@crxjs/vite-plugin';
 
 import packageData from '../package.json';
+
+const DEFAULT_TELEMETRY_HOST_PERMISSIONS = [
+  'https://*.ingest.sentry.io/*',
+  'https://us.i.posthog.com/*',
+  'https://eu.i.posthog.com/*',
+];
+
+const toHostPermission = (value?: string): string | null => {
+  const raw = value?.trim();
+  if (!raw) return null;
+
+  try {
+    const normalized = raw.includes('://') ? raw : `https://${raw}`;
+    const parsedUrl = new URL(normalized);
+    return `${parsedUrl.protocol}//${parsedUrl.host}/*`;
+  } catch {
+    return null;
+  }
+};
+
+const getTelemetryHostPermissions = (): string[] => {
+  const hostPermissions = new Set<string>(DEFAULT_TELEMETRY_HOST_PERMISSIONS);
+
+  const sentryPermission = toHostPermission(process.env.VITE_SENTRY_DSN);
+  if (sentryPermission) {
+    hostPermissions.add(sentryPermission);
+  }
+
+  const posthogPermission = toHostPermission(process.env.VITE_POSTHOG_HOST);
+  if (posthogPermission) {
+    hostPermissions.add(posthogPermission);
+  }
+
+  return [...hostPermissions];
+};
+
+const telemetryHostPermissions = getTelemetryHostPermissions();
 
 const createManifest = (isDev: boolean) =>
   defineManifest({
@@ -30,6 +66,7 @@ const createManifest = (isDev: boolean) =>
       128: 'icon128.png',
     },
     permissions: ['activeTab', 'storage', 'unlimitedStorage', 'clipboardRead'],
+    host_permissions: telemetryHostPermissions,
     content_scripts: [
       {
         js: ['src/content_scripts/index.ts'],

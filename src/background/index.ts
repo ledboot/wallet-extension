@@ -1,5 +1,6 @@
 import { CHAIN_INFO, EVENTS } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
+import { captureSentryException, initSentry } from '@/shared/telemetry/sentry';
 import PortMessage from '@/shared/utils/message/portMessage';
 
 import { walletController } from './controller';
@@ -29,6 +30,23 @@ const expandIcon = (path: string) => {
 
 let appStoreLoaded = false;
 
+initSentry('background');
+
+globalThis.addEventListener('error', (event: ErrorEvent) => {
+  captureSentryException(event.error || event.message, {
+    event: 'background.error',
+    fileName: event.filename,
+    lineNumber: event.lineno,
+    columnNumber: event.colno,
+  });
+});
+
+globalThis.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
+  captureSentryException(event.reason, {
+    event: 'background.unhandledrejection',
+  });
+});
+
 async function start() {
   const keyringState = await storage.get('keyringState');
   keyringService.loadStore(keyringState);
@@ -38,7 +56,10 @@ async function start() {
   appStoreLoaded = true;
 }
 
-start();
+start().catch((error) => {
+  captureSentryException(error, { phase: 'background.start' });
+  console.error('[Background] Failed to start services:', error);
+});
 
 /**
  * Handle extension installation event

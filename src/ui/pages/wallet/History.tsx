@@ -7,6 +7,7 @@ import {
 import { toast } from 'sonner';
 
 import { Account, TxHistoryItem, TxType } from '@/shared/types';
+import { capturePostHogEvent } from '@/shared/telemetry/posthog';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useCurrentAccount } from '@/ui/state/hooks';
 
@@ -175,6 +176,10 @@ export default function History() {
   };
 
   const handleOpenTransactionDetail = (tx: TransactionDisplayItem) => {
+    capturePostHogEvent('history_transaction_detail_opened', {
+      type: tx.type,
+      coinbase: Boolean(tx.coinbase),
+    });
     navigate('TransactionDetailScreen', { transaction: tx });
   };
 

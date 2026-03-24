@@ -3,6 +3,7 @@ import { Account } from '@shared/types';
 import { Check, ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
+import { capturePostHogEvent } from '@/shared/telemetry/posthog';
 import { PixelAvatar } from '@/ui/components/PixelAvatar';
 import { useKeyringsList } from '@/ui/state/hooks';
 import { useWallet } from '@/ui/utils/walletContext';
@@ -41,12 +42,16 @@ const ApprovalConnect = () => {
 
   const handleConnect = async () => {
     if (id && selectedAddresses.length > 0) {
+      capturePostHogEvent('approval_connect_approved', {
+        selected_count: selectedAddresses.length,
+      });
       await wallet.resolveApproval(id, selectedAddresses);
     }
   };
 
   const handleCancel = async () => {
     if (id) {
+      capturePostHogEvent('approval_connect_rejected');
       await wallet.rejectApproval(id);
     }
   };

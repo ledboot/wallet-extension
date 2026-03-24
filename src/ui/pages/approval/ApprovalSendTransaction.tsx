@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { capturePostHogEvent } from '@/shared/telemetry/posthog';
 import { useWallet } from '@/ui/utils/walletContext';
 import { ShieldCheck } from 'lucide-react';
 import ApprovalLayout from './ApprovalLayout';
@@ -12,12 +13,14 @@ const ApprovalSendTransaction = () => {
 
   const handleApprove = async () => {
     if (id) {
+      capturePostHogEvent('approval_send_transaction_approved');
       await wallet.resolveApproval(id, true);
     }
   };
 
   const handleReject = async () => {
     if (id) {
+      capturePostHogEvent('approval_send_transaction_rejected');
       await wallet.rejectApproval(id);
     }
   };

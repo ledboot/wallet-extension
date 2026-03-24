@@ -2,6 +2,8 @@ import { PropsWithChildren, useEffect } from 'react';
 
 import { CHAIN_INFO, ChainType, EVENTS, NetworkType } from '@/shared/constants';
 import eventBus from '@/shared/eventBus';
+import { capturePostHogEvent, identifyPostHogUser, resetPostHogUser } from '@/shared/telemetry/posthog';
+import { clearSentryUser, setSentryUser } from '@/shared/telemetry/sentry';
 import { Message } from '@/shared/utils';
 import { useNavigate } from '@/ui/pages/MainRoute';
 import { accountsStore } from '@/ui/state/accounts';
@@ -91,6 +93,8 @@ export default function SyncBridge(props: PropsWithChildren) {
         const currentAccount = await wallet.getCurrentAccount();
         if (currentAccount) {
           accountsStore.getState().setCurrent(currentAccount);
+          identifyPostHogUser(currentAccount.address);
+          setSentryUser(currentAccount.address);
         }
       }
     };
@@ -102,12 +106,16 @@ export default function SyncBridge(props: PropsWithChildren) {
 
       switch (method) {
         case 'lock': {
+          capturePostHogEvent('wallet_locked');
           globalStore.getState().update({ isUnlocked: false });
           keyringsStore.getState().clearAssets();
+          resetPostHogUser();
+          clearSentryUser();
           navigate('UnlockScreen');
           break;
         }
         case 'unlock': {
+          capturePostHogEvent('wallet_unlocked');
           globalStore.getState().update({ isUnlocked: true });
           // 刚解锁：同步 keyrings + assets
           await syncKeyrings();
