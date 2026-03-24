@@ -48,7 +48,6 @@ const AccountSelection = () => {
       navigate('MainScreen');
       return;
     }
-    console.log('handleAccountSelect', keyring.key, accountIndex);
     setSelectedKeyringIndex(keyring.index);
     setSelectedAccountIndex(accountIndex);
     wallet.changeKeyring(keyring.key, accountIndex);
@@ -252,10 +251,6 @@ const AccountSelection = () => {
         <EditAccountName
           account={editingAccount}
           onClose={() => setEditingAccount(null)}
-          onSuccess={() => {
-            // 可以在这里添加成功后的处理逻辑
-            console.log('Account name updated successfully');
-          }}
         />
       )}
 
@@ -264,10 +259,6 @@ const AccountSelection = () => {
         <EditKeyringName
           keyring={editingKeyring}
           onClose={() => setEditingKeyring(null)}
-          onSuccess={() => {
-            // 可以在这里添加成功后的处理逻辑
-            console.log('Keyring name updated successfully');
-          }}
         />
       )}
 

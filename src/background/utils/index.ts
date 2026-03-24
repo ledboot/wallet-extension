@@ -134,7 +134,6 @@ export function decode(r: Reader) {
 
     if ((version & 0x10) == 0) {
       lockTime = r.readInt32();
-      console.log('lockTime', lockTime);
     }
 
     count = r.readVarInt();

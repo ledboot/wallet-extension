@@ -63,7 +63,6 @@ export default function SyncBridge(props: PropsWithChildren) {
 
       try {
         const { assetsData, chainName, address, chainId } = await wallet.assetsListsPage();
-        console.log('refreshAssets', assetsData, chainName, address, chainId);
         if (address) {
           keyringsStore.getState().setCurrentAssets(address, chainId, assetsData, chainName);
         }
@@ -100,7 +99,6 @@ export default function SyncBridge(props: PropsWithChildren) {
     const onBroadcastToUI = async (payload: any) => {
       if (!payload?.method) return;
       const { method, params } = payload;
-      console.log('received onBroadcastToUI', method, params);
 
       switch (method) {
         case 'lock': {

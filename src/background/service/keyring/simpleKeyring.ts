@@ -115,12 +115,9 @@ export class SimpleKeyring {
 
   async deserialize(opts: any): Promise<void> {
     const keyArray = opts as [string, boolean][];
-    console.log('deserialize keyArray', keyArray);
     // [['9d5799bd5449a8ee4eb5dbcddd5dd18a16f194fdef102a110867dd6773034feb', true], ['9d5799bd5449a8ee4eb5dbcddd5dd18a16f194fdef102a110867dd6773034feb', true]]
 
     for (const [hex, compressed] of keyArray) {
-      console.log('deserialize hex', hex);
-      console.log('deserialize compressed', compressed);
       const privateKeyBytes = hexToBytes(hex);
       this.wallets.push(new ECKeyImpl(privateKeyBytes, compressed));
     }

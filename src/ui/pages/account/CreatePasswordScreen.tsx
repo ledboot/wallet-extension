@@ -39,9 +39,6 @@ export default function CreatePasswordScreen() {
         newWallet: newWallet,
       });
     },
-    onError: (err) => {
-      console.log('error', err);
-    },
   });
 
   const handleContinue = () => {

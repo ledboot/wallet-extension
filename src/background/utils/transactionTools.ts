@@ -57,7 +57,6 @@ export function buildTx(
 
   const r = gatherCoins(condition, amount, fees, rights, notxfee);
   // if(r === null) return false;
-  console.log("gatherCoins r=",r)
   const sum = r.sum;
   const inaddress = r.inaddress;
   if (tokenType !== 0n) r.minTxfee = 0n;

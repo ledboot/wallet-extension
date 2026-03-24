@@ -18,14 +18,12 @@ class PortMessage extends Message {
     this.port = browserRuntimeConnect(undefined, name ? { name } : undefined);
     this.port.onMessage.addListener(
       ({ _type_, data }: { _type_: string; data: unknown }) => {
-        console.log('[PortMessage] connect received message:', { _type_, data });
         if (_type_ === `${this._EVENT_PRE}message`) {
           this.emit('message', data);
           return;
         }
 
         if (_type_ === `${this._EVENT_PRE}response`) {
-          console.log('[PortMessage] handling response');
           this.onResponse(data as ResponseData);
         }
       }
@@ -39,9 +37,7 @@ class PortMessage extends Message {
     this.listenCallback = listenCallback;
     this.port.onMessage.addListener(
       ({ _type_, data }: { _type_: string; data: unknown }) => {
-        console.log('[PortMessage] listen received message:', { _type_, data });
         if (_type_ === `${this._EVENT_PRE}request`) {
-          console.log('[PortMessage] handling request');
           this.onRequest(data as RequestData);
         }
       }
@@ -52,12 +48,10 @@ class PortMessage extends Message {
 
   send = (type: string, data: unknown) => {
     if (!this.port) {
-      console.log('[PortMessage] send: port is null');
       return;
     }
     try {
       const message = { _type_: `${this._EVENT_PRE}${type}`, data };
-      console.log('[PortMessage] sending:', message);
       this.port.postMessage(message);
     } catch (e) {
       console.error('[PortMessage] send error:', e);

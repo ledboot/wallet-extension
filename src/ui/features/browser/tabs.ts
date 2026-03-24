@@ -17,7 +17,6 @@ export const openExtensionInTab = async (route: string, params: any = {}) => {
     });
     return tab;
   }
-  console.log('openExtensionInTab params', route, params);
 
   try {
     // Check if target URL is a phishing site

@@ -102,7 +102,6 @@ export class WalletController {
   syncAccountUtxos = async (start: number, limit: number, isBackgroundPolling = false) => {
     if (!isBackgroundPolling) this.resetLockTime();
     const account = await this.getCurrentAccount();
-    console.log('syncAccountUtxos', account?.address, 'start:', start, 'limit:', limit);
     if (!account) return { sums: [], CoinNames: [], utxoItems: [] };
     const chainInfo = this.getCurrentChainInfo();
     const chainId = chainInfo.chainId;
@@ -137,8 +136,6 @@ export class WalletController {
         }
 
         eventBus.emit(EVENTS.broadcastToUI, { method: 'refreshAssets', params: null });
-      } else {
-        console.log('Skipping UTXO update: New UTXOs are from an older block');
       }
 
       const nextSyncHeight = Number.isFinite(latestHeight) && latestHeight >= 0 ? latestHeight + 1 : start + limit + 1;

@@ -59,15 +59,6 @@ export default function TransactionConfirmScreen() {
     }
     setIsSending(true);
     try {
-      // TODO: Replace with actual send transaction logic
-      console.log('Sending transaction:', {
-        from: currentAccount?.address,
-        to: recipientAddress,
-        amount,
-        token: token.name,
-        fee,
-      });
-
       // Make the transfer
       const result = await wallet.transfer(
         amount,
@@ -77,7 +68,6 @@ export default function TransactionConfirmScreen() {
         0,
         15
       );
-      console.log('Transfer result:', result);
       await new Promise((resolve) => setTimeout(resolve, 1500));
       await wallet.updateTransferAddressesHistory(recipientAddress);
 

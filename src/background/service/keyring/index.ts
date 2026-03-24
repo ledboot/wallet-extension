@@ -167,7 +167,6 @@ class KeyringService extends EventEmitter {
    */
   setLocked = async (): Promise<MemStoreState> => {
     // set locked
-    console.log('setLocked');
     this.password = null;
     this.memStore.updateState({ isUnlocked: false });
 
@@ -622,7 +621,6 @@ class KeyringService extends EventEmitter {
    * @returns {Promise<Keyring>} The keyring of the account, if it exists.
    */
   getKeyringForAccount = (address: string, type: string = KEYRING_TYPE.SimpleKeyring): Keyring => {
-    console.log('getKeyringForAccount', address, type);
     const keyrings = type ? this.keyrings.filter((keyring) => keyring.type === type) : this.keyrings;
     for (let i = 0; i < keyrings.length; i++) {
       const keyring = keyrings[i];

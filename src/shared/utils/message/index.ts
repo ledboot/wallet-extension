@@ -69,16 +69,13 @@ abstract class Message extends EventEmitter {
   };
 
   onRequest = async ({ ident, data }: RequestData) => {
-    console.log('[Message] onRequest received:', { ident, data });
     if (this.listenCallback) {
       let res: unknown, err: ResponseData['err'];
 
       try {
         res = await this.listenCallback(data);
-        console.log('[Message] listenCallback result:', res);
       } catch (e: unknown) {
         const error = e as Error;
-        console.log('[Message] listenCallback error:', error);
         err = {
           message: error.message,
           stack: error.stack || '',
@@ -91,7 +88,6 @@ abstract class Message extends EventEmitter {
         }
       }
 
-      console.log('[Message] sending response:', { ident, res, err });
       this.send('response', { ident, res, err });
     }
   };

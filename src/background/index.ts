@@ -31,13 +31,11 @@ let appStoreLoaded = false;
 
 async function start() {
   const keyringState = await storage.get('keyringState');
-  console.log('keyringState', keyringState);
   keyringService.loadStore(keyringState);
   keyringService.store.subscribe((value) => storage.set('keyringState', value));
   await preferenceService.init();
   await assetService.init();
   appStoreLoaded = true;
-  console.log('appStoreLoaded', appStoreLoaded);
 }
 
 start();
@@ -66,7 +64,6 @@ const contentScriptPorts = new Set<PortMessage>();
 
 browserRuntimeOnConnect((port: any) => {
   if (port.name === 'popup' || port.name === 'notification' || port.name === 'tab' || port.name === 'sidepanel') {
-    console.log('port', port);
     const pm = new PortMessage(port as any);
     pm.listen(async (data: any) => {
       if (data?.type) {
@@ -75,7 +72,6 @@ browserRuntimeOnConnect((port: any) => {
             eventBus.emit(data.method, data.params);
             return;
           case 'controller':
-            console.log('received controller', data);
             if (data.method) {
               const result = await (walletController as any)[data.method].apply(walletController, data.args);
               return result;
@@ -347,12 +343,9 @@ function broadcastToContentScripts(event: string, data: unknown) {
 
 // Handle simple message requests from content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('Background received message:', message);
-
   // Handle wallet requests
   if (message && typeof message === 'object') {
     const { method, params } = message;
-    console.log('--------params', params);
 
     if (method === 'CONNECT_WALLET') {
       chrome.action
@@ -557,7 +550,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (method === 'SIGN_TRANSACTION') {
       (async () => {
         try {
-          console.log('SIGN_TRANSACTION', params);
           if (!params || !params.tx) {
             sendResponse({
               success: false,
@@ -636,7 +628,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (method === 'GET_UTXOS') {
       const assets = assetService.getUtxosByAddress(params.address);
-      console.log('----------assets', assets);
       sendResponse({
         success: true,
         result: assets,

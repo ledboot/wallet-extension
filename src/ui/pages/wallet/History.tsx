@@ -186,7 +186,6 @@ export default function History() {
   useEffect(() => {
     const fetchTransactions = async (account: Account) => {
       if (account) {
-        console.log('[UI] fetchTransactions start', account);
         try {
           setLoading(true);
           setNextCursor(undefined);

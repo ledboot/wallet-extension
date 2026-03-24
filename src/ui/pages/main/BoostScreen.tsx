@@ -30,7 +30,6 @@ export default function BoostScreen() {
     }
 
     const currentAccount = await wallet.getCurrentAccount();
-    console.log('currentAccount', currentAccount);
     if (!currentAccount) {
       navigate('WelcomeScreen', { fromBoost: true });
       return;

@@ -170,14 +170,11 @@ export class OpenapiService {
     const maxchainid = chainIds.length > 0 ? Math.max(...chainIds) : 0;
     const updated = updatedTimes.length > 0 ? Math.max(...updatedTimes) : 0;
 
-    console.log('fetchBlockchains - maxchainid:', maxchainid, 'updated:', updated);
-
     const url = `${serverEndpoint}/omega/index.php?module=ncx&MOD_op=getblockchains&class=${chainclass}&id=${maxchainid}&updated=${updated}`;
     const res = await this.httpGet(url);
 
     // 处理获取到的区块链网络信息
     if (Array.isArray(res) && res.length > 0) {
-      console.log(`Processing ${res.length} remote networks...`);
       res.forEach((apiData) => {
         try {
           const meta = JSON.parse(apiData.meta);
@@ -200,14 +197,12 @@ export class OpenapiService {
           };
 
           const networkId = `${networkConfig.label.toUpperCase().replace(/\s+/g, '_')}_${networkConfig.networkType.toUpperCase()}`;
-          console.log('Generated networkId:', networkId);
 
           preferenceService.addchainInfo(networkId, networkConfig);
         } catch (error) {
           console.error('Error adding network from API data:', error);
         }
       });
-      console.log('Dynamic networks added successfully');
     }
   };
 
@@ -397,9 +392,7 @@ export class OpenapiService {
 
     // phase-2: spent 从旧 UTXO 删除，并抵消同批次新增后又花费的输出
     for (const spendKey of spendsSet) {
-      if (utxoMap.delete(spendKey)) {
-        console.log(`Removing spent UTXO: ${spendKey}`);
-      }
+      utxoMap.delete(spendKey);
       if (addsMap.has(spendKey)) {
         addsMap.delete(spendKey);
       }

@@ -180,8 +180,6 @@ class PreferenceService {
 
     const updatedChainInfo = { ...this.store.chainInfo };
     this.store.chainInfo = updatedChainInfo;
-
-    console.log(`Added chain ${chainType} to preference store`);
   };
 
   getchainInfo = (chainType: string): ChainInfo | undefined => {

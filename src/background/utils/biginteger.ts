@@ -1163,8 +1163,6 @@ function op_andnot(x: any, y: any) {
   } else if (ba[0] & 0x80) {
     return new (BigInteger as any)([0].concat(ba));
   } else {
-    console.log('fromByteArrayUnsigned ba444:', ba);
-    console.log('fromByteArrayUnsigned ba444 new BigInteger:', new (BigInteger as any)(ba));
     return new (BigInteger as any)(ba);
   }
 };

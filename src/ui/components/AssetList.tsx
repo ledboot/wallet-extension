@@ -52,8 +52,6 @@ export function AssetList() {
   const chainName = useActiveChainName();
   const loading = useAssetsLoading();
 
-  console.log('AssetList render:', { assets, chainName, loading });
-
   if (loading) {
     return <div className='p-4 text-center'>{t('assets.loading')}</div>;
   }
