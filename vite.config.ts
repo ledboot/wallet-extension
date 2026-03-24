@@ -12,7 +12,7 @@ import tailwindcss from '@tailwindcss/vite';
 // 加载环境变量
 dotenv.config();
 
-import manifest from './src/manifest';
+import createManifest from './src/manifest';
 
 function touchFile(filePath: string): void {
   const time = new Date();
@@ -41,71 +41,75 @@ export function touchGlobalCSSPlugin({
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(),
-    touchGlobalCSSPlugin({
-      cssFilePath: resolve(__dirname, 'src/assets/styles/index.css'),
-      watchFiles: ['.tsx'],
-    }),
-    wasm(),
-    crx({
-      manifest,
-      contentScripts: {
-        injectCss: true,
+export default defineConfig(({ mode, command }) => {
+  const isDev = mode === 'development' || command === 'serve';
+  const nodeEnv = mode === 'production' ? 'production' : 'development';
+
+  return {
+    plugins: [
+      react(),
+      tailwindcss(),
+      touchGlobalCSSPlugin({
+        cssFilePath: resolve(__dirname, 'src/assets/styles/index.css'),
+        watchFiles: ['.tsx'],
+      }),
+      wasm(),
+      crx({
+        manifest: createManifest(isDev),
+        contentScripts: {
+          injectCss: true,
+        },
+      }),
+    ],
+    define: {
+      global: 'globalThis',
+      'process.env.NODE_ENV': JSON.stringify(nodeEnv),
+    },
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, 'src'),
       },
-    }),
-  ],
-  define: {
-    global: 'globalThis',
-    'process.env': {},
-  },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
     },
-  },
-  server: {
-    hmr: {
-      host: 'localhost',
-      protocol: 'ws',
+    server: {
+      hmr: {
+        host: 'localhost',
+        protocol: 'ws',
+      },
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'credentialless',
+        // 移除不安全的 CSP 设置，只保留 WebAssembly 支持
+        'Content-Security-Policy': 'script-src \'self\' \'wasm-unsafe-eval\'; object-src \'none\';',
+      },
+      cors: {
+        origin: [/chrome-extension:\/\//],
+      },
+      fs: {
+        // Allow serving files from one level up to the project root
+        allow: ['..'],
+      },
     },
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'credentialless',
-      // 移除不安全的 CSP 设置，只保留 WebAssembly 支持
-      'Content-Security-Policy': 'script-src \'self\' \'wasm-unsafe-eval\'; object-src \'none\';',
+    optimizeDeps: {
+      exclude: ['tiny-secp256k1'],
     },
-    cors: {
-      origin: [/chrome-extension:\/\//],
-    },
-    fs: {
-      // Allow serving files from one level up to the project root
-      allow: ['..'],
-    },
-  },
-  optimizeDeps: {
-    exclude: ['tiny-secp256k1'],
-  },
-  build: {
-    target: ['chrome89', 'firefox89', 'safari15'],
-    outDir: 'dist',
-    rollupOptions: {
-      output: {
-        entryFileNames: '[name].js',
-        // chunkFileNames: '[name]-[hash].js',
-        assetFileNames: (assetInfo) => {
-          if (
-            assetInfo.name &&
-            /\.(ttf|woff|woff2|eot)$/.test(assetInfo.name)
-          ) {
-            return 'assets/fonts/[name][extname]';
-          }
-          return 'assets/[name]-[hash][extname]';
+    build: {
+      target: ['chrome89', 'firefox89', 'safari15'],
+      outDir: 'dist',
+      rollupOptions: {
+        output: {
+          entryFileNames: '[name].js',
+          assetFileNames: (assetInfo) => {
+            if (
+              assetInfo.name &&
+              /\.(ttf|woff|woff2|eot)$/.test(assetInfo.name)
+            ) {
+              return 'assets/fonts/[name][extname]';
+            }
+            return 'assets/[name]-[hash][extname]';
+          },
         },
       },
     },
-  },
-  assetsInclude: ['**/*.wasm'],
+    assetsInclude: ['**/*.wasm'],
+  };
 });

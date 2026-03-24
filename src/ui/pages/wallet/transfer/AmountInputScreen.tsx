@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from '@/ui/pages/MainRoute';
 import { ChevronLeft, X } from 'lucide-react';
 import { useLocation } from 'react-router';
@@ -13,6 +13,11 @@ interface LocationState {
   recipientAddress: string;
 }
 
+const normalizeDisplayAmount = (value: number): string => {
+  if (!Number.isFinite(value) || value <= 0) return '0';
+  return value.toFixed(8).replace(/\.?0+$/, '');
+};
+
 export default function AmountInputScreen() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,6 +30,44 @@ export default function AmountInputScreen() {
   const [fee, setFee] = useState('0.00'); // Mock fee
   const [isLoadingFee, setIsLoadingFee] = useState(false);
   const [feeError, setFeeError] = useState<string | null>(null);
+  const [availableBalanceRaw, setAvailableBalanceRaw] = useState(0);
+
+  const tokenPrecision = useMemo(() => {
+    const precision = Number(token?.decimalpoint);
+    if (Number.isInteger(precision) && precision >= 0 && precision <= 18) {
+      return precision;
+    }
+    return 8;
+  }, [token?.decimalpoint]);
+
+  const availableBalance = useMemo(() => {
+    return availableBalanceRaw / 1e8;
+  }, [availableBalanceRaw]);
+
+  const availableBalanceText = useMemo(() => {
+    return formatAmount(availableBalanceRaw);
+  }, [availableBalanceRaw]);
+
+  const fetchAvailableBalance = useCallback(async () => {
+    if (!token || !currentAccount?.address) return;
+    const chainId = Number(token?.chainId);
+    if (!Number.isFinite(chainId)) return;
+
+    try {
+      const nextBalance = await wallet.getTokenBalance(currentAccount.address, chainId, String(token.tokenType || '0'));
+      setAvailableBalanceRaw(Number(nextBalance) || 0);
+    } catch (error) {
+      console.error('获取可用余额失败:', error);
+    }
+  }, [currentAccount?.address, token, wallet]);
+
+  useEffect(() => {
+    void fetchAvailableBalance();
+    const timer = window.setInterval(() => {
+      void fetchAvailableBalance();
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [fetchAvailableBalance]);
 
   // Fetch transaction fee when amount changes
   useEffect(() => {
@@ -77,11 +120,10 @@ export default function AmountInputScreen() {
 
   // Calculate total amount including fee
   const totalAmount = useMemo(() => {
-    if (!amount) return '0';
     const amountNum = parseFloat(amount) || 0;
     const feeNum = parseFloat(fee) || 0;
-    return (amountNum + feeNum).toString();
-  }, [amount, fee]);
+    return (amountNum + feeNum).toFixed(tokenPrecision);
+  }, [amount, fee, tokenPrecision]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -107,9 +149,9 @@ export default function AmountInputScreen() {
       );
       setFee((feeSats / 1e8).toFixed(8));
       // 计算扣除手续费后的余额
-      const balance = parseFloat(formatAmount(token.value)) - feeSats / 1e8;
+      const balance = availableBalance - feeSats / 1e8;
       // 设置金额为扣除手续费后的余额，确保不小于0
-      setAmount(Math.max(0, balance).toString());
+      setAmount(normalizeDisplayAmount(Math.max(0, balance)));
       setIsMax(true);
     } catch (error) {
       console.error('获取最大可转金额失败:', error);
@@ -131,11 +173,19 @@ export default function AmountInputScreen() {
     });
   };
 
+  const isInsufficient = useMemo(() => {
+    const amountNum = parseFloat(amount) || 0;
+    const feeNum = parseFloat(fee) || 0;
+    const exceedsAvailable = amountNum > availableBalance;
+    const maxFeeInsufficient = isMax && availableBalance <= feeNum;
+    return exceedsAvailable || maxFeeInsufficient;
+  }, [amount, availableBalance, fee, isMax]);
+
   const isValid = useMemo(() => {
     if (!amount || parseFloat(amount) <= 0) return false;
-    if (parseFloat(amount) > parseFloat(token?.value || '0')) return false;
+    if (isInsufficient) return false;
     return true;
-  }, [amount, token]);
+  }, [amount, isInsufficient]);
 
   if (!token || !recipientAddress) {
     navigate('TokenSelectionScreen');
@@ -171,7 +221,7 @@ export default function AmountInputScreen() {
               </span>
               <div className='text-sm font-medium text-gray-500'>
                 {t('transfer.available')
-                  .replace('{balance}', formatAmount(token.value))
+                  .replace('{balance}', availableBalanceText)
                   .replace('{token}', token.name)}
               </div>
             </div>
@@ -238,7 +288,7 @@ export default function AmountInputScreen() {
               : 'cursor-not-allowed bg-gray-100 text-gray-400'
           }`}
         >
-          {t('transfer.continue')}
+          {isInsufficient ? t('transfer.insufficient_balance') : t('transfer.continue')}
         </button>
       </div>
     </div>

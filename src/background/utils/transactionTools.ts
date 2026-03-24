@@ -27,7 +27,6 @@ export function buildTx(
   amount: bigint,
   receivedPks: string,
   senderAddress: string,
-  checkutxo: boolean,
   notxfee: boolean,
   merge: boolean,
   crosschain: number
@@ -58,6 +57,7 @@ export function buildTx(
 
   const r = gatherCoins(condition, amount, fees, rights, notxfee);
   // if(r === null) return false;
+  console.log("gatherCoins r=",r)
   const sum = r.sum;
   const inaddress = r.inaddress;
   if (tokenType !== 0n) r.minTxfee = 0n;
@@ -104,9 +104,6 @@ export function buildTx(
     outdef.tokenType = txout[i].tokenType;
     outdef.value = txout[i].value;
     outdef.pkScript = txout[i].pkScript;
-    // if((outdef.tokenType & 2n) != 0n){
-    //   outdef.Rights = txout[i].Rights;
-    // }
     tx.tOut.push(outdef);
   }
 
@@ -132,10 +129,6 @@ function gatherCoins(
   condition.min = min;
   condition.max = 0n;
 
-  // while (sum - minTxfee < amount && more){
-  // if(assets != null && assets.length  == 0){
-
-  // }
   condition.skip = 0;
   assets = assetService.getUtxosByAddress(condition.sendAddress || '');
 

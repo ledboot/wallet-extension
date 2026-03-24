@@ -1,7 +1,49 @@
+import { useEffect, useRef, useState } from 'react';
 import { Wallet } from 'lucide-react';
 
 import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useActiveAssets, useActiveChainName, useAssetsLoading } from '@/ui/state/hooks';
+import TokenIcon from '@/ui/components/TokenIcon';
+
+const SATOSHI_FACTOR = 1e8;
+
+const formatAssetAmount = (value: number): string => {
+  return (value / SATOSHI_FACTOR).toFixed(8);
+};
+
+function AnimatedAssetAmount({ value }: { value: number }) {
+  const durationMs = 450;
+  const [displayValue, setDisplayValue] = useState<number>(value);
+  const targetRef = useRef<number>(value);
+
+  useEffect(() => {
+    if (targetRef.current === value) return;
+
+    const startValue = targetRef.current;
+    const endValue = value;
+    targetRef.current = value;
+    const startTs = performance.now();
+
+    let raf = 0;
+    const step = (ts: number) => {
+      const progress = Math.min((ts - startTs) / durationMs, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const next = startValue + (endValue - startValue) * eased;
+      setDisplayValue(next);
+
+      if (progress < 1) {
+        raf = requestAnimationFrame(step);
+      } else {
+        setDisplayValue(endValue);
+      }
+    };
+
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+
+  return <span className='tabular-nums'>{formatAssetAmount(displayValue)}</span>;
+}
 
 export function AssetList() {
   const { t } = useLanguage();
@@ -38,13 +80,10 @@ export function AssetList() {
                   <div className='flex items-center justify-between'>
                     <div className='flex items-center space-x-3'>
                       <div className='flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white'>
-                        <img
+                        <TokenIcon
                           src={asset.iconHtml}
                           alt={asset.name || t('assets.token_icon')}
-                          className='h-full w-full object-cover'
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/images/default-token.png';
-                          }}
+                          className='h-full w-full rounded-full'
                         />
                       </div>
                       <div>
@@ -53,7 +92,9 @@ export function AssetList() {
                       </div>
                     </div>
                     <div className='text-right'>
-                      <div className='text-base font-semibold text-gray-900'>{(asset.value / 1e8).toFixed(8)}</div>
+                      <div className='text-base font-semibold text-gray-900'>
+                        <AnimatedAssetAmount value={asset.value} />
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -35,7 +35,6 @@ export class OpenapiService {
     if (res.status !== 200) throw new Error('Network error with status: ' + res.status);
     try {
       jsonRes = await res.json();
-      console.log('jsonRes', jsonRes);
     } catch (e) {
       throw new Error('Network error, json parse error');
     }
@@ -50,9 +49,8 @@ export class OpenapiService {
   ): Promise<{ id: number; error: any; result: T }> => {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json');
-    const rpcUser = import.meta.env.VITE_RPC_USER;
-    const rpcPassword = import.meta.env.VITE_RPC_PASS;
-    headers.append('Authorization', `Basic ${btoa(`${rpcUser}:${rpcPassword}`)}`);
+    const rpcToken = import.meta.env.VITE_RPC_TOKEN;
+    headers.append('Authorization', `Basic ${rpcToken}`);
     let res: Response;
     const requestParams = {
       jsonrpc: '1.0',
@@ -219,11 +217,13 @@ export class OpenapiService {
 
     const chainInfo = preferenceService.getCurrentChainInfo();
     const currentChainId = chainInfo.chainId;
+    const coinbaseHash = '0000000000000000000000000000000000000000000000000000000000000000';
 
     const btc = currentChainId == 0x400002; // 假设这是比特币网络
     const txOUtLen = msgtx?.tOut.length || 0;
     const tOut: any[] = [];
     const tIn: any[] = [];
+    let isCoinbase = false;
     for (let j = 0; j < txOUtLen; j++) {
       const output = msgtx?.tOut[j];
 
@@ -260,7 +260,10 @@ export class OpenapiService {
       const input = msgtx?.tIn[j];
 
       if (input.isSeparator()) continue;
-      if (input.previousOutPoint.hash == '0000000000000000000000000000000000000000000000000000000000000000') {
+      if (input.previousOutPoint.hash == coinbaseHash) {
+        if (tIn.length === 0) {
+          isCoinbase = true;
+        }
         continue;
       }
 
@@ -271,7 +274,7 @@ export class OpenapiService {
         sequence: input.sequence,
       });
     }
-    return { tIn, tOut };
+    return { tIn, tOut, isCoinbase };
   };
 
   analyzeResult = async (account: Account, list: any[], chainId: number) => {
@@ -280,38 +283,72 @@ export class OpenapiService {
     let latestHeight = -1;
     const syncedUtxos = assetService.getUtxosMap(account.address, chainId);
     const utxoMap = new Map<string, Utxo>(syncedUtxos.map((utxo) => [`${utxo.txid}:${utxo.index}`, utxo]));
-    // 处理交易输出（UTXO添加）
-    for (let i = list.length - 1; i >= 0; i--) {
-      const item = list[i];
+    const addsMap = new Map<string, Utxo>();
+    const spendsSet = new Set<string>();
+    const decodedCurrentBatchMap = new Map<string, ReturnType<OpenapiService['decodeMsgHex']>>();
+    const decodedRawTxCache = new Map<string, ReturnType<OpenapiService['decodeMsgHex']>>();
+
+    const parsedTxList = list.map((item) => {
+      const decoded = this.decodeMsgHex(item.hex);
+      if (item?.txid) {
+        decodedCurrentBatchMap.set(item.txid, decoded);
+      }
       const currentHeight = Number(item?.height);
       if (Number.isFinite(currentHeight)) {
         latestHeight = Math.max(latestHeight, currentHeight);
       }
+      return { item, ...decoded };
+    });
 
-      const { tIn, tOut } = this.decodeMsgHex(item.hex);
+    const getDecodedTxById = async (txid: string) => {
+      if (!txid) return null;
+      if (decodedCurrentBatchMap.has(txid)) {
+        return decodedCurrentBatchMap.get(txid)!;
+      }
+      if (decodedRawTxCache.has(txid)) {
+        return decodedRawTxCache.get(txid)!;
+      }
+      const rawTx = await this.getRawTransaction(txid);
+      if (!rawTx) return null;
+      const decoded = this.decodeMsgHex(rawTx);
+      decodedRawTxCache.set(txid, decoded);
+      return decoded;
+    };
+
+    // 两阶段处理：先收集 adds / spends，再统一结算，避免顺序导致漏删
+    for (let i = 0; i < parsedTxList.length; i++) {
+      const { item, tIn, tOut, isCoinbase } = parsedTxList[i];
+      let hasOwnedInput = false;
 
       for (let j = 0; j < tIn.length; j++) {
         const previousOutPointHash = tIn[j].previousOutPointHash;
         const previousOutPointIndex = tIn[j].previousOutPointIndex;
-        const utxoKey = `${previousOutPointHash}:${previousOutPointIndex}`;
-        if (utxoMap.has(utxoKey)) {
-          console.log(`Removing spent UTXO: ${previousOutPointHash}:${previousOutPointIndex}`);
-          utxoMap.delete(utxoKey);
+        spendsSet.add(`${previousOutPointHash}:${previousOutPointIndex}`);
+
+        // 使用链上前序输出判定该输入是否来自当前账户
+        const previousDecodedTx = await getDecodedTxById(previousOutPointHash);
+        const previousOutput = previousDecodedTx?.tOut?.find((out) => out.outPointIndex === previousOutPointIndex);
+        if (previousOutput && account.addressHex == previousOutput.addressHex) {
+          hasOwnedInput = true;
         }
       }
+
       for (let j = 0; j < tOut.length; j++) {
         const output = tOut[j];
-        if (account.addressHex == output.addressHex) {
-          let sender = '';
-          if (tIn.length > 0) {
-            const previousTx = await this.getRawTransaction(tIn[0].previousOutPointHash);
-            const { tOut: previousTxOut } = this.decodeMsgHex(previousTx);
-            sender = previousTxOut[0].address;
+        const isOutputToSelf = account.addressHex == output.addressHex;
+        if (isOutputToSelf) {
+          let sender = isCoinbase ? 'Coinbase' : '';
+          if (!isCoinbase && tIn.length > 0) {
+            const previousDecodedTx = await getDecodedTxById(tIn[0].previousOutPointHash);
+            if (previousDecodedTx?.tOut?.length) {
+              sender = previousDecodedTx.tOut[0].address;
+            }
           }
           const txItemHistory = {
             txid: item.txid,
             index: output.outPointIndex,
             address: sender,
+            coinbase: isCoinbase,
             txType: TxType.RECEIVE,
             blockHeight: item.height,
             blockHash: item.blockhash,
@@ -335,9 +372,41 @@ export class OpenapiService {
             rights: output.rights || [],
           };
           txHistory.push(txItemHistory);
-          utxoMap.set(`${txItemUtxo.txid}:${txItemUtxo.index}`, txItemUtxo);
+          addsMap.set(`${txItemUtxo.txid}:${txItemUtxo.index}`, txItemUtxo);
+        } else if (hasOwnedInput) {
+          // 有本地址输入且当前输出不是找零，则记为发送记录。
+          txHistory.push({
+            txid: item.txid,
+            index: output.outPointIndex,
+            address: output.address,
+            coinbase: false,
+            txType: TxType.SEND,
+            blockHeight: item.height,
+            blockHash: item.blockhash,
+            blockTime: item.blocktime,
+            tokenType: output.tokenType.toString(),
+            value: Number(output.value),
+            rights: output.rights || [],
+            confirmations: 10,
+            pkScript: output.pkScript,
+            myaddress: account.address,
+          });
         }
       }
+    }
+
+    // phase-2: spent 从旧 UTXO 删除，并抵消同批次新增后又花费的输出
+    for (const spendKey of spendsSet) {
+      if (utxoMap.delete(spendKey)) {
+        console.log(`Removing spent UTXO: ${spendKey}`);
+      }
+      if (addsMap.has(spendKey)) {
+        addsMap.delete(spendKey);
+      }
+    }
+
+    for (const [utxoKey, utxo] of addsMap.entries()) {
+      utxoMap.set(utxoKey, utxo);
     }
 
     const utxoItems = Array.from(utxoMap.values());
@@ -437,7 +506,7 @@ export class OpenapiService {
     const pks = bytesToHex(adb);
     const merge = receivedAddress === senderAddress;
 
-    const tx = await buildTx(tokenType, amount, pks, senderAddress, false, false, merge, crosschain);
+    const tx = await buildTx(tokenType, amount, pks, senderAddress, false, merge, crosschain);
 
     if (timeLimit) {
       const height = await this.gbc();

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from '@/ui/pages/MainRoute';
 import { ChevronLeft, ChevronRight, Wallet, X } from 'lucide-react';
 
+import TokenIcon from '@/ui/components/TokenIcon';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useChainType, useCurrentAccount } from '@/ui/state/hooks';
 import { formatAmount } from '@/ui/utils';
@@ -19,8 +20,6 @@ export default function TokenSelectionScreen() {
   useEffect(() => {
     const loadTokens = async () => {
       try {
-        // TODO: Replace with actual token fetching logic
-        // This is a mock implementation
         const { assetsData } = await wallet.assetsListsPage();
         setTokens(assetsData);
       } catch (error) {
@@ -83,14 +82,10 @@ export default function TokenSelectionScreen() {
                 className='mb-3 flex cursor-pointer items-center justify-between rounded-2xl bg-gray-50 p-4 transition-colors hover:bg-gray-100 active:bg-gray-200'
               >
                 <div className='flex items-center'>
-                  <img
+                  <TokenIcon
                     src={token.iconHtml}
                     alt={token.name}
                     className='mr-4 h-10 w-10 rounded-full'
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = 'https://via.placeholder.com/40';
-                    }}
                   />
                   <div>
                     <div className='text-base font-semibold text-gray-900'>

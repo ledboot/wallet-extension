@@ -33,6 +33,7 @@ export interface TxHistoryInOutItem {
 export interface TxHistoryItem {
   txid: string;
   address: string;
+  coinbase?: boolean;
   txType: TxType;
   blockHeight: number;
   blockHash: string;
@@ -44,6 +45,12 @@ export interface TxHistoryItem {
   pkScript: string;
   myaddress: string;
   index: number;
+}
+
+export interface TxHistoryPage {
+  list: TxHistoryItem[];
+  nextCursor?: string;
+  hasMore: boolean;
 }
 
 export enum TxType {

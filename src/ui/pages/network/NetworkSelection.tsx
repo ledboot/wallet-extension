@@ -88,7 +88,7 @@ export default function NetworkSelection() {
       </div>
 
       {/* List Content */}
-      <div className='hide-scrollbar flex-1 overflow-y-auto bg-white px-4 pb-6 pt-[104px]'>
+      <div className='hide-scrollbar flex-1 overflow-y-auto bg-white px-4 pb-6 pt-[116px]'>
         {displayed.length === 0 ? (
           <div className='flex h-64 flex-col items-center justify-center text-gray-400'>
             <Globe className='mb-3 h-12 w-12 opacity-50' />

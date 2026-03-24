@@ -20,7 +20,42 @@ interface TransactionDisplayItem extends TxHistoryItem {
   timeAgo: string;
 }
 
+type TxFilter = 'all' | 'send' | 'receive';
+
+const formatTimeAgo = (timestamp: number): string => {
+  const now = Date.now();
+  const diff = now - timestamp * 1000;
+  const minutes = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (minutes < 1) return '刚刚';
+  if (minutes < 60) return `${minutes}分钟前`;
+  if (hours < 24) return `${hours}小时前`;
+  if (days < 7) return `${days}天前`;
+  return new Date(timestamp * 1000).toLocaleDateString('zh-CN');
+};
+
+const formatAmount = (value: bigint | string): string => {
+  const bigIntValue = typeof value === 'string' ? BigInt(value) : value;
+  const UNIT = 100000000n;
+  const isNegative = bigIntValue < 0n;
+  const abs = isNegative ? -bigIntValue : bigIntValue;
+  const integerPart = abs / UNIT;
+  const decimalPart = (abs % UNIT).toString().padStart(8, '0');
+
+  const sign = isNegative ? '-' : '';
+  return `${sign}${integerPart.toString()}.${decimalPart}`;
+};
+
+const getTransactionType = (tx: TxHistoryItem): 'send' | 'receive' | 'unknown' => {
+  if (tx.txType === TxType.RECEIVE) return 'receive';
+  if (tx.txType === TxType.SEND) return 'send';
+  return 'unknown';
+};
+
 export default function History() {
+  const PAGE_SIZE = 20;
   const navigate = useNavigate();
   const { t } = useLanguage();
   const wallet = useWallet();
@@ -30,48 +65,39 @@ export default function History() {
     []
   );
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'send' | 'receive' | 'unknown'>(
-    'all'
-  );
-  const hasMore = true;
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | undefined>();
+  const [hasMore, setHasMore] = useState(false);
+  const [filter, setFilter] = useState<TxFilter>('all');
 
   // const wif = wallet.getWIF(currentAccount.address); 获取私钥
-  const filterOptions = [
+  const filterOptions: { key: TxFilter; label: string }[] = [
     { key: 'all', label: t('history.all') },
     { key: 'receive', label: t('history.receive') },
     { key: 'send', label: t('history.send') },
-    { key: 'unknown', label: t('history.unknown') },
   ];
 
-  const formatTimeAgo = (timestamp: number): string => {
-    const now = Date.now();
-    const diff = now - timestamp * 1000;
-    const minutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const getTransactionIcon = (type: string, coinbase?: boolean) => {
+    if (coinbase) {
+      return (
+        <div className='flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/15'>
+          <svg
+            className='h-4 w-4 text-amber-600'
+            fill='none'
+            stroke='currentColor'
+            viewBox='0 0 24 24'
+          >
+            <path
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              strokeWidth={2}
+              d='M12 3l2.8 5.6 6.2.9-4.5 4.4 1.1 6.2L12 17.8 6.4 20l1.1-6.2L3 9.5l6.2-.9L12 3z'
+            />
+          </svg>
+        </div>
+      );
+    }
 
-    if (minutes < 1) return '刚刚';
-    if (minutes < 60) return `${minutes}分钟前`;
-    if (hours < 24) return `${hours}小时前`;
-    if (days < 7) return `${days}天前`;
-    return new Date(timestamp * 1000).toLocaleDateString('zh-CN');
-  };
-
-  const formatAmount = (value: bigint | string): string => {
-    // 如果是字符串（从消息传递过来的），转换为 BigInt
-    const bigIntValue = typeof value === 'string' ? BigInt(value) : value;
-    return (bigIntValue / 100000000n).toString();
-  };
-
-  const getTransactionType = (
-    tx: TxHistoryItem
-  ): 'send' | 'receive' | 'unknown' => {
-    if (tx.txType === TxType.RECEIVE) return 'receive';
-    if (tx.txType === TxType.SEND) return 'send';
-    return 'unknown';
-  };
-
-  const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'send':
         return (
@@ -148,24 +174,8 @@ export default function History() {
     }
   };
 
-  const handleViewOnExplorer = async (txid: string) => {
-    try {
-      const currentChainInfo = await wallet.getCurrentChainInfoData();
-      const baseExplorerUrl = currentChainInfo?.explorerUrl?.trim() || '';
-
-      if (!baseExplorerUrl) {
-        return;
-      }
-
-      const finalUrl = baseExplorerUrl.includes('{txid}')
-        ? baseExplorerUrl.replaceAll('{txid}', txid)
-        : `${baseExplorerUrl.replace(/\/+$/, '')}/tx/${txid}`;
-
-      window.open(finalUrl, '_blank');
-    } catch (error) {
-      console.error('[UI] Failed to open explorer:', error);
-      toast.error(t('common.error'));
-    }
+  const handleOpenTransactionDetail = (tx: TransactionDisplayItem) => {
+    navigate('TransactionDetailScreen', { transaction: tx });
   };
 
   const filteredTransactions = transactions.filter((tx) => {
@@ -179,22 +189,28 @@ export default function History() {
         console.log('[UI] fetchTransactions start', account);
         try {
           setLoading(true);
+          setNextCursor(undefined);
+          setHasMore(false);
 
-          const result = await wallet.getAddressHistory(account, 0, 20);
-          if (result && Array.isArray(result)) {
-            const displayTransactions: TransactionDisplayItem[] = result.map(
-              (tx: TxHistoryItem) => ({
-                ...tx,
-                type: getTransactionType(tx),
-                displayAmount: formatAmount(tx.value.toString()),
-                displaySymbol: 'ZENT',
-                timeAgo: formatTimeAgo(tx.blockTime),
-              })
-            );
-            setTransactions(displayTransactions);
-          }
+          const result = await wallet.getAddressHistory(account, PAGE_SIZE);
+          const list = Array.isArray(result?.list) ? result.list : [];
+          const displayTransactions: TransactionDisplayItem[] = list.map(
+            (tx: TxHistoryItem) => ({
+              ...tx,
+              type: getTransactionType(tx),
+              displayAmount: formatAmount(tx.value.toString()),
+              displaySymbol: 'ZENT',
+              timeAgo: formatTimeAgo(tx.blockTime),
+            })
+          );
+          setTransactions(displayTransactions);
+          setNextCursor(result?.nextCursor);
+          setHasMore(Boolean(result?.hasMore));
         } catch (error) {
           console.error('[UI] Error fetching transactions:', error);
+          setTransactions([]);
+          setNextCursor(undefined);
+          setHasMore(false);
         } finally {
           setLoading(false);
         }
@@ -202,7 +218,34 @@ export default function History() {
     };
 
     fetchTransactions(currentAccount);
-  }, [currentAccount, wallet]);
+  }, [currentAccount, wallet, PAGE_SIZE]);
+
+  const handleLoadMore = async () => {
+    if (!currentAccount || !hasMore || loadingMore || !nextCursor) return;
+
+    try {
+      setLoadingMore(true);
+      const result = await wallet.getAddressHistory(currentAccount, PAGE_SIZE, nextCursor);
+      const list = Array.isArray(result?.list) ? result.list : [];
+      const displayTransactions: TransactionDisplayItem[] = list.map(
+        (tx: TxHistoryItem) => ({
+          ...tx,
+          type: getTransactionType(tx),
+          displayAmount: formatAmount(tx.value.toString()),
+          displaySymbol: 'ZENT',
+          timeAgo: formatTimeAgo(tx.blockTime),
+        })
+      );
+      setTransactions((prev) => [...prev, ...displayTransactions]);
+      setNextCursor(result?.nextCursor);
+      setHasMore(Boolean(result?.hasMore));
+    } catch (error) {
+      console.error('[UI] Error loading more transactions:', error);
+      toast.error(t('common.error'));
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   return (
     <div className='flex h-screen flex-col bg-white'>
@@ -228,7 +271,7 @@ export default function History() {
             {filterOptions.map(({ key, label }) => (
               <button
                 key={key}
-                onClick={() => setFilter(key as any)}
+                onClick={() => setFilter(key)}
                 className={`flex-shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   filter === key
                     ? 'bg-gray-900 text-white'
@@ -269,11 +312,7 @@ export default function History() {
                 ? t('history.no_transactions_description')
                 : t('history.no_filtered_transactions').replace(
                     '{type}',
-                    filter === 'send'
-                      ? t('history.send')
-                      : filter === 'receive'
-                        ? t('history.receive')
-                        : t('history.unknown')
+                    filter === 'send' ? t('history.send') : t('history.receive')
                   )}
             </p>
           </div>
@@ -281,21 +320,23 @@ export default function History() {
           <div className='flex flex-col space-y-3 pt-2'>
             {filteredTransactions.map((tx) => (
               <div
-                key={tx.txid}
+                key={`${tx.txid}:${tx.index}`}
                 className='flex cursor-pointer items-center justify-between rounded-2xl bg-gray-50 px-4 py-4 transition-colors hover:bg-gray-100/80 active:bg-gray-100'
-                onClick={() => handleViewOnExplorer(tx.txid)}
+                onClick={() => handleOpenTransactionDetail(tx)}
               >
                 {/* 左侧：图标和交易信息 */}
                 <div className='flex min-w-0 items-center space-x-3'>
-                  {getTransactionIcon(tx.type)}
+                  {getTransactionIcon(tx.type, tx.coinbase)}
                   <div className='min-w-0'>
                     <div className='flex items-center space-x-2'>
                       <span className='truncate text-base font-semibold text-gray-900'>
-                        {tx.type === 'send'
-                          ? t('history.send')
-                          : tx.type === 'receive'
-                            ? t('history.receive')
-                            : t('history.unknown')}
+                        {tx.coinbase
+                          ? t('history.coinbase')
+                          : tx.type === 'send'
+                            ? t('history.send')
+                            : tx.type === 'receive'
+                              ? t('history.receive')
+                              : t('history.unknown')}
                       </span>
                     </div>
                     <div className='truncate text-xs font-medium text-gray-400'>
@@ -309,14 +350,14 @@ export default function History() {
                   <div className='flex flex-col items-end'>
                     <div
                       className={`text-base font-bold tracking-tight ${
-                        tx.type === 'receive'
+                        tx.coinbase || tx.type === 'receive'
                           ? 'text-green-500'
                           : tx.type === 'send'
                             ? 'text-gray-900'
                             : 'text-gray-500'
                       }`}
                     >
-                      {tx.type === 'receive'
+                      {tx.coinbase || tx.type === 'receive'
                         ? '+'
                         : tx.type === 'send'
                           ? '-'
@@ -335,10 +376,11 @@ export default function History() {
             {hasMore && (
               <div className='pb-2 pt-6 text-center'>
                 <button
-                  disabled={loading}
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
                   className='inline-flex items-center justify-center rounded-full bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50'
                 >
-                  {loading ? (
+                  {loadingMore ? (
                     <>
                       <RefreshCw className='mr-2 h-4 w-4 animate-spin' />
                       {t('history.loading_more')}

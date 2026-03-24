@@ -26,6 +26,7 @@ import SettingsScreen from './settings/SettingsScreen';
 import WalletLockScreen from './settings/WalletLockScreen';
 import History from './wallet/History';
 import Receive from './wallet/Receive';
+import TransactionDetailScreen from './wallet/TransactionDetailScreen';
 import AmountInputScreen from './wallet/transfer/AmountInputScreen';
 import RecipientAddressScreen from './wallet/transfer/RecipientAddressScreen';
 // Import transfer screens
@@ -109,6 +110,10 @@ const routes = {
   HistoryScreen: {
     path: '/wallet/history',
     element: <History />,
+  },
+  TransactionDetailScreen: {
+    path: '/wallet/history/detail',
+    element: <TransactionDetailScreen />,
   },
   NetworkSelection: {
     path: '/network/selection',

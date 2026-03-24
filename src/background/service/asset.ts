@@ -1,5 +1,5 @@
 import { CHAIN_INFO, NetworkType } from '@/shared/constants';
-import { CoinNames, TransferAddressHistory, Utxo, UtxoAddressSumInfo } from '@/shared/types';
+import { CoinNames, TransferAddressHistory, TxHistoryItem, TxHistoryPage, Utxo, UtxoAddressSumInfo } from '@/shared/types';
 
 import createPersistStore from '../utils/persisitStore';
 import { indexedDB as indexedDbStorage, storage } from '../webapi';
@@ -85,6 +85,7 @@ class AssetService {
 
     await this.migrateLegacyUtxoMap();
     await this.hydrateUtxoMapFromIndexedDB();
+    await indexedDbStorage.migrateLegacyTxHistoryMapToEntries();
   };
 
   /**
@@ -98,6 +99,7 @@ class AssetService {
     this.utxoMap = {};
 
     await indexedDbStorage.clear();
+    await indexedDbStorage.clearTxHistory();
     // 立即覆盖存储，避免旧缓存被 debounce 的持久化覆盖
     await storage.set('assetState', { ...this.template });
   };
@@ -175,6 +177,24 @@ class AssetService {
     await indexedDbStorage.clear();
   };
 
+  // ─── Tx History (IndexedDB) ───────────────────────────────────────────
+
+  mergeTxHistoryMap = async (address: string, chainId: number, txHistory: TxHistoryItem[]) => {
+    if (txHistory.length === 0) return;
+
+    const key = this.getAddressChainKey(address, chainId);
+    const map = new Map<string, TxHistoryItem>();
+    for (const item of txHistory) {
+      map.set(`${item.txid}:${item.index}`, item);
+    }
+    await indexedDbStorage.upsertTxHistoryEntries(key, [...map.values()]);
+  };
+
+  getTxHistory = async (address: string, chainId: number, limit = 20, cursor?: string): Promise<TxHistoryPage> => {
+    const key = this.getAddressChainKey(address, chainId);
+    return indexedDbStorage.getTxHistoryPage(key, limit, cursor);
+  };
+
   // ─── UTXO Sum ─────────────────────────────────────────────────────────
 
   updateUtxoSum = (newSums: UtxoAddressSumInfo[]) => {
@@ -219,11 +239,6 @@ class AssetService {
 
     // utxoMap (IndexedDB)
     const targetKeys = Object.keys(this.utxoMap || {}).filter((key) => key.startsWith(`${address}_`));
-    if (targetKeys.length === 0) {
-      await this.persistAssetStateNow();
-      return;
-    }
-
     const nextMap: UtxoMap = { ...this.utxoMap };
     for (const key of targetKeys) {
       delete nextMap[key];
@@ -231,6 +246,7 @@ class AssetService {
     this.utxoMap = nextMap;
 
     await Promise.all(targetKeys.map((key) => indexedDbStorage.remove(key)));
+    await indexedDbStorage.removeTxHistoryByAddressPrefix(address);
     await this.persistAssetStateNow();
   };
 

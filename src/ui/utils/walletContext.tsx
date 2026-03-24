@@ -5,6 +5,7 @@ import type {
   Account,
   ChainInfo,
   CoinNames,
+  TxHistoryPage,
   TransferAddressHistory,
   UtxoAddressSumInfo,
   WalletKeyring,
@@ -50,7 +51,7 @@ export interface WalletController {
   // createKeyringWithPrivateKey(privateKey: string, compressed: boolean, alianName?: string): Promise<void>;
   importPrivateKey(wif: string): Promise<void>;
 
-  getAddressHistory(account: Account, start: number, limit: number, chainId?: number): Promise<any>;
+  getAddressHistory(account: Account, limit: number, cursor?: string): Promise<TxHistoryPage>;
 
   updateAccountAlianName(accountKey: string, newName: string): Promise<void>;
   updateKeyringAlianName(keyringKey: string, newName: string): Promise<void>;
@@ -65,6 +66,7 @@ export interface WalletController {
   }>;
   getTransferAddressHistory(): Promise<TransferAddressHistory[]>;
   updateTransferAddressesHistory(newAddress: string): Promise<void>;
+  getTokenBalance(address: string, chainId: number, tokenType: string): Promise<number>;
   getTransferFees(
     tokenType: number,
     senderAddress: string,

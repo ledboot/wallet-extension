@@ -107,7 +107,7 @@ export class WalletController {
     const chainInfo = this.getCurrentChainInfo();
     const chainId = chainInfo.chainId;
 
-    const { utxoItems, hasHistory, latestHeight } = await openapiService.getAddressHistory(
+    const { txHistory, utxoItems, hasHistory, latestHeight } = await openapiService.getAddressHistory(
       account,
       start,
       limit,
@@ -125,6 +125,7 @@ export class WalletController {
 
       if (shouldUpdate) {
         await assetService.setUtxosMap(account.address, chainId, utxoItems);
+        await assetService.mergeTxHistoryMap(account.address, chainId, txHistory);
         assetService.aggregateUtxoSums(account.address, chainId);
 
         if (utxoItems.length > 0) {
@@ -522,11 +523,10 @@ export class WalletController {
     return keyring.generatePrePrivateKey();
   };
 
-  getAddressHistory = async (account: Account, start: number, limit: number, chainId?: number) => {
+  getAddressHistory = async (account: Account, limit: number, cursor?: string, chainId?: number) => {
     this.resetLockTime();
     const activeChainId = typeof chainId === 'number' ? chainId : this.getCurrentChainInfo().chainId;
-    const { txHistory } = await openapiService.getAddressHistory(account, start, limit, activeChainId);
-    return txHistory;
+    return assetService.getTxHistory(account.address, activeChainId, limit, cursor);
   };
 
   /**
@@ -534,6 +534,13 @@ export class WalletController {
    */
   getUtxoSum = async (): Promise<UtxoAddressSumInfo[]> => {
     return assetService.getUtxoSum();
+  };
+
+  getTokenBalance = async (address: string, chainId: number, tokenType: string): Promise<number> => {
+    const sums = assetService.getUtxoSum(address, chainId);
+    return sums
+      .filter((item) => String(item.tokenType) === String(tokenType))
+      .reduce((acc, item) => acc + Number(item.value || 0), 0);
   };
 
   /**
@@ -623,6 +630,27 @@ export class WalletController {
     preferenceService.addchainInfo(chainType, chainInfo);
   };
 
+  private parseAmountToAtomicUnits = (amount: string, decimals = 8): bigint => {
+    const normalized = String(amount ?? '').trim();
+    if (!normalized) {
+      throw new Error('Invalid amount');
+    }
+    if (!/^\d*(\.\d*)?$/.test(normalized)) {
+      throw new Error('Invalid amount format');
+    }
+
+    const [intRaw = '0', fracRaw = ''] = normalized.split('.');
+    const intPart = intRaw === '' ? '0' : intRaw;
+    if (fracRaw.length > decimals) {
+      throw new Error(`Amount supports up to ${decimals} decimals`);
+    }
+
+    const fracPart = fracRaw.padEnd(decimals, '0');
+    const factor = BigInt(`1${'0'.repeat(decimals)}`);
+
+    return BigInt(intPart) * factor + BigInt(fracPart || '0');
+  };
+
   transfer = async (
     amount: string,
     tokenType: string,
@@ -631,9 +659,12 @@ export class WalletController {
     crosschain: number,
     timeLimit: number
   ) => {
+    const atomicAmount = this.parseAmountToAtomicUnits(amount, 8);
+    const parsedTokenType = BigInt(String(tokenType));
+
     return await openapiService.transfer(
-      BigInt(Number(amount) * 1e8),
-      BigInt(Number(tokenType)),
+      atomicAmount,
+      parsedTokenType,
       receivedAddress,
       senderAddress,
       crosschain,

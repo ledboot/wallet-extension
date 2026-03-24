@@ -51,17 +51,27 @@ export default function SyncBridge(props: PropsWithChildren) {
      * background 广播 refreshAssets 时调用，或初始化时主动调用。
      */
     const refreshAssets = async () => {
-      keyringsStore.getState().setAssetsLoading(true);
+      const before = keyringsStore.getState();
+      const activeKey = `${before.currentAddress}:${before.currentChainId}`;
+      const hasCachedActiveAssets =
+        !!before.currentAddress && Object.prototype.hasOwnProperty.call(before.assetsMap, activeKey);
+
+      // 仅首次进入（当前没有缓存资产）显示 loading，后续刷新不切换 loading，避免列表闪动
+      if (!hasCachedActiveAssets) {
+        keyringsStore.getState().setAssetsLoading(true);
+      }
+
       try {
         const { assetsData, chainName, address, chainId } = await wallet.assetsListsPage();
         console.log('refreshAssets', assetsData, chainName, address, chainId);
         if (address) {
           keyringsStore.getState().setCurrentAssets(address, chainId, assetsData, chainName);
         }
-        keyringsStore.getState().setAssetsLoading(false);
       } catch (e) {
         console.error('Failed to refresh assets:', e);
-        keyringsStore.getState().setAssetsLoading(false);
+        if (!hasCachedActiveAssets) {
+          keyringsStore.getState().setAssetsLoading(false);
+        }
       }
     };
 

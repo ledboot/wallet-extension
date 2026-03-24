@@ -3,6 +3,7 @@ import { AlertCircle, Check, ChevronLeft, Copy, X } from 'lucide-react';
 import { useLocation } from 'react-router';
 import { toast } from 'sonner';
 
+import TokenIcon from '@/ui/components/TokenIcon';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useNavigate } from '@/ui/pages/MainRoute';
 import { useCurrentAccount } from '@/ui/state/hooks';
@@ -153,14 +154,10 @@ export default function TransactionConfirmScreen() {
             <div className='flex items-center justify-between'>
               <span className='text-sm font-medium text-gray-500'>{t('transfer.token_label')}</span>
               <div className='flex items-center'>
-                <img
+                <TokenIcon
                   src={token.iconHtml}
                   alt={token.name}
                   className='mr-2 h-5 w-5 rounded-full'
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = 'https://via.placeholder.com/20';
-                  }}
                 />
                 <span className='text-sm font-semibold text-gray-900'>{token.name}</span>
               </div>
