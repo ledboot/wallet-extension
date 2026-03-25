@@ -1,16 +1,10 @@
- 
- 
 import fs from 'fs';
 import { resolve } from 'path';
 import { crx } from '@crxjs/vite-plugin';
 import react from '@vitejs/plugin-react';
-import { defineConfig, Plugin } from 'vite';
-import dotenv from 'dotenv';
+import { defineConfig, loadEnv, Plugin } from 'vite';
 import wasm from 'vite-plugin-wasm';
 import tailwindcss from '@tailwindcss/vite';
-
-// 加载环境变量
-dotenv.config();
 
 import createManifest from './src/manifest';
 
@@ -44,6 +38,9 @@ export function touchGlobalCSSPlugin({
 export default defineConfig(({ mode, command }) => {
   const isDev = mode === 'development' || command === 'serve';
   const nodeEnv = mode === 'production' ? 'production' : 'development';
+  const env = loadEnv(mode, process.cwd(), '');
+
+  Object.assign(process.env, env);
 
   return {
     plugins: [

@@ -58,7 +58,7 @@ export default function ChangePasswordScreen() {
   };
 
   return (
-    <div className='flex h-[600px] w-full flex-col bg-white pt-14 dark:bg-gray-900'>
+    <div className='relative flex h-full min-h-full w-full flex-col bg-white pt-14 dark:bg-gray-900'>
       <div className='absolute left-0 top-0 z-10 flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-4 dark:border-gray-800 dark:bg-gray-900'>
         <button
           onClick={() => navigate('#back')}
