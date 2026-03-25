@@ -1,25 +1,46 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, ChevronLeft, Copy, X } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { toast } from 'sonner';
 
-import { CHAIN_INFO } from '@/shared/constants';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useNavigate } from '@/ui/pages/MainRoute';
 import { useChainType, useCurrentAccount } from '@/ui/state/hooks';
+import { useWallet } from '@/ui/utils/walletContext';
 
 export default function Receive() {
   const navigate = useNavigate();
+  const wallet = useWallet();
   const { t } = useLanguage();
   const currentAccount = useCurrentAccount();
   const chainType = useChainType();
   const [copied, setCopied] = useState(false);
+  const [networkLabel, setNetworkLabel] = useState('');
 
   const address = currentAccount?.address || '';
-  const networkLabel = useMemo(
-    () => CHAIN_INFO[chainType]?.label ?? '',
-    [chainType]
-  );
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadCurrentChainInfo = async () => {
+      try {
+        const currentChainInfo = await wallet.getCurrentChainInfoData();
+        if (!mounted) return;
+        const label = currentChainInfo?.label?.trim() ?? '';
+        const networkType = currentChainInfo?.networkType?.trim() ?? '';
+        setNetworkLabel([label, networkType].filter(Boolean).join(' '));
+      } catch {
+        if (!mounted) return;
+        setNetworkLabel('');
+      }
+    };
+
+    loadCurrentChainInfo();
+
+    return () => {
+      mounted = false;
+    };
+  }, [wallet, chainType]);
 
   const copyAddress = () => {
     if (!address) return;

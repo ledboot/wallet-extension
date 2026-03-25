@@ -59,7 +59,7 @@ export const EVENTS = {
 // 动态 CHAIN_INFO 对象，支持运行时添加网络
 export const CHAIN_INFO: { [key: string]: ChainInfo } = {
   [ChainType.ZENT_TESTNET]: {
-    label: 'ZENT Testnet',
+    label: 'ZENT',
     iconLabel: 'ZENT',
     chainId: 0x1,
     endpoints: ['http://207.246.106.17:7789'],
