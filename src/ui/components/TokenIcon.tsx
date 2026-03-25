@@ -13,7 +13,7 @@ export default function TokenIcon({
   src,
   alt,
   className = '',
-  fallbackSrc = '/images/default-token.svg',
+  fallbackSrc = '/public/images/default-token.svg',
 }: TokenIconProps) {
   const resolvedSrc = typeof src === 'string' ? src.trim() : '';
   const [loaded, setLoaded] = useState<boolean>(resolvedSrc ? loadedIconSrcSet.has(resolvedSrc) : false);

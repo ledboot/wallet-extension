@@ -53,17 +53,17 @@ const createManifest = (isDev: boolean) =>
     action: {
       default_popup: 'index.html',
       default_icon: {
-        16: 'icon16.png',
-        32: 'icon32.png',
-        48: 'icon48.png',
-        128: 'icon128.png',
+        16: 'public/icon16.png',
+        32: 'public/icon32.png',
+        48: 'public/icon48.png',
+        128: 'public/icon128.png',
       },
     },
     icons: {
-      16: 'icon16.png',
-      32: 'icon32.png',
-      48: 'icon48.png',
-      128: 'icon128.png',
+      16: 'public/icon16.png',
+      32: 'public/icon32.png',
+      48: 'public/icon48.png',
+      128: 'public/icon128.png',
     },
     permissions: ['activeTab', 'storage', 'unlimitedStorage', 'clipboardRead'],
     host_permissions: telemetryHostPermissions,
@@ -82,7 +82,7 @@ const createManifest = (isDev: boolean) =>
     ],
     web_accessible_resources: [
       {
-        resources: ['*.js', '*.css', 'public/*', 'public/js/*.js'],
+        resources: ['*.js', '*.css', 'public/images/*', 'public/zentlogo.png'],
         matches: ['<all_urls>'],
       },
     ],

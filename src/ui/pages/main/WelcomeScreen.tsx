@@ -51,7 +51,7 @@ export default function WelcomeScreen() {
       </div>
 
       <div className='flex flex-1 flex-col items-center justify-center px-6'>
-        <img src='/zentlogo.png' alt='ZENT Logo' className='mb-6 h-20 w-20 rounded-2xl object-contain' />
+        <img src='/public/zentlogo.png' alt='ZENT Logo' className='mb-6 h-20 w-20 rounded-2xl object-contain' />
 
         <h1 className='mb-2 text-center text-2xl font-bold tracking-tight text-base-content'>{t('welcome.title')}</h1>
 

@@ -61,6 +61,7 @@ export default defineConfig(({ mode, command }) => {
         },
       }),
     ],
+    publicDir: command === 'build' ? false : 'public',
     define: {
       global: 'globalThis',
       'process.env.NODE_ENV': JSON.stringify(nodeEnv),

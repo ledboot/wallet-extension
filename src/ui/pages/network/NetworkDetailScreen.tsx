@@ -107,11 +107,11 @@ export default function NetworkDetailScreen() {
         <div className='mb-8 flex flex-col items-center'>
           <div className='mb-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-50'>
             <img
-              src={chainInfo.icon || '/images/default-chain.svg'}
+              src={chainInfo.icon || '/public/images/default-chain.svg'}
               alt={chainInfo.label}
               className='h-10 w-10 object-contain'
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/images/default-chain.svg';
+                (e.target as HTMLImageElement).src = '/public/images/default-chain.svg';
               }}
             />
           </div>

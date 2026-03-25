@@ -111,11 +111,11 @@ export default function NetworkSelection() {
                   {/* Icon */}
                   <div className='mr-4 flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-gray-100'>
                     <img
-                      src={info.icon || '/images/default-chain.svg'}
+                      src={info.icon || '/public/images/default-chain.svg'}
                       alt={info.label}
                       className='h-10 w-10 object-contain'
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/images/default-chain.svg';
+                        (e.target as HTMLImageElement).src = '/public/images/default-chain.svg';
                       }}
                     />
                   </div>

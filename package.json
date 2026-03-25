@@ -7,10 +7,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "build:dev": "NODE_ENV=development tsc && vite build",
-    "build:prod": "NODE_ENV=production tsc && vite build",
-    "debug": "NODE_ENV=development bun run build && ./scripts/debug.sh",
+    "build": "tsc && vite build --mode development",
+    "build:prod": "tsc && vite build --mode production",
+    "debug": "bun run build:dev && ./scripts/debug.sh",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "preinstall": "npx only-allow bun",
