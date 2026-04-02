@@ -1,15 +1,15 @@
 import { createContext, useContext } from 'react';
-
-import { ChainType, NetworkType } from '@/shared/constants';
 import type {
   Account,
   ChainInfo,
   CoinNames,
-  TxHistoryPage,
   TransferAddressHistory,
+  TxHistoryPage,
   UtxoAddressSumInfo,
   WalletKeyring,
 } from '@/shared/types';
+
+import { ChainType, NetworkType } from '@/shared/constants';
 
 export interface WalletController {
   boot(password: string): Promise<void>;
@@ -92,6 +92,7 @@ export interface WalletController {
   clearCache(): Promise<void>;
   getLocale(): Promise<string>;
   setLocale(locale: string): void;
+  refreshAssets(): Promise<void>;
 }
 
 const WalletContext = createContext<WalletController | null>(null);

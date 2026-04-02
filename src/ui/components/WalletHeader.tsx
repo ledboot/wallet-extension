@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, ChevronDown, Copy, Globe, Lock, Settings } from 'lucide-react';
+import { Check, ChevronDown, Copy, Globe, Lock, RefreshCw, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { PixelAvatar } from '@/ui/components/PixelAvatar';
@@ -22,6 +22,7 @@ export function WalletHeader() {
   }, [currentAccount]);
 
   const [copied, setCopied] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const copyAddress = () => {
     if (!currentAccount) return;
@@ -29,6 +30,16 @@ export function WalletHeader() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast.success(t('header.address_copied'));
+  };
+
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await wallet.refreshAssets();
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   return (
@@ -53,6 +64,13 @@ export function WalletHeader() {
           title='Copy Address'
         >
           {copied ? <Check className='h-4 w-4 text-success' /> : <Copy className='h-4 w-4' />}
+        </div>
+        <div
+          className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 ${isRefreshing ? 'animate-spin' : ''}`}
+          onClick={handleRefresh}
+          title={t('header.refresh')}
+        >
+          <RefreshCw className='h-4 w-4' />
         </div>
         <div className='group relative flex items-center justify-center'>
           <div title={t('header.settings')}>

@@ -445,19 +445,23 @@ export class WalletController {
 
     this.isPollingUtxos = true;
     try {
-      const account = await this.getCurrentAccount();
-      if (!account) return;
-
-      const currentChainInfo = this.getCurrentChainInfo();
-      const networkType = currentChainInfo.networkType;
-      const latest = assetService.getSyncBlockHeight(account.address, currentChainInfo.chainId, networkType);
-
-      await this.syncAccountUtxos(latest, 2048, true);
+      await this.refreshAssets();
     } catch (e) {
       console.error('UTXO polling error:', e);
     } finally {
       this.isPollingUtxos = false;
     }
+  }
+
+  refreshAssets = async () => {
+    const account = await this.getCurrentAccount();
+    if (!account) return;
+
+    const currentChainInfo = this.getCurrentChainInfo();
+    const networkType = currentChainInfo.networkType;
+    const latest = assetService.getSyncBlockHeight(account.address, currentChainInfo.chainId, networkType);
+
+    await this.syncAccountUtxos(latest, 2048, true);
   }
 
   private _stopUtxoPolling() {
