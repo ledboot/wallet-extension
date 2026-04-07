@@ -1,16 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  BookOpen,
-  ChevronLeft,
-  Clock,
-  CreditCard,
-  FileText,
-  HeadphonesIcon,
-  Hexagon,
-  MessageCircle,
-  SlidersHorizontal,
-  Trash2,
-} from 'lucide-react';
+import { BookOpen, ChevronLeft, Clock, CreditCard, Hexagon, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { ConfirmModal } from '@/ui/components/ConfirmModal';
@@ -116,10 +105,11 @@ export default function SettingsScreen() {
         <div className='mb-8 px-4 py-5'>
           <SectionTitle title={t('settings.more')} />
           <div className='flex flex-wrap gap-y-6'>
-            <SettingItem icon={FileText} label={t('settings.terms_of_service')} />
-            <SettingItem icon={BookOpen} label={t('settings.privacy_notice')} />
-            <SettingItem icon={HeadphonesIcon} label={t('settings.get_help')} />
-            <SettingItem icon={MessageCircle} label={t('settings.community')} />
+            <SettingItem
+              icon={BookOpen}
+              label={t('settings.privacy_notice')}
+              onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('public/ZentPrivacyNotice.html') })}
+            />
           </div>
         </div>
 

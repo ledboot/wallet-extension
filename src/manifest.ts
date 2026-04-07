@@ -82,7 +82,7 @@ const createManifest = (isDev: boolean) =>
     ],
     web_accessible_resources: [
       {
-        resources: ['*.js', '*.css', 'public/images/*', 'public/zentlogo.png'],
+        resources: ['*.js', '*.css', 'public/images/*', 'public/zentlogo.png', 'public/zentcoin.png'],
         matches: ['<all_urls>'],
       },
     ],
