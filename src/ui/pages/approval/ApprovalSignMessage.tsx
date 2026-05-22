@@ -5,21 +5,21 @@ import { useWallet } from '@/ui/utils/walletContext';
 import { ShieldCheck } from 'lucide-react';
 import ApprovalLayout from './ApprovalLayout';
 
-const ApprovalSwitchNetwork = () => {
+const ApprovalSignMessage = () => {
   const id = getApprovalId();
   const wallet = useWallet();
   const [request, setRequest] = useState<any>(null);
 
   const handleApprove = async () => {
     if (id) {
-      capturePostHogEvent('approval_switch_network_approved');
+      capturePostHogEvent('approval_sign_message_approved');
       await wallet.resolveApproval(id, true);
     }
   };
 
   const handleReject = async () => {
     if (id) {
-      capturePostHogEvent('approval_switch_network_rejected');
+      capturePostHogEvent('approval_sign_message_rejected');
       await wallet.rejectApproval(id);
     }
   };
@@ -28,48 +28,43 @@ const ApprovalSwitchNetwork = () => {
     <ApprovalLayout id={id} onInit={setRequest}>
       <div className="flex flex-col h-screen bg-white text-gray-900 overflow-hidden">
         <div className="flex items-center justify-center h-16 border-b border-gray-50">
-          <h1 className="text-lg font-bold">Switch network</h1>
+          <h1 className="text-lg font-bold">Sign Message</h1>
         </div>
 
-        <div className="flex-1 flex flex-col px-6">
-          <div className="flex items-center py-8 space-x-4">
-            <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center border border-gray-100 shrink-0 shadow-sm">
+        <div className="flex-1 flex flex-col px-6 overflow-hidden">
+          <div className="flex items-center py-6 space-x-4 shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100 shrink-0 shadow-sm">
               {request?.icon ? (
-                <img src={request.icon} alt={request.name} className="w-10 h-10 object-contain" />
+                <img src={request.icon} alt={request.name} className="w-8 h-8 object-contain" />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-gray-200" />
+                <div className="w-8 h-8 rounded-full bg-gray-200" />
               )}
             </div>
             <div className="min-w-0">
-              <h1 className="text-3xl font-bold tracking-tight truncate">{request?.name}</h1>
-              <p className="text-sm text-gray-400 font-medium truncate">{request?.origin}</p>
+              <h1 className="text-xl font-bold tracking-tight truncate">{request?.name}</h1>
+              <p className="text-xs text-gray-400 font-medium truncate">{request?.origin}</p>
             </div>
           </div>
 
-          <div className="h-px bg-gray-100 w-full mb-6" />
+          <div className="h-px bg-gray-100 w-full mb-4 shrink-0" />
 
-          <div className="space-y-4">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Request details</p>
-            <div className="w-full p-4 rounded-2xl bg-gray-50 border border-gray-100">
-              <p className="text-sm text-gray-600">
-                Allow <span className="font-bold text-gray-900">{request?.name}</span> to switch the network to:
-              </p>
-              <div className="mt-3 flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100">
-                <span className="text-sm font-bold text-gray-900">
-                  {request?.params?.name || `Chain ID: ${request?.params?.chainId}`}
-                </span>
-              </div>
+          <div className="flex-1 flex flex-col min-h-0">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 shrink-0">Message to sign</p>
+            <div className="flex-1 w-full p-4 rounded-2xl bg-gray-50 border border-gray-100 overflow-y-auto mb-4">
+              <pre className="text-[11px] font-mono whitespace-pre-wrap break-all text-gray-600">
+                {request?.params?.message}
+              </pre>
             </div>
           </div>
         </div>
 
-        <div className="p-6 border-t border-gray-100">
+        <div className="p-6 border-t border-gray-100 shrink-0">
           <div className="flex items-center space-x-3 mb-6 px-1">
             <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center border border-gray-200">
               <ShieldCheck className="w-3.5 h-3.5 text-gray-400" />
             </div>
             <p className="text-[11px] leading-relaxed text-gray-500 font-semibold">
-              The DApp will be able to read data and send requests to the new network.
+              Signing this message does not cost any gas fees.
             </p>
           </div>
 
@@ -78,13 +73,13 @@ const ApprovalSwitchNetwork = () => {
               onClick={handleReject}
               className="flex-1 py-4 px-6 rounded-full text-sm font-bold text-gray-900 bg-white border border-gray-200 hover:bg-gray-50 transition-all"
             >
-              Cancel
+              Reject
             </button>
             <button
               onClick={handleApprove}
               className="flex-1 py-4 px-6 rounded-full text-sm font-bold text-white bg-gray-900 hover:bg-black transition-all shadow-lg shadow-gray-200"
             >
-              Switch
+              Sign
             </button>
           </div>
         </div>
@@ -93,4 +88,4 @@ const ApprovalSwitchNetwork = () => {
   );
 };
 
-export default ApprovalSwitchNetwork;
+export default ApprovalSignMessage;

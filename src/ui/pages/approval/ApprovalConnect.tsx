@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Account } from '@shared/types';
 import { Check, ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { getApprovalId } from '@/ui/utils';
 
 import { capturePostHogEvent } from '@/shared/telemetry/posthog';
 import { PixelAvatar } from '@/ui/components/PixelAvatar';
@@ -10,8 +10,7 @@ import { useWallet } from '@/ui/utils/walletContext';
 import ApprovalLayout from './ApprovalLayout';
 
 const ApprovalConnect = () => {
-  const [searchParams] = useSearchParams();
-  const id = searchParams.get('id');
+  const id = getApprovalId();
   const wallet = useWallet();
   const keyringsList = useKeyringsList();
 

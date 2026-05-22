@@ -12,6 +12,7 @@ import ExportPrivateKeyScreen from './account/ExportPrivateKeyScreen';
 import UnlockScreen from './account/UnlockScreen';
 import ApprovalConnect from './approval/ApprovalConnect';
 import ApprovalSendTransaction from './approval/ApprovalSendTransaction';
+import ApprovalSignMessage from './approval/ApprovalSignMessage';
 import ApprovalSignTransaction from './approval/ApprovalSignTransaction';
 import ApprovalSwitchNetwork from './approval/ApprovalSwitchNetwork';
 import BoostScreen from './main/BoostScreen';
@@ -147,6 +148,10 @@ const routes = {
   ApprovalSendTransaction: {
     path: '/approval/send-transaction',
     element: <ApprovalSendTransaction />,
+  },
+  ApprovalSignMessage: {
+    path: '/approval/sign-message',
+    element: <ApprovalSignMessage />,
   },
 };
 

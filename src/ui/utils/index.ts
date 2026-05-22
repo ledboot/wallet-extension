@@ -24,3 +24,15 @@ export const getUiType = (): UiTypeCheck => {
     return m;
   }, {} as UiTypeCheck);
 };
+
+export const getApprovalId = (): string | null => {
+  const hash = window.location.hash;
+  const search = window.location.search;
+  const searchParams = new URLSearchParams(
+    hash.includes('?') 
+      ? hash.split('?')[1] 
+      : search
+  );
+  return searchParams.get('id');
+};
+

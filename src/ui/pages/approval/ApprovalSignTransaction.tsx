@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { capturePostHogEvent } from '@/shared/telemetry/posthog';
+import { getApprovalId } from '@/ui/utils';
 import { useWallet } from '@/ui/utils/walletContext';
 import { ShieldCheck } from 'lucide-react';
 import ApprovalLayout from './ApprovalLayout';
 
 const ApprovalSignTransaction = () => {
-  const [searchParams] = useSearchParams();
-  const id = searchParams.get('id');
+  const id = getApprovalId();
   const wallet = useWallet();
   const [request, setRequest] = useState<any>(null);
 

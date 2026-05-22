@@ -49,7 +49,13 @@ abstract class Message extends EventEmitter {
         reject,
       });
 
-      this.send('request', { ident, data });
+      try {
+        this.send('request', { ident, data });
+      } catch (e) {
+        this._requestIdPool.push(ident);
+        this._waitingMap.delete(ident);
+        reject(e);
+      }
     });
   };
 
@@ -92,9 +98,10 @@ abstract class Message extends EventEmitter {
     }
   };
 
-  _dispose = () => {
+  _dispose = (error?: Error) => {
+    const err = error || new Error('User rejected request');
     for (const request of this._waitingMap.values()) {
-      request.reject(new Error('User rejected request'));
+      request.reject(err);
     }
 
     this._waitingMap.clear();

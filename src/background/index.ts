@@ -15,6 +15,8 @@ import {
 import { bytesToHex } from './utils/index';
 import { MsgT } from './utils/msgTools';
 import { signTransaction } from './utils/transactionTools';
+import { signAsync } from '@noble/secp256k1';
+import { sha256 as nobleSha256 } from '@noble/hashes/sha2';
 import { storage } from './webapi';
 import { browserRuntimeOnConnect, browserRuntimeOnInstalled } from './webapi/browser';
 import { openExtensionInTab } from './webapi/tab';
@@ -331,6 +333,40 @@ browserRuntimeOnConnect((port: any) => {
           if (!contractAddress) throw new Error('Missing contract address');
           if (!contractParams) throw new Error('Missing contract call params');
           return openapiService.contractCall(contractAddress, contractParams);
+        }
+
+        case 'signMessage': {
+          const { message } = (params as any) ?? {};
+          if (!message) throw new Error('Missing message');
+
+          const origin = (port.sender as any)?.origin;
+          const session = sessionService.getSession(origin);
+
+          // Request user approval
+          await approvalService.requestApproval({
+            origin: origin || 'Unknown',
+            name: session?.data?.name || origin || 'Unknown DApp',
+            icon: session?.data?.icon || '',
+            type: 'signMessage',
+            params: { message },
+          });
+
+          // Fetch current account to sign
+          const accounts = await keyringService.getAccounts();
+          const idx = preferenceService.store.currentAccountIndex;
+          const activeAccount = accounts[idx] || accounts[0];
+          if (!activeAccount) throw new Error('No active account');
+
+          const privateKey = keyringService.exportPrivateKeyHex(activeAccount.address);
+
+          // Construct formatted message: prefix + len + rawMsg
+          const formattedMessage = `\x19Zent Signed Message:\n${message.length}${message}`;
+          const encoder = new TextEncoder();
+          const hash = nobleSha256(encoder.encode(formattedMessage));
+
+          const sig = await signAsync(hash, privateKey, { extraEntropy: true });
+          const sigBytes = sig.toBytes();
+          return bytesToHex(sigBytes);
         }
 
         default:

@@ -285,6 +285,17 @@ export class ZentProvider extends EventEmitter {
       params: { contractAddress, params },
     });
   };
+
+  /**
+   * Sign a text message.
+   * @param message - The raw text message to sign
+   */
+  signMessage = async (message: string): Promise<string> => {
+    return this[requestMethodKey]({
+      method: 'signMessage',
+      params: { message },
+    }) as Promise<string>;
+  };
 }
 
 declare global {

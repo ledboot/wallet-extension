@@ -44,6 +44,9 @@ class ApprovalService extends EventEmitter {
       case 'sendTransaction':
         path = '/approval/send-transaction';
         break;
+      case 'signMessage':
+        path = '/approval/sign-message';
+        break;
       default:
         path = '/approval/connect';
     }

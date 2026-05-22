@@ -35,3 +35,7 @@ node_modules/*
 .agents
 
 publish/*
+
+android/*
+ios/*
+capacitor.config.ts

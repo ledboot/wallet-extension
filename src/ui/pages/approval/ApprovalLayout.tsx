@@ -3,6 +3,7 @@ import { Lock, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWallet } from '@/ui/utils/walletContext';
 import { useLanguage } from '@/ui/contexts/LanguageContext';
+import { getApprovalId } from '@/ui/utils';
 
 interface ApprovalLayoutProps {
   children: React.ReactNode;
@@ -20,10 +21,11 @@ const ApprovalLayout: React.FC<ApprovalLayoutProps> = ({ children, id, onInit })
 
   useEffect(() => {
     const init = async () => {
-      if (id) {
+      const actualId = id || getApprovalId();
+      if (actualId) {
         try {
           const [req, unlocked] = await Promise.all([
-            wallet.getApproval(id),
+            wallet.getApproval(actualId),
             wallet.isUnlocked(),
           ]);
           setRequest(req);
@@ -34,10 +36,14 @@ const ApprovalLayout: React.FC<ApprovalLayoutProps> = ({ children, id, onInit })
         } finally {
           setLoading(false);
         }
+      } else {
+        console.warn('[ApprovalLayout] No approval ID found');
+        setLoading(false);
       }
     };
     init();
   }, [id, wallet, onInit]);
+
 
   const handleUnlock = async () => {
     try {
