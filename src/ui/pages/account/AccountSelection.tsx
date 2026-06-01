@@ -44,10 +44,6 @@ const AccountSelection = () => {
   }, [keyringsList, currentAccountFromState]);
 
   const handleAccountSelect = (keyring: WalletKeyring, accountIndex: number) => {
-    if (keyring.key === currentKeyring.key) {
-      navigate('MainScreen');
-      return;
-    }
     setSelectedKeyringIndex(keyring.index);
     setSelectedAccountIndex(accountIndex);
     wallet.changeKeyring(keyring.key, accountIndex);

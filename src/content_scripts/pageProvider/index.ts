@@ -8,11 +8,10 @@ import ReadyPromise from './readyPromise';
 import { $, domReadyCall } from './utils';
 
 const log = (event: string, ...args: unknown[]) => {
-  void event;
-  void args;
-  if (process.env.NODE_ENV !== 'production') {
-    // console.log(`%c [zent] ${event}`, 'font-weight:600;background:#7d6ef9;color:#fff;', ...args)
+  if (process.env.NODE_ENV === 'production') {
+    if (!_zentProviderPrivate._state.enableDeveloperLogs) return;
   }
+  console.log(`%c [zent] ${event}`, 'font-weight:600;background:#7d6ef9;color:#fff;', ...args);
 };
 
 // Must match CHANNEL_NAME in content_scripts/index.ts (bridge script)
@@ -23,6 +22,7 @@ interface StateProvider {
   isConnected: boolean;
   isUnlocked: boolean;
   initialized: boolean;
+  enableDeveloperLogs: boolean;
 }
 
 // Symbol for truly private request method
@@ -49,6 +49,7 @@ const _zentProviderPrivate: {
     isConnected: false,
     isUnlocked: false,
     initialized: false,
+    enableDeveloperLogs: false,
   },
   _pushEventHandlers: null,
   _requestPromise: new ReadyPromise(0),
@@ -108,6 +109,9 @@ export class ZentProvider extends EventEmitter {
       }
       if (result?.accounts) {
         _zentProviderPrivate._pushEventHandlers?.accountsChanged(result.accounts);
+      }
+      if (typeof result?.enableDeveloperLogs === 'boolean') {
+        _zentProviderPrivate._state.enableDeveloperLogs = result.enableDeveloperLogs;
       }
     } catch {
       // Ignore initialization errors — background may not be ready yet
@@ -328,12 +332,16 @@ const providerProxy = new Proxy(provider, {
     if (prop === '_events' || prop === '_eventsCount' || prop === '_maxListeners') {
       return (target as any)[prop];
     }
-    // Block private method access
+    // Block private member access
     if ((typeof prop === 'string' && prop.startsWith('_')) || prop === requestMethodKey) {
       console.warn(`[Zent] Access to private member "${String(prop)}" is not allowed.`);
       return undefined;
     }
-    return (target as any)[prop];
+    const val = (target as any)[prop];
+    if (typeof val === 'function') {
+      return val.bind(target);
+    }
+    return val;
   },
 });
 

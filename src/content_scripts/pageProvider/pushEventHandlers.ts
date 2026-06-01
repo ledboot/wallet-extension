@@ -11,6 +11,7 @@ interface ProviderPrivate {
   _pushEventHandlers: PushEventHandlers | null;
   _requestPromise: ReadyPromise;
   _bcm: BroadcastChannelMessage;
+  _state: any;
 }
 
 class PushEventHandlers {
@@ -66,6 +67,10 @@ class PushEventHandlers {
       this._providerPrivate._networkId = networkId;
       this._emit('networkChanged', networkId);
     }
+  };
+
+  developerLogsChanged = (enabled: boolean) => {
+    this._providerPrivate._state.enableDeveloperLogs = enabled;
   };
 }
 

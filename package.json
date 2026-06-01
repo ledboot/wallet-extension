@@ -3,7 +3,7 @@
   "displayName": "Zent Wallet Extension",
   "description": "Securely manage ZENT tokens and blockchain assets. Send, receive, and track with enhanced privacy.",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "scripts": {
     "dev": "vite",

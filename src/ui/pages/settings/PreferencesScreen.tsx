@@ -1,11 +1,21 @@
+import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 import { useLanguage } from '@/ui/contexts/LanguageContext';
 import { useNavigate } from '@/ui/pages/MainRoute';
+import { useWallet } from '@/ui/utils/walletContext';
 
 export default function PreferencesScreen() {
   const navigate = useNavigate();
   const { currentLanguage, t } = useLanguage();
+  const wallet = useWallet();
+  const [developerLogsEnabled, setDeveloperLogsEnabled] = useState(false);
+
+  useEffect(() => {
+    wallet.getEnableDeveloperLogs().then((val: boolean) => {
+      setDeveloperLogsEnabled(val);
+    });
+  }, [wallet]);
 
   const languages = [
     { code: 'en' as const, name: 'English' },
@@ -15,6 +25,19 @@ export default function PreferencesScreen() {
   ];
 
   const currentLangObj = languages.find((l) => l.code === currentLanguage) || languages[0];
+
+  const getDeveloperLogsLabel = () => {
+    switch (currentLanguage) {
+      case 'zh':
+        return '开发者日志';
+      case 'ja':
+        return '開発者ログ';
+      case 'ko':
+        return '개발자 로그';
+      default:
+        return 'Developer Logs';
+    }
+  };
 
   const SettingRow = ({
     label,
@@ -66,6 +89,24 @@ export default function PreferencesScreen() {
           onClick={() => navigate('LanguageScreen')}
         />
         <SettingRow label={t('settings.custom_network')} onClick={() => navigate('AddCustomNetwork')} />
+        <SettingRow
+          label={getDeveloperLogsLabel()}
+          rightContent={
+            <label className='relative inline-flex cursor-pointer items-center'>
+              <input
+                type='checkbox'
+                checked={developerLogsEnabled}
+                onChange={async (e) => {
+                  const val = e.target.checked;
+                  setDeveloperLogsEnabled(val);
+                  await wallet.setEnableDeveloperLogs(val);
+                }}
+                className='peer sr-only'
+              />
+              <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-gray-900 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none dark:bg-gray-700 dark:peer-checked:bg-gray-100 dark:peer-checked:after:bg-gray-800" />
+            </label>
+          }
+        />
       </div>
     </div>
   );

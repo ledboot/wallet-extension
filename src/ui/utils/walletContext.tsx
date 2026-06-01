@@ -93,6 +93,8 @@ export interface WalletController {
   getLocale(): Promise<string>;
   setLocale(locale: string): void;
   refreshAssets(): Promise<void>;
+  getEnableDeveloperLogs(): Promise<boolean>;
+  setEnableDeveloperLogs(enabled: boolean): Promise<void>;
 }
 
 const WalletContext = createContext<WalletController | null>(null);

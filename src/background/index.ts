@@ -160,9 +160,10 @@ browserRuntimeOnConnect((port: any) => {
               accounts: accounts.map((a: any) => a.address),
               networkId: chainInfo.id,
               isUnlocked,
+              enableDeveloperLogs: preferenceService.getEnableDeveloperLogs(),
             };
           } catch {
-            return { accounts: [], networkId: null, isUnlocked: false };
+            return { accounts: [], networkId: null, isUnlocked: false, enableDeveloperLogs: false };
           }
         }
 
@@ -187,9 +188,7 @@ browserRuntimeOnConnect((port: any) => {
         }
 
         case 'getCurrentAccount': {
-          const accounts = await keyringService.getAccounts();
-          const idx = preferenceService.store.currentAccountIndex;
-          return accounts[idx] || accounts[0] || null;
+          return walletController.getCurrentAccount();
         }
 
         case 'getNetwork': {
@@ -267,10 +266,14 @@ browserRuntimeOnConnect((port: any) => {
         }
 
         case 'getCurrentAccountUtxos': {
-          const accounts = await keyringService.getAccounts();
-          const idx = preferenceService.store.currentAccountIndex;
-          const address = accounts[idx]?.address;
+          const activeAccount = await walletController.getCurrentAccount();
+          const address = activeAccount?.address;
           if (!address) throw new Error('No current account');
+          try {
+            await walletController.refreshAssets();
+          } catch (e) {
+            console.error('Failed to refresh assets:', e);
+          }
           return assetService.getUtxosByAddress(address);
         }
 
@@ -352,9 +355,7 @@ browserRuntimeOnConnect((port: any) => {
           });
 
           // Fetch current account to sign
-          const accounts = await keyringService.getAccounts();
-          const idx = preferenceService.store.currentAccountIndex;
-          const activeAccount = accounts[idx] || accounts[0];
+          const activeAccount = await walletController.getCurrentAccount();
           if (!activeAccount) throw new Error('No active account');
 
           const privateKey = keyringService.exportPrivateKeyHex(activeAccount.address);
@@ -376,10 +377,14 @@ browserRuntimeOnConnect((port: any) => {
 
     // Forward wallet events to the page provider via this port
     const broadcastCallback = (data: any) => {
-      pm.request({
-        event: data.method,
-        data: data.params,
-      });
+      try {
+        pm.send('message', {
+          event: data.method,
+          data: data.params,
+        });
+      } catch (e) {
+        // ignore
+      }
     };
     eventBus.addEventListener(EVENTS.broadcastToUI, broadcastCallback);
 
@@ -394,7 +399,11 @@ browserRuntimeOnConnect((port: any) => {
 /** Push an event to all connected content-script ports. */
 function broadcastToContentScripts(event: string, data: unknown) {
   for (const pm of contentScriptPorts) {
-    pm.request({ event, data }).catch(() => null);
+    try {
+      pm.send('message', { event, data });
+    } catch (e) {
+      // ignore
+    }
   }
 }
 
@@ -443,10 +452,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (method === 'GET_CURRENT_ACCOUNT') {
       (async () => {
         try {
-          const accounts = await keyringService.getAccounts();
-          const currentAccountIndex = preferenceService.store.currentAccountIndex;
-          const currentAccount = accounts[currentAccountIndex] || accounts[0];
-
+          const currentAccount = await walletController.getCurrentAccount();
+ 
           sendResponse({
             success: true,
             result: currentAccount,

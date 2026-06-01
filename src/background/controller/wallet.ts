@@ -92,6 +92,15 @@ export class WalletController {
     }
 
     eventBus.emit(EVENTS.broadcastToUI, { method: 'unlock', params: {} });
+
+    const account = await this.getCurrentAccount();
+    if (account) {
+      eventBus.emit(EVENTS.broadcastToUI, {
+        method: 'accountsChanged',
+        params: [account.address],
+      });
+    }
+
     this._startUtxoPolling();
   };
 
@@ -189,6 +198,11 @@ export class WalletController {
       this.heartbeatInterval = null;
     }
     this._stopUtxoPolling();
+
+    eventBus.emit(EVENTS.broadcastToUI, {
+      method: 'accountsChanged',
+      params: [],
+    });
   };
 
   /**
@@ -266,6 +280,13 @@ export class WalletController {
    */
   removeAccount = async (address: string, type: string) => {
     await keyringService.removeAccount(address, type);
+    const account = await this.getCurrentAccount();
+    if (account) {
+      eventBus.emit(EVENTS.broadcastToUI, {
+        method: 'accountsChanged',
+        params: [account.address],
+      });
+    }
   };
 
   getKeyrings = async (): Promise<WalletKeyring[]> => {
@@ -401,6 +422,14 @@ export class WalletController {
       method: 'updateKeyrings',
       params: {},
     });
+
+    const account = await this.getCurrentAccount();
+    if (account) {
+      eventBus.emit(EVENTS.broadcastToUI, {
+        method: 'accountsChanged',
+        params: [account.address],
+      });
+    }
   };
 
   /** UI 心跳：更新心跳时间 */
@@ -690,6 +719,18 @@ export class WalletController {
     // Close the window
     chrome.windows.getCurrent((win) => {
       if (win.id) chrome.windows.remove(win.id);
+    });
+  };
+
+  getEnableDeveloperLogs = () => {
+    return preferenceService.getEnableDeveloperLogs();
+  };
+
+  setEnableDeveloperLogs = (enabled: boolean) => {
+    preferenceService.setEnableDeveloperLogs(enabled);
+    eventBus.emit(EVENTS.broadcastToUI, {
+      method: 'developerLogsChanged',
+      params: enabled,
     });
   };
 }

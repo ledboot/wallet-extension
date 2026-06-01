@@ -23,6 +23,7 @@ export interface PreferenceStore {
   };
   chainInfo: { [key: string]: ChainInfo };
   currentChainInfo: ChainInfo;
+  enableDeveloperLogs: boolean;
 }
 
 const version = chrome.runtime.getManifest().version;
@@ -48,6 +49,7 @@ class PreferenceService {
         keyringAlianNames: {},
         chainInfo: { ...CHAIN_INFO },
         currentChainInfo: CHAIN_INFO[ChainType.ZENT_MAINNET],
+        enableDeveloperLogs: false,
       },
     });
 
@@ -194,6 +196,14 @@ class PreferenceService {
     if (this.store.chainInfo) {
       delete this.store.chainInfo[chainType];
     }
+  };
+
+  getEnableDeveloperLogs = () => {
+    return !!this.store.enableDeveloperLogs;
+  };
+
+  setEnableDeveloperLogs = (enabled: boolean) => {
+    this.store.enableDeveloperLogs = enabled;
   };
 }
 
