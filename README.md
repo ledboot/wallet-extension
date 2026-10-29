@@ -1,5 +1,7 @@
 # ZENT Wallet Extension
 
+Third-party integration: [Provider API and smallc-ide integration guide (中文)](docs/third-party-wallet-integration.md).
+
 _Read this in other languages: [中文](README_CN.md)._
 
 ZENT Wallet Extension is a modern cryptocurrency wallet application based on Chrome Extensions. The project is built using the latest React 19, Tailwind CSS 4, and Vite toolchain, utilizing Zustand for data state management. It provides a comprehensive verification and isolation protection mechanism from the underlying Keyring to the front-end view to ensure high security.

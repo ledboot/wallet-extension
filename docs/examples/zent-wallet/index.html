@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ZENT 钱包第三方接入示例</title>
+    <style>
+      body {
+        margin: 32px auto;
+        padding: 0 20px;
+        max-width: 900px;
+        font: 16px/1.6 system-ui;
+      }
+      section {
+        margin: 24px 0;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 20px;
+      }
+      button,
+      input,
+      textarea,
+      select {
+        margin: 4px 0;
+        padding: 8px;
+        font: inherit;
+      }
+      input,
+      textarea,
+      select {
+        box-sizing: border-box;
+        width: 100%;
+      }
+      button {
+        cursor: pointer;
+      }
+      pre {
+        background: #f5f5f5;
+        padding: 16px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      label {
+        display: block;
+        margin-top: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>ZENT 钱包接入示例</h1>
+    <p>先在钱包中解锁并选择测试账户、测试网络，再连接本页。示例不包含交易构造器。</p>
+    <p id="status" role="status">正在检测钱包…</p>
+    <section>
+      <h2>1. 连接和查询</h2>
+      <button id="connect">连接钱包</button>
+      <button id="disconnect">断开本页连接</button>
+      <button id="query">查询当前账户、网络、余额和 UTXO</button>
+      <label for="networks">目标网络</label>
+      <select id="networks"></select>
+      <button id="switch">请求切换网络（切换后需重新连接）</button>
+    </section>
+    <section>
+      <h2>2. 签署文本</h2>
+      <label for="message">待签消息</label>
+      <textarea id="message" rows="3">Hello ZENT! This is a wallet integration test.</textarea>
+      <button id="sign-message">请求消息签名</button>
+      <p>仅演示签名调用，不构成完整登录认证。</p>
+    </section>
+    <section>
+      <h2>3. 模拟、签名与广播交易</h2>
+      <label for="raw-tx">使用 SmallC 工具或你的交易构造器生成的完整交易 hex</label>
+      <textarea id="raw-tx" rows="5" placeholder="粘贴真实的测试网络交易 hex，不含 0x"></textarea>
+      <button id="simulate">模拟交易</button>
+      <button id="sign-tx">请求交易签名</button>
+      <button id="broadcast" disabled>广播本次已签名交易</button>
+      <p>签名后由你单独点击广播。广播成功仅表示节点返回交易 hash，需另行查询链上确认。</p>
+    </section>
+    <section>
+      <h2>4. 合约查询</h2>
+      <label for="contract">已部署的测试合约地址</label>
+      <input id="contract" placeholder="输入目标网络中的合约地址" />
+      <label for="params">按该合约 ABI 编码的参数 hex</label>
+      <textarea id="params" rows="3" placeholder="输入 SmallC 合约工具生成的参数 hex"></textarea>
+      <button id="call">调用 contractCall</button>
+    </section>
+    <h2>执行结果</h2>
+    <pre id="output" aria-live="polite">尚未调用</pre>
+    <script type="module" src="./demo.js"></script>
+  </body>
+</html>

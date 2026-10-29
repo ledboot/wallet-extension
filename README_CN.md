@@ -2,6 +2,8 @@
 
 _其他语言版本: [English](README.md)._
 
+第三方网页接入钱包请参阅：[接入指南与完整示例](docs/third-party-wallet-integration.md)。
+
 ZENT Wallet Extension 是一款基于 Chrome Extension 的现代化加密货币钱包应用。项目采用了最新的 React 19、Tailwind CSS 4 和 Vite 工具链构建，使用 Zustand 进行数据状态管理，并在安全上提供了从底层 Keyring 到前端视图的完善验证隔离保护机制。
 
 ## 🌟 核心特性 (Features)
